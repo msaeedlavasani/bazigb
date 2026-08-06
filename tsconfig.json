@@ -15,10 +15,10 @@
     "baseUrl": ".",
     "paths": {
       "@bazigb/engine": [
-        "packages/engine/dist"
+        "packages/engine/src"
       ],
       "@bazigb/game-*": [
-        "packages/games/*/dist"
+        "packages/games/*/src"
       ]
     }
   },

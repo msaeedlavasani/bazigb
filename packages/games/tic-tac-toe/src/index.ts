@@ -1,10 +1,10 @@
-import { Game, Move } from '@bazigb/engine';
+import { Game, Move, GameContext } from '@bazigb/engine';
 
 interface TicTacToeState {
   cells: (string | null)[];
 }
 
-const clickCell: Move<TicTacToeState> = (G, ctx, id) => {
+const clickCell: Move<TicTacToeState> = (G: TicTacToeState, ctx: GameContext, id: number) => {
   if (G.cells[id] !== null) return G;
   const cells = [...G.cells];
   cells[id] = ctx.currentPlayer;
@@ -19,8 +19,7 @@ export const TicTacToe: Game<TicTacToeState> = {
   moves: {
     clickCell,
   },
-  endIf: (G) => {
-    // منطق چک کردن برنده اینجا قرار می‌گیرد
+  endIf: (G: TicTacToeState) => {
     return null;
   },
 };
