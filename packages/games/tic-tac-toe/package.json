@@ -2,6 +2,9 @@
   "name": "@bazigb/game-tic-tac-toe",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@bazigb/engine": "*"
   }

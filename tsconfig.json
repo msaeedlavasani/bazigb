@@ -14,8 +14,12 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@bazigb/engine": ["packages/engine/src"],
-      "@bazigb/game-*": ["packages/games/*/src"]
+      "@bazigb/engine": [
+        "packages/engine/dist"
+      ],
+      "@bazigb/game-*": [
+        "packages/games/*/dist"
+      ]
     }
   },
   "exclude": ["node_modules", "dist"]
