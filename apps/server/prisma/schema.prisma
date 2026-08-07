@@ -14,6 +14,9 @@ generator client {
   // location and keeps generated types inside the workspace.
   // Path is relative to this file (prisma/).
   output = "../src/generated/prisma"
+  // Ensure the production query engine (Debian bookworm / OpenSSL 3) is always
+  // downloaded by `prisma generate` — even when generating on macOS.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
