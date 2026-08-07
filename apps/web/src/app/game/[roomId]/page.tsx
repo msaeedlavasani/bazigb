@@ -1,13 +1,54 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Loader2, Users } from 'lucide-react';
-import { socket, connectSocket } from '../../../lib/socket';
+import { ArrowLeft, Copy, Eye, Loader2, Users, Wifi, WifiOff } from 'lucide-react';
+import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
 import ChessBoard, { ChessMoveInput } from '../../components/ChessBoard';
+import ChatSidebar from '../../components/ChatSidebar';
+import {
+  getCapturedPieces,
+  getMoveHistory,
+  getChessResult,
+  materialValue,
+  PIECE_GLYPHS,
+  CHESS_RESULT_LABELS,
+  HistoryMove,
+} from '../../../lib/chess';
+import { playMoveSound } from '../../../lib/sound';
+
+type ConnStatus = 'connecting' | 'connected' | 'reconnecting';
+
+/** One row of the captured-pieces tray. */
+function CapturedRow({ label, pieces }: { label: string; pieces: string[] }) {
+  const value = materialValue(pieces);
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="w-16 shrink-0 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+      <span className="flex min-h-6 flex-1 flex-wrap items-center gap-1 text-xl leading-none">
+        {pieces.length === 0 ? (
+          <span className="text-xs text-slate-600">—</span>
+        ) : (
+          pieces.map((piece, i) => (
+            <span key={i} className="drop-shadow">
+              {PIECE_GLYPHS[piece] ?? piece}
+            </span>
+          ))
+        )}
+      </span>
+      {value > 0 && (
+        <span className="shrink-0 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+          +{value}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -18,63 +59,148 @@ export default function GamePage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [connStatus, setConnStatus] = useState<ConnStatus>('connecting');
+
+  // Beep bookkeeping: `boardKeyRef` tracks the last board signature we saw;
+  // `pendingMyMoveRef` suppresses the beep for the echo of our own move.
+  const boardKeyRef = useRef<string | null>(null);
+  const pendingMyMoveRef = useRef(false);
+
+  const markMyMove = useCallback(() => {
+    pendingMyMoveRef.current = true;
+    // If the move is rejected (no broadcast follows), stop suppressing beeps.
+    window.setTimeout(() => {
+      pendingMyMoveRef.current = false;
+    }, 3000);
+  }, []);
 
   useEffect(() => {
     if (!roomCode) return;
     connectSocket();
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // 1. Fetch the persisted room + initial game state from the DB via the server.
-    fetchRoom(roomCode)
-      .then((r) => {
-        if (cancelled) return;
-        setRoom(r);
-        if (r.currentState) setGameState(r.currentState);
-      })
-      .catch((e: any) => {
-        if (!cancelled) setError(e?.message || 'Room not found');
-      });
+    /** Re-fetch the persisted room + state so the board renders the latest DB snapshot. */
+    const refreshRoomFromDb = () => {
+      fetchRoom(roomCode)
+        .then((r) => {
+          if (cancelled) return;
+          setRoom(r);
+          if (r.currentState) {
+            setGameState(r.currentState);
+            setWinner(r.winnerId ?? null);
+          }
+          setError(null);
+        })
+        .catch((e: any) => {
+          if (!cancelled) setError(e?.message || 'Room not found');
+        });
+    };
 
-    // 2. Live updates over the socket.
+    /** Re-join the room and re-sync: safe on every connect (players, spectators). */
+    const joinRoom = () => {
+      if (cancelled) return;
+      rejoinRoom(roomCode);
+      refreshRoomFromDb();
+    };
+
+    /** Beep when the board changes and the change was not caused by us. */
+    const handleStateChange = (state: GameState) => {
+      const G = state.G;
+      const key = G && typeof G.fen === 'string' ? G.fen : Array.isArray(G?.cells) ? G.cells.join(',') : null;
+      const prev = boardKeyRef.current;
+      boardKeyRef.current = key;
+      if (prev !== null && prev !== key && !pendingMyMoveRef.current) playMoveSound();
+      pendingMyMoveRef.current = false;
+    };
+
     const onConnect = () => {
-      socket.emit('joinRoom', roomCode);
+      if (cancelled) return;
+      setConnStatus('connected');
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      joinRoom();
+    };
+    const onConnectError = () => {
+      if (cancelled) return;
+      setConnStatus('reconnecting');
+      // socket.io retries automatically; nudge it in case the handshake was
+      // dropped before a retry got scheduled.
+      if (!retryTimer) {
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          if (cancelled) return;
+          if (!socket.connected) connectSocket();
+        }, 2500);
+      }
+    };
+    const onDisconnect = () => {
+      if (cancelled) return;
+      setConnStatus('reconnecting');
     };
     const onGameState = (state: GameState) => {
+      if (cancelled) return;
       setGameState(state);
       setWinner(null);
       setError(null);
+      handleStateChange(state);
     };
     const onGameOver = ({ state, winner: w }: { state: GameState; winner: string }) => {
+      if (cancelled) return;
       setGameState(state);
       setWinner(w);
+      handleStateChange(state);
     };
     const onError = (err: any) => {
+      if (cancelled) return;
       setError(err?.message || 'An unknown error occurred');
+    };
+    const onRoomUpdate = (update: { code?: string; players?: string[]; status?: Room['status'] }) => {
+      if (cancelled || update.code !== roomCode) return;
+      setRoom((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...(Array.isArray(update.players) ? { players: update.players } : {}),
+              ...(update.status ? { status: update.status } : {}),
+            }
+          : prev,
+      );
     };
 
     socket.on('gameState', onGameState);
     socket.on('gameOver', onGameOver);
     socket.on('error', onError);
     socket.on('connect', onConnect);
+    socket.on('connect_error', onConnectError);
+    socket.on('disconnect', onDisconnect);
+    socket.on('roomUpdate', onRoomUpdate);
 
     // Socket may already be connected (e.g. coming from the lobby).
     if (socket.connected) onConnect();
 
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       socket.off('gameState', onGameState);
       socket.off('gameOver', onGameOver);
       socket.off('error', onError);
       socket.off('connect', onConnect);
+      socket.off('connect_error', onConnectError);
+      socket.off('disconnect', onDisconnect);
+      socket.off('roomUpdate', onRoomUpdate);
     };
   }, [roomCode]);
 
   const handleCellClick = useCallback(
     (index: number) => {
-      if (!gameState || winner) return;
+      if (!gameState || !isMyTurn || winnerId) return;
       socket.emit('makeMove', { room: roomCode, moveName: 'clickCell', args: [index] });
+      markMyMove();
     },
-    [gameState, winner, roomCode],
+    [gameState, isMyTurn, winnerId, roomCode, markMyMove],
   );
 
   /**
@@ -83,13 +209,14 @@ export default function GamePage() {
    */
   const handleChessMove = useCallback(
     (move: ChessMoveInput) => {
-      if (!gameState || winner) return;
+      if (!gameState || !isMyTurn || winnerId) return;
       const args = move.promotion
         ? [{ from: move.from, to: move.to, promotion: move.promotion }]
         : [{ from: move.from, to: move.to }];
       socket.emit('makeMove', { room: roomCode, moveName: 'move', args });
+      markMyMove();
     },
-    [gameState, winner, roomCode],
+    [gameState, isMyTurn, winnerId, roomCode, markMyMove],
   );
 
   const handleCopy = async () => {
@@ -102,21 +229,72 @@ export default function GamePage() {
     }
   };
 
-  const isMyTurn = !!gameState && socket.id === gameState.ctx.currentPlayer;
+  const mySocketId = socket.id ?? null;
+
+  // Spectator vs player: the seated list from ctx is authoritative, with the
+  // room's persisted list as a fallback (e.g. before `roomUpdate` arrives).
+  const ctxPlayers = gameState?.ctx.players ?? [];
+  const isPlayer =
+    !!mySocketId &&
+    (ctxPlayers.includes(mySocketId) || room?.players?.includes(mySocketId) ?? false);
+  const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
 
   // Generic container: pick the board component from the room's game type
   // (falls back to the state shape so old rooms still render correctly).
   const gameType = room?.gameType ?? (gameState && 'fen' in gameState.G ? 'chess' : 'tic-tac-toe');
   const isChess = gameType === 'chess';
 
-  // Winner is emitted live via `gameOver`, but can also be reconstructed from
-  // the persisted state (e.g. after a page reload on a finished chess room).
-  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null);
+  // Winner: live `gameOver` broadcast, then the persisted chess result, then
+  // the room's stored winner (covers hard refreshes on finished rooms).
+  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null) ?? room?.winnerId ?? null;
+
+  // Chess extras (captured pieces, move history, result label) — derived
+  // purely from the persisted state so they survive refreshes too.
+  const chessData = useMemo(() => {
+    if (!isChess || !gameState?.G?.fen) return null;
+    return {
+      captured: getCapturedPieces(gameState.G.fen),
+      history: Array.isArray(gameState.G.moves) ? getMoveHistory(gameState.G.moves) : [],
+      result: getChessResult(gameState.G.fen),
+    };
+  }, [isChess, gameState]);
+
+  const historyPairs = useMemo(() => {
+    if (!chessData) return [] as { number: number; white?: HistoryMove; black?: HistoryMove }[];
+    const pairs: { number: number; white?: HistoryMove; black?: HistoryMove }[] = [];
+    for (const move of chessData.history) {
+      let pair = pairs.find((p) => p.number === move.number);
+      if (!pair) {
+        pair = { number: move.number };
+        pairs.push(pair);
+      }
+      if (move.color === 'w') pair.white = move;
+      else pair.black = move;
+    }
+    return pairs;
+  }, [chessData]);
+
+  const winnerLabel = useMemo(() => {
+    if (!winnerId) return null;
+    if (winnerId === 'draw') return "It's a Draw!";
+    if (isPlayer) return winnerId === mySocketId ? 'Winner: YOU!' : 'Winner: Opponent';
+    const idx = ctxPlayers.indexOf(winnerId);
+    return idx >= 0 ? `Winner: Player ${idx + 1}` : 'Winner: Player';
+  }, [winnerId, isPlayer, mySocketId, ctxPlayers]);
+
+  const connChip =
+    connStatus === 'connected'
+      ? { label: 'Connected', Icon: Wifi, cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' }
+      : {
+          label: connStatus === 'reconnecting' ? 'Reconnecting…' : 'Connecting…',
+          Icon: WifiOff,
+          cls: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+        };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
-      <div className={`w-full ${isChess ? 'max-w-xl' : 'max-w-md'} text-center space-y-6`}>
-        <header className="flex items-center justify-between">
+      <div className={`w-full ${isChess ? 'max-w-2xl' : 'max-w-md'} text-center space-y-6`}>
+        <header className="flex items-center justify-between gap-2">
           <Link
             href="/lobby"
             className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
@@ -124,26 +302,40 @@ export default function GamePage() {
             <ArrowLeft className="w-4 h-4" />
             Lobby
           </Link>
-          <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700 px-4 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Room</span>
-            <span className="font-mono font-bold tracking-widest">{roomCode}</span>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="text-slate-500 hover:text-white transition-colors"
-              aria-label="Copy room code"
+          <div className="flex items-center gap-2">
+            <span
+              className={`hidden sm:flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${connChip.cls}`}
             >
-              {copied ? (
-                <span className="text-xs text-emerald-400 font-semibold">Copied!</span>
-              ) : (
-                <Copy className="w-3.5 h-3.5" />
-              )}
-            </button>
+              <connChip.Icon className="w-3.5 h-3.5" />
+              {connChip.label}
+            </span>
+            <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700 px-4 py-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Room</span>
+              <span className="font-mono font-bold tracking-widest">{roomCode}</span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="text-slate-500 hover:text-white transition-colors"
+                aria-label="Copy room code"
+              >
+                {copied ? (
+                  <span className="text-xs text-emerald-400 font-semibold">Copied!</span>
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
           </div>
         </header>
 
+        {/* Mobile connection indicator */}
+        <div className={`sm:hidden flex items-center justify-center gap-1.5 text-xs font-semibold ${connChip.cls} rounded-full border px-3 py-1 w-fit mx-auto`}>
+          <connChip.Icon className="w-3.5 h-3.5" />
+          {connChip.label}
+        </div>
+
         {error && !gameState ? (
-          /* Error state (room not found / full). */
+          /* Error state (room not found). */
           <div className="space-y-4 p-6 rounded-2xl bg-slate-800 border border-rose-500/40">
             <h2 className="text-xl font-bold text-rose-400">Room unavailable</h2>
             <p className="text-slate-400 text-sm">{error}</p>
@@ -183,19 +375,30 @@ export default function GamePage() {
             </button>
           </div>
         ) : (
-          /* Board — both players seated and a game state exists. */
+          /* Board — players and spectators share this view. */
           <div className="space-y-6">
+            {/* Status row: turn indicator for players, spectating chip otherwise. */}
             <div className="flex items-center justify-between gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-3 h-3 rounded-full ${
-                    isMyTurn ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-600'
-                  }`}
-                />
-                <span className="text-sm font-semibold uppercase tracking-wider">
-                  {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
-                </span>
-              </div>
+              {isPlayer ? (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-3 h-3 rounded-full ${
+                      isMyTurn ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-600'
+                    }`}
+                  />
+                  <span className="text-sm font-semibold uppercase tracking-wider">
+                    {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-violet-300">
+                  <Eye className="w-4 h-4" />
+                  <span className="text-sm font-bold uppercase tracking-wider">Spectating</span>
+                  <span className="hidden sm:inline text-xs font-normal text-violet-300/70 normal-case">
+                    — you&apos;re watching live
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-indigo-300 bg-indigo-500/10 border border-indigo-400/20 rounded-full px-2.5 py-0.5">
                   {isChess ? '♞ Chess' : 'Tic-Tac-Toe'}
@@ -204,26 +407,89 @@ export default function GamePage() {
               </div>
             </div>
 
-            {isChess ? (
-              <ChessBoard
-                fen={gameState.G.fen}
-                onMove={handleChessMove}
-                disabled={!isMyTurn || !!winnerId}
-                orientation={socket.id === gameState.ctx.players[0] ? 'w' : 'b'}
-              />
-            ) : (
-              <Board
-                cells={gameState.G.cells}
-                onCellClick={handleCellClick}
-                disabled={!isMyTurn || !!winnerId}
-              />
+            {/* Board with a "Spectating" overlay for non-players */}
+            <div className="relative">
+              {!isPlayer && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-violet-400/50 bg-slate-900/85 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-violet-200 shadow-lg backdrop-blur">
+                  <Eye className="h-3.5 w-3.5" />
+                  Spectating
+                </div>
+              )}
+
+              {isChess ? (
+                <ChessBoard
+                  fen={gameState.G.fen}
+                  onMove={handleChessMove}
+                  disabled={!isPlayer || !isMyTurn || !!winnerId}
+                  orientation={isPlayer ? (mySocketId === gameState.ctx.players[0] ? 'w' : 'b') : 'w'}
+                />
+              ) : (
+                <Board
+                  cells={gameState.G.cells}
+                  onCellClick={handleCellClick}
+                  disabled={!isPlayer || !isMyTurn || !!winnerId}
+                />
+              )}
+            </div>
+
+            {/* Chess: captured pieces + move history (from the persisted state). */}
+            {isChess && chessData && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-left">
+                <div className="rounded-2xl border border-slate-700 bg-slate-800/70 p-4">
+                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Captured pieces
+                  </h3>
+                  <div className="space-y-2.5">
+                    <CapturedRow label="White" pieces={chessData.captured.white} />
+                    <CapturedRow label="Black" pieces={chessData.captured.black} />
+                  </div>
+                </div>
+
+                <div className="flex max-h-56 flex-col rounded-2xl border border-slate-700 bg-slate-800/70 p-4">
+                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Move history
+                  </h3>
+                  {historyPairs.length === 0 ? (
+                    <p className="text-sm text-slate-500">No moves yet — White to move.</p>
+                  ) : (
+                    <div className="min-h-0 flex-1 overflow-y-auto pr-1 font-mono">
+                      <div className="grid grid-cols-[2.5rem_1fr_1fr] gap-x-2 gap-y-1.5">
+                        {historyPairs.map((pair) => (
+                          <Fragment key={pair.number}>
+                            <span className="text-xs text-slate-500">{pair.number}.</span>
+                            <span className="flex flex-col">
+                              <span className="text-sm font-semibold text-slate-100">
+                                {pair.white ? (pair.white.san ?? `${pair.white.from}–${pair.white.to}`) : ''}
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                {pair.white ? `${pair.white.from}–${pair.white.to}` : ''}
+                              </span>
+                            </span>
+                            <span className="flex flex-col">
+                              <span className="text-sm font-semibold text-slate-300">
+                                {pair.black ? (pair.black.san ?? `${pair.black.from}–${pair.black.to}`) : ''}
+                              </span>
+                              <span className="text-[10px] text-slate-600">
+                                {pair.black ? `${pair.black.from}–${pair.black.to}` : ''}
+                              </span>
+                            </span>
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
-            {winnerId && (
+            {winnerLabel && (
               <div className="p-4 bg-indigo-600 rounded-xl shadow-xl">
-                <h2 className="text-2xl font-bold">
-                  {winnerId === 'draw' ? "It's a Draw!" : `Winner: ${winnerId === socket.id ? 'YOU!' : 'Opponent'}`}
-                </h2>
+                <h2 className="text-2xl font-bold">{winnerLabel}</h2>
+                {isChess && chessData?.result && (
+                  <p className="mt-1 text-sm font-medium text-indigo-200">
+                    {CHESS_RESULT_LABELS[chessData.result]}
+                  </p>
+                )}
                 <Link
                   href="/lobby"
                   className="mt-4 inline-block px-6 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-slate-100 transition-colors"
@@ -235,6 +501,9 @@ export default function GamePage() {
           </div>
         )}
       </div>
+
+      {/* Social chat sidebar (players and spectators). */}
+      <ChatSidebar roomCode={roomCode} playerIds={ctxPlayers} myId={mySocketId} />
     </main>
   );
 }

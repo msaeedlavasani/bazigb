@@ -1091,11 +1091,13 @@ export namespace Prisma {
   export type UserAvgAggregateOutputType = {
     wins: number | null
     losses: number | null
+    rating: number | null
   }
 
   export type UserSumAggregateOutputType = {
     wins: number | null
     losses: number | null
+    rating: number | null
   }
 
   export type UserMinAggregateOutputType = {
@@ -1105,6 +1107,7 @@ export namespace Prisma {
     username: string | null
     wins: number | null
     losses: number | null
+    rating: number | null
     createdAt: Date | null
   }
 
@@ -1115,6 +1118,7 @@ export namespace Prisma {
     username: string | null
     wins: number | null
     losses: number | null
+    rating: number | null
     createdAt: Date | null
   }
 
@@ -1125,6 +1129,7 @@ export namespace Prisma {
     username: number
     wins: number
     losses: number
+    rating: number
     createdAt: number
     _all: number
   }
@@ -1133,11 +1138,13 @@ export namespace Prisma {
   export type UserAvgAggregateInputType = {
     wins?: true
     losses?: true
+    rating?: true
   }
 
   export type UserSumAggregateInputType = {
     wins?: true
     losses?: true
+    rating?: true
   }
 
   export type UserMinAggregateInputType = {
@@ -1147,6 +1154,7 @@ export namespace Prisma {
     username?: true
     wins?: true
     losses?: true
+    rating?: true
     createdAt?: true
   }
 
@@ -1157,6 +1165,7 @@ export namespace Prisma {
     username?: true
     wins?: true
     losses?: true
+    rating?: true
     createdAt?: true
   }
 
@@ -1167,6 +1176,7 @@ export namespace Prisma {
     username?: true
     wins?: true
     losses?: true
+    rating?: true
     createdAt?: true
     _all?: true
   }
@@ -1264,6 +1274,7 @@ export namespace Prisma {
     username: string
     wins: number
     losses: number
+    rating: number
     createdAt: Date
     _count: UserCountAggregateOutputType | null
     _avg: UserAvgAggregateOutputType | null
@@ -1293,6 +1304,7 @@ export namespace Prisma {
     username?: boolean
     wins?: boolean
     losses?: boolean
+    rating?: boolean
     createdAt?: boolean
     gameHistoryWins?: boolean | User$gameHistoryWinsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -1305,6 +1317,7 @@ export namespace Prisma {
     username?: boolean
     wins?: boolean
     losses?: boolean
+    rating?: boolean
     createdAt?: boolean
   }, ExtArgs["result"]["user"]>
 
@@ -1315,6 +1328,7 @@ export namespace Prisma {
     username?: boolean
     wins?: boolean
     losses?: boolean
+    rating?: boolean
     createdAt?: boolean
   }
 
@@ -1336,6 +1350,7 @@ export namespace Prisma {
       username: string
       wins: number
       losses: number
+      rating: number
       createdAt: Date
     }, ExtArgs["result"]["user"]>
     composites: {}
@@ -1737,6 +1752,7 @@ export namespace Prisma {
     readonly username: FieldRef<"User", 'String'>
     readonly wins: FieldRef<"User", 'Int'>
     readonly losses: FieldRef<"User", 'Int'>
+    readonly rating: FieldRef<"User", 'Int'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
   }
     
@@ -4072,6 +4088,7 @@ export namespace Prisma {
     username: 'username',
     wins: 'wins',
     losses: 'losses',
+    rating: 'rating',
     createdAt: 'createdAt'
   };
 
@@ -4168,6 +4185,7 @@ export namespace Prisma {
     username?: StringFilter<"User"> | string
     wins?: IntFilter<"User"> | number
     losses?: IntFilter<"User"> | number
+    rating?: IntFilter<"User"> | number
     createdAt?: DateTimeFilter<"User"> | Date | string
     gameHistoryWins?: GameHistoryListRelationFilter
   }
@@ -4179,6 +4197,7 @@ export namespace Prisma {
     username?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
     gameHistoryWins?: GameHistoryOrderByRelationAggregateInput
   }
@@ -4193,6 +4212,7 @@ export namespace Prisma {
     password?: StringFilter<"User"> | string
     wins?: IntFilter<"User"> | number
     losses?: IntFilter<"User"> | number
+    rating?: IntFilter<"User"> | number
     createdAt?: DateTimeFilter<"User"> | Date | string
     gameHistoryWins?: GameHistoryListRelationFilter
   }, "id" | "email" | "username">
@@ -4204,6 +4224,7 @@ export namespace Prisma {
     username?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _avg?: UserAvgOrderByAggregateInput
@@ -4222,6 +4243,7 @@ export namespace Prisma {
     username?: StringWithAggregatesFilter<"User"> | string
     wins?: IntWithAggregatesFilter<"User"> | number
     losses?: IntWithAggregatesFilter<"User"> | number
+    rating?: IntWithAggregatesFilter<"User"> | number
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
 
@@ -4375,6 +4397,7 @@ export namespace Prisma {
     username: string
     wins?: number
     losses?: number
+    rating?: number
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
   }
@@ -4386,6 +4409,7 @@ export namespace Prisma {
     username: string
     wins?: number
     losses?: number
+    rating?: number
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
   }
@@ -4397,6 +4421,7 @@ export namespace Prisma {
     username?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
+    rating?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
   }
@@ -4408,6 +4433,7 @@ export namespace Prisma {
     username?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
+    rating?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
   }
@@ -4419,6 +4445,7 @@ export namespace Prisma {
     username: string
     wins?: number
     losses?: number
+    rating?: number
     createdAt?: Date | string
   }
 
@@ -4429,6 +4456,7 @@ export namespace Prisma {
     username?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
+    rating?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -4439,6 +4467,7 @@ export namespace Prisma {
     username?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
+    rating?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -4651,12 +4680,14 @@ export namespace Prisma {
     username?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
   }
 
   export type UserAvgOrderByAggregateInput = {
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -4666,6 +4697,7 @@ export namespace Prisma {
     username?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -4676,12 +4708,14 @@ export namespace Prisma {
     username?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
   }
 
   export type UserSumOrderByAggregateInput = {
     wins?: SortOrder
     losses?: SortOrder
+    rating?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -5219,6 +5253,7 @@ export namespace Prisma {
     username: string
     wins?: number
     losses?: number
+    rating?: number
     createdAt?: Date | string
   }
 
@@ -5229,6 +5264,7 @@ export namespace Prisma {
     username: string
     wins?: number
     losses?: number
+    rating?: number
     createdAt?: Date | string
   }
 
@@ -5284,6 +5320,7 @@ export namespace Prisma {
     username?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
+    rating?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -5294,6 +5331,7 @@ export namespace Prisma {
     username?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
+    rating?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

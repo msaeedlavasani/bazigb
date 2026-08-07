@@ -29,6 +29,7 @@ model User {
   username  String   @unique
   wins      Int      @default(0)
   losses    Int      @default(0)
+  rating    Int      @default(1200) // ELO rating, seeded at 1200
   createdAt DateTime @default(now())
 
   gameHistoryWins GameHistory[] @relation("GameWinner")
