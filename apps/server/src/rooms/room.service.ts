@@ -9,6 +9,15 @@ export const VEGAS_MAX_PLAYERS = 5;
 export function getMaxPlayers(gameType: string): number {
   return gameType === 'vegas' ? VEGAS_MAX_PLAYERS : MAX_PLAYERS;
 }
+
+/**
+ * Minimum number of players required for a game to start. All games start as
+ * soon as 2 players are seated (the lobby has no player-count selector yet),
+ * even though a Vegas room can later host up to 5 while still waiting.
+ */
+export function getMinPlayers(): number {
+  return 2;
+}
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
 
 // Ambiguous characters (0, O, 1, I) are excluded so codes are easy to share by voice.
@@ -120,6 +129,22 @@ export class RoomService {
       }
     }
     throw new Error('Could not allocate a unique room code');
+  }
+
+  /**
+   * Replace `oldPlayerId` with `newPlayerId` in the room's seats. Used when a
+   * disconnected player reconnects with a fresh socket id mid-game.
+   */
+  async swapPlayer(code: string, oldPlayerId: string, newPlayerId: string): Promise<RoomWithParsedData | null> {
+    const existing = await this.prisma.room.findUnique({ where: { code } });
+    if (!existing) return null;
+    const players = this.parsePlayers(existing.players);
+    if (!players.includes(oldPlayerId)) return this.toParsed(existing);
+    const updated = await this.prisma.room.update({
+      where: { id: existing.id },
+      data: { players: JSON.stringify(players.map((p) => (p === oldPlayerId ? newPlayerId : p))) },
+    });
+    return this.toParsed(updated);
   }
 
   /**

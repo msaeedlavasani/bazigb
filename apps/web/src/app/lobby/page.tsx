@@ -290,7 +290,7 @@ export default function LobbyPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-3.5 h-3.5" />
-                        {room.players.length}/2
+                        {room.players.length}/{room.gameType === 'vegas' ? 5 : 2}
                       </span>
                     </div>
                   </div>

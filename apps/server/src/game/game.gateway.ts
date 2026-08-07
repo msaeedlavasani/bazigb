@@ -14,7 +14,7 @@ import { TicTacToe } from '@bazigb/game-tic-tac-toe';
 import { ChessGame } from '@bazigb/game-chess';
 import { Backgammon } from '@bazigb/game-backgammon';
 import { Vegas } from '@bazigb/game-vegas';
-import { RoomService, getMaxPlayers, RoomWithParsedData } from '../rooms/room.service';
+import { RoomService, getMaxPlayers, getMinPlayers, RoomWithParsedData } from '../rooms/room.service';
 import { HistoryService } from '../history/history.service';
 
 /** Registry of playable games keyed by the room's `gameType`. */
@@ -105,25 +105,57 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       let room = await this.roomService.getRoom(roomCode);
+      const state = room?.currentState ?? null;
+      const connectedIds = new Set(
+        this.server.sockets.adapter.rooms.get(roomCode) ?? [],
+      );
 
-      // Room does not exist yet -> the first joiner creates it and is seated.
+      // 1) Create the room when it does not exist (first joiner is seated).
       if (!room) {
         room = await this.roomService.joinRoom(roomCode, client.id, gameType);
-      } else if (
-        !room.players.includes(client.id) &&
-        room.players.length < getMaxPlayers(room.gameType)
-      ) {
-        // Free seat -> seat the client as a player.
+      } else if (room.players.includes(client.id)) {
+        // 2) Already seated — re-join is a no-op.
+      } else if (room.status === 'waiting' && room.players.length < getMaxPlayers(room.gameType)) {
+        // 3) Free seat in a waiting room -> seat the client as a player.
         try {
           room = await this.roomService.joinRoom(roomCode, client.id, gameType);
         } catch {
           // Lost the race for the last seat -> fall through as a spectator.
           room = (await this.roomService.getRoom(roomCode)) ?? room;
         }
+      } else if (room.status === 'playing' && state) {
+        // 4) Reconnection mid-game: a stale socket id (their pre-refresh
+        //    connection) may still own a seat in ctx.players. Swap it for the
+        //    fresh socket so turns keep flowing and they are a player again.
+        const stale = state.ctx.players.find(
+          (p) => p !== client.id && !connectedIds.has(p),
+        );
+        if (stale) {
+          const nextState: GameState = {
+            ...state,
+            ctx: {
+              ...state.ctx,
+              players: state.ctx.players.map((p) => (p === stale ? client.id : p)),
+              currentPlayer:
+                state.ctx.currentPlayer === stale ? client.id : state.ctx.currentPlayer,
+            },
+          };
+          await this.roomService.saveState(roomCode, nextState);
+          room =
+            (await this.roomService.swapPlayer(roomCode, stale, client.id)) ??
+            (await this.roomService.getRoom(roomCode));
+          this.server.to(roomCode).emit('gameState', nextState);
+          console.log(
+            `Reconnection in room ${roomCode}: swapped stale socket ${stale} -> ${client.id}`,
+          );
+        }
       }
-      // Otherwise (room already full, or the client is already seated) the
+      // Otherwise (waiting-but-full, playing with live players, finished) the
       // client joins as a spectator: they receive state + broadcasts but are
       // never seated in `room.players`.
+
+      room = room ?? (await this.roomService.getRoom(roomCode));
+      if (!room) return; // the room vanished mid-join
 
       const isSpectator = !room.players.includes(client.id);
 
@@ -133,44 +165,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           isSpectator ? 'spectator' : 'player'
         }. Total seated players: ${room.players.length}`,
       );
-
-      // Reconnection during an active game: if this client was just seated but
-      // a stale socket id (their pre-refresh connection) still owns a seat in
-      // the game's ctx.players, swap the stale id for the fresh one so turns
-      // keep flowing to the reconnect instead of a dead socket.
-      if (!isSpectator && room.status === 'playing' && room.currentState) {
-        const state = room.currentState;
-        const connectedIds = new Set(
-          this.server.sockets.adapter.rooms.get(roomCode) ?? [],
-        );
-        const replaced = new Set<string>();
-        const newPlayers = state.ctx.players.map((p) => {
-          if (p === client.id) return p;
-          if (!connectedIds.has(p) && !replaced.has(p)) {
-            replaced.add(p);
-            return client.id;
-          }
-          return p;
-        });
-        if (replaced.size > 0) {
-          const nextState: GameState = {
-            ...state,
-            ctx: {
-              ...state.ctx,
-              players: newPlayers,
-              currentPlayer:
-                state.ctx.currentPlayer && replaced.has(state.ctx.currentPlayer)
-                  ? client.id
-                  : state.ctx.currentPlayer,
-            },
-          };
-          await this.roomService.saveState(roomCode, nextState);
-          this.server.to(roomCode).emit('gameState', nextState);
-          console.log(
-            `Reconnection in room ${roomCode}: swapped stale sockets ${[...replaced].join(', ')} -> ${client.id}`,
-          );
-        }
-      }
 
       // Social: announce the arrival and keep spectators in sync on seats/status.
       this.emitSystemMessage(
@@ -187,9 +181,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         status: room.status,
       });
 
-      // Game starts when room is full and no game running yet.
+      // Game starts once the minimum number of players is seated and no game
+      // is running yet. (All games start with 2 players; a Vegas room may have
+      // more joiners while still waiting.)
       const shouldStart =
-        room.players.length === getMaxPlayers(room.gameType) && room.status === 'waiting' && !room.currentState;
+        room.players.length >= getMinPlayers() && room.status === 'waiting' && !room.currentState;
 
       if (shouldStart) {
         const game = resolveGame(room.gameType);
