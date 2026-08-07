@@ -144,6 +144,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           room =
             (await this.roomService.swapPlayer(roomCode, stale, client.id)) ??
             (await this.roomService.getRoom(roomCode));
+          // The stale id was already removed from room.players on disconnect —
+          // re-seat the fresh socket so the room sees 2 players again.
+          if (room && !room.players.includes(client.id)) {
+            room = await this.roomService.joinRoom(roomCode, client.id, gameType);
+          }
           this.server.to(roomCode).emit('gameState', nextState);
           console.log(
             `Reconnection in room ${roomCode}: swapped stale socket ${stale} -> ${client.id}`,
