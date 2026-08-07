@@ -152,6 +152,39 @@ exports.Prisma.GameHistoryScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.TournamentScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  gameType: 'gameType',
+  status: 'status',
+  maxPlayers: 'maxPlayers',
+  bracket: 'bracket',
+  winnerId: 'winnerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TournamentPlayerScalarFieldEnum = {
+  id: 'id',
+  tournamentId: 'tournamentId',
+  userId: 'userId',
+  seed: 'seed',
+  joinedAt: 'joinedAt'
+};
+
+exports.Prisma.TournamentMatchScalarFieldEnum = {
+  id: 'id',
+  tournamentId: 'tournamentId',
+  round: 'round',
+  bracketIndex: 'bracketIndex',
+  playerAId: 'playerAId',
+  playerBId: 'playerBId',
+  winnerId: 'winnerId',
+  nextMatchId: 'nextMatchId',
+  status: 'status',
+  playedAt: 'playedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -166,7 +199,10 @@ exports.Prisma.NullsOrder = {
 exports.Prisma.ModelName = {
   User: 'User',
   Room: 'Room',
-  GameHistory: 'GameHistory'
+  GameHistory: 'GameHistory',
+  Tournament: 'Tournament',
+  TournamentPlayer: 'TournamentPlayer',
+  TournamentMatch: 'TournamentMatch'
 };
 
 /**

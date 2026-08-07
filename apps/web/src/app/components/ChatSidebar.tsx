@@ -81,7 +81,7 @@ export default function ChatSidebar({ roomCode, playerIds, myId }: ChatSidebarPr
         if (pendingIdx >= 0) {
           const next = [...prev];
           next[pendingIdx] = {
-            kind: 'chat',
+            kind: 'chat' as const,
             key,
             senderId,
             message: msg.message as string,
@@ -92,7 +92,7 @@ export default function ChatSidebar({ roomCode, playerIds, myId }: ChatSidebarPr
         if (prev.some((e) => e.key === key)) return prev;
         return [
           ...prev,
-          { kind: 'chat', key, senderId, message: msg.message as string, timestamp },
+          { kind: 'chat' as const, key, senderId, message: msg.message as string, timestamp },
         ].slice(-MAX_ENTRIES);
       });
 
@@ -112,7 +112,7 @@ export default function ChatSidebar({ roomCode, playerIds, myId }: ChatSidebarPr
         if (prev.some((e) => e.key === key)) return prev;
         return [
           ...prev,
-          { kind: 'system', key, type: msg.type ?? 'info', message: msg.message, timestamp },
+          { kind: 'system' as const, key, type: msg.type ?? 'info', message: msg.message as string, timestamp },
         ].slice(-MAX_ENTRIES);
       });
     };

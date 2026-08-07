@@ -194,6 +194,20 @@ export default function GamePage() {
     };
   }, [roomCode]);
 
+  const mySocketId = socket.id ?? null;
+
+  // Spectator vs player: the seated list from ctx is authoritative, with the
+  // room's persisted list as a fallback (e.g. before `roomUpdate` arrives).
+  const ctxPlayers = gameState?.ctx.players ?? [];
+  const isPlayer =
+    !!mySocketId &&
+    (ctxPlayers.includes(mySocketId) || (room?.players?.includes(mySocketId) ?? false));
+  const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
+
+  // Winner: live `gameOver` broadcast, then the persisted chess result, then
+  // the room's stored winner (covers hard refreshes on finished rooms).
+  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null) ?? room?.winnerId ?? null;
+
   const handleCellClick = useCallback(
     (index: number) => {
       if (!gameState || !isMyTurn || winnerId) return;
@@ -229,24 +243,10 @@ export default function GamePage() {
     }
   };
 
-  const mySocketId = socket.id ?? null;
-
-  // Spectator vs player: the seated list from ctx is authoritative, with the
-  // room's persisted list as a fallback (e.g. before `roomUpdate` arrives).
-  const ctxPlayers = gameState?.ctx.players ?? [];
-  const isPlayer =
-    !!mySocketId &&
-    (ctxPlayers.includes(mySocketId) || room?.players?.includes(mySocketId) ?? false);
-  const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
-
   // Generic container: pick the board component from the room's game type
   // (falls back to the state shape so old rooms still render correctly).
   const gameType = room?.gameType ?? (gameState && 'fen' in gameState.G ? 'chess' : 'tic-tac-toe');
   const isChess = gameType === 'chess';
-
-  // Winner: live `gameOver` broadcast, then the persisted chess result, then
-  // the room's stored winner (covers hard refreshes on finished rooms).
-  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null) ?? room?.winnerId ?? null;
 
   // Chess extras (captured pieces, move history, result label) — derived
   // purely from the persisted state so they survive refreshes too.

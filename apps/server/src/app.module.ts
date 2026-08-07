@@ -7,6 +7,10 @@ import { RoomService } from './rooms/room.service';
 import { HistoryService } from './history/history.service';
 import { HistoryController } from './history/history.controller';
 import { RoomsController } from './rooms/room.controller';
+import { LeaderboardService } from './leaderboard/leaderboard.service';
+import { LeaderboardController } from './leaderboard/leaderboard.controller';
+import { TournamentService } from './tournaments/tournament.service';
+import { TournamentsController } from './tournaments/tournament.controller';
 
 @Module({
   imports: [
@@ -14,7 +18,12 @@ import { RoomsController } from './rooms/room.controller';
     PrismaModule,
     AuthModule,
   ],
-  controllers: [HistoryController, RoomsController],
-  providers: [GameGateway, RoomService, HistoryService],
+  controllers: [
+    HistoryController,
+    RoomsController,
+    LeaderboardController,
+    TournamentsController,
+  ],
+  providers: [GameGateway, RoomService, HistoryService, LeaderboardService, TournamentService],
 })
 export class AppModule {}
