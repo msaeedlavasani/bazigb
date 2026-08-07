@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Gamepad2, Swords, Trophy, User, Volume2, VolumeX } from 'lucide-react';
+import Image from 'next/image';
 import { useSoundSettings } from '../../hooks/useSoundSettings';
 
 const NAV_LINKS = [
@@ -21,9 +22,19 @@ export default function Nav() {
       <nav className="mx-auto flex w-full max-w-5xl items-center gap-1 px-4 py-3">
         <Link
           href="/"
-          className="mr-4 text-lg font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-400"
+          className="mr-4 flex items-center gap-2 group"
         >
-          BaziGB
+          <div className="relative h-8 w-8 overflow-hidden rounded-lg">
+            <Image
+              src="/brand/logo-256.webp"
+              alt="BaziG3 Logo"
+              fill
+              className="object-cover transition-transform group-hover:scale-110"
+            />
+          </div>
+          <span className="text-lg font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-sky-300 group-hover:from-white group-hover:to-white transition-all">
+            BaziG3
+          </span>
         </Link>
 
         <div className="flex items-center gap-1">
