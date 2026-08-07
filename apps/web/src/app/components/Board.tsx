@@ -31,7 +31,7 @@ export default function Board({ cells, onCellClick, disabled = false }: BoardPro
       role="grid"
       aria-label="Tic-Tac-Toe board"
     >
-      {cells.map((cell, index) => {
+      {(cells ?? []).map((cell, index) => {
         const cellClass =
           cell === 'X'
             ? X_CELL

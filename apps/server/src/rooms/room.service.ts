@@ -122,6 +122,27 @@ export class RoomService {
     throw new Error('Could not allocate a unique room code');
   }
 
+  /**
+   * Remove `playerId` from the room's seats. Used on socket disconnect so a
+   * player who refreshes / drops can re-join without being blocked by their
+   * stale socket id filling the room (which turned them into spectators).
+   */
+  async removePlayer(code: string, playerId: string): Promise<RoomWithParsedData | null> {
+    const existing = await this.prisma.room.findUnique({ where: { code } });
+    if (!existing || existing.status === 'finished') return existing ? this.toParsed(existing) : null;
+
+    const players = this.parsePlayers(existing.players).filter((p) => p !== playerId);
+    if (players.length === this.parsePlayers(existing.players).length) {
+      return this.toParsed(existing); // not seated — nothing to do
+    }
+
+    const updated = await this.prisma.room.update({
+      where: { id: existing.id },
+      data: { players: JSON.stringify(players) },
+    });
+    return this.toParsed(updated);
+  }
+
   /** Mark a room as playing and store the initial game state. */
   async startGame(code: string, initialState: GameState): Promise<RoomWithParsedData> {
     const room = await this.prisma.room.findUnique({ where: { code } });

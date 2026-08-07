@@ -4,15 +4,17 @@ import {
   MessageBody,
   WebSocketServer,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { JwtService } from '@nestjs/jwt';
 import { BaziGBEngine, Game, GameState } from '@bazigb/engine';
 import { TicTacToe } from '@bazigb/game-tic-tac-toe';
 import { ChessGame } from '@bazigb/game-chess';
 import { Backgammon } from '@bazigb/game-backgammon';
 import { Vegas } from '@bazigb/game-vegas';
-import { RoomService, getMaxPlayers } from '../rooms/room.service';
+import { RoomService, getMaxPlayers, RoomWithParsedData } from '../rooms/room.service';
 import { HistoryService } from '../history/history.service';
 
 /** Registry of playable games keyed by the room's `gameType`. */
@@ -32,17 +34,44 @@ function resolveGame(gameType?: string): Game {
 const MAX_CHAT_LENGTH = 500;
 
 @WebSocketGateway({ cors: true })
-export class GameGateway implements OnGatewayConnection {
+export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+
+  /**
+   * socketId -> authenticated user id. Populated when a client joins a room
+   * with a valid JWT, so finished games can be recorded against the real user
+   * account (profile stats / ELO) instead of anonymous socket ids.
+   */
+  private readonly socketUsers = new Map<string, string>();
 
   constructor(
     private readonly roomService: RoomService,
     private readonly historyService: HistoryService,
+    private readonly jwtService: JwtService,
   ) {}
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
+  }
+
+  /** Resolve socket ids to authenticated user ids (falls back to the id itself). */
+  private resolveUserIds(socketIds: string[]): string[] {
+    return socketIds.map((id) => this.socketUsers.get(id) ?? id);
+  }
+
+  /** Try to authenticate the client with the JWT attached to the join payload. */
+  private async bindUser(client: Socket, token?: string) {
+    if (!token) return;
+    try {
+      const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
+      if (payload?.sub) {
+        this.socketUsers.set(client.id, payload.sub);
+        console.log(`Socket ${client.id} bound to user ${payload.sub}`);
+      }
+    } catch {
+      // Invalid/expired token — the socket just stays anonymous.
+    }
   }
 
   /**
@@ -65,12 +94,14 @@ export class GameGateway implements OnGatewayConnection {
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    // Accept both the legacy plain-string form and { roomCode, gameType }.
-    @MessageBody() payload: string | { roomCode: string; gameType?: string },
+    // Accept both the legacy plain-string form and { roomCode, gameType, token }.
+    @MessageBody() payload: string | { roomCode: string; gameType?: string; token?: string },
   ) {
     const roomCode = typeof payload === 'string' ? payload : payload?.roomCode;
     const gameType = typeof payload === 'string' ? undefined : payload?.gameType;
     if (!roomCode) return;
+
+    await this.bindUser(client, typeof payload === 'string' ? undefined : payload?.token);
 
     try {
       let room = await this.roomService.getRoom(roomCode);
@@ -102,6 +133,44 @@ export class GameGateway implements OnGatewayConnection {
           isSpectator ? 'spectator' : 'player'
         }. Total seated players: ${room.players.length}`,
       );
+
+      // Reconnection during an active game: if this client was just seated but
+      // a stale socket id (their pre-refresh connection) still owns a seat in
+      // the game's ctx.players, swap the stale id for the fresh one so turns
+      // keep flowing to the reconnect instead of a dead socket.
+      if (!isSpectator && room.status === 'playing' && room.currentState) {
+        const state = room.currentState;
+        const connectedIds = new Set(
+          this.server.sockets.adapter.rooms.get(roomCode) ?? [],
+        );
+        const replaced = new Set<string>();
+        const newPlayers = state.ctx.players.map((p) => {
+          if (p === client.id) return p;
+          if (!connectedIds.has(p) && !replaced.has(p)) {
+            replaced.add(p);
+            return client.id;
+          }
+          return p;
+        });
+        if (replaced.size > 0) {
+          const nextState: GameState = {
+            ...state,
+            ctx: {
+              ...state.ctx,
+              players: newPlayers,
+              currentPlayer:
+                state.ctx.currentPlayer && replaced.has(state.ctx.currentPlayer)
+                  ? client.id
+                  : state.ctx.currentPlayer,
+            },
+          };
+          await this.roomService.saveState(roomCode, nextState);
+          this.server.to(roomCode).emit('gameState', nextState);
+          console.log(
+            `Reconnection in room ${roomCode}: swapped stale sockets ${[...replaced].join(', ')} -> ${client.id}`,
+          );
+        }
+      }
 
       // Social: announce the arrival and keep spectators in sync on seats/status.
       this.emitSystemMessage(
@@ -135,6 +204,45 @@ export class GameGateway implements OnGatewayConnection {
       }
     } catch (error: any) {
       client.emit('error', error.message || 'An unknown error occurred');
+    }
+  }
+
+  /**
+   * When a socket drops (refresh, tab close, network blip) its stale id is
+   * removed from every room it was seated in. Otherwise the room looks full
+   * forever and a reloading player is admitted as a spectator.
+   */
+  async handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
+    this.socketUsers.delete(client.id);
+
+    let rooms: RoomWithParsedData[] = [];
+    try {
+      rooms = await this.roomService.listRooms();
+    } catch {
+      return;
+    }
+
+    for (const room of rooms) {
+      if (!room.players.includes(client.id)) continue;
+      try {
+        const updated = await this.roomService.removePlayer(room.code, client.id);
+        if (updated && !updated.players.includes(client.id)) {
+          this.server.to(room.code).emit('roomUpdate', {
+            code: room.code,
+            players: updated.players,
+            status: updated.status,
+          });
+          this.emitSystemMessage(
+            room.code,
+            `User ${client.id} left the game`,
+            client.id,
+            'leave',
+          );
+        }
+      } catch {
+        // Ignore per-room cleanup errors — the room simply keeps the stale id.
+      }
     }
   }
 
@@ -215,11 +323,13 @@ export class GameGateway implements OnGatewayConnection {
 
         const winner = result === 'draw' ? null : result;
         await this.roomService.finishRoom(room, winner, nextState);
+        const resolvedPlayers = this.resolveUserIds(roomRecord.players);
+        const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
         await this.historyService.recordGameResult({
           roomCode: room,
           gameName: game.name,
-          winnerId: winner,
-          players: roomRecord.players,
+          winnerId: resolvedWinner,
+          players: resolvedPlayers,
           finalState: nextState,
         });
         this.emitSystemMessage(
@@ -265,11 +375,13 @@ export class GameGateway implements OnGatewayConnection {
         this.server.to(room).emit('gameOver', { state: nextState, winner: result });
         const winner = result === 'draw' ? null : result;
         await this.roomService.finishRoom(room, winner, nextState);
+        const resolvedPlayers = this.resolveUserIds(roomRecord.players);
+        const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
         await this.historyService.recordGameResult({
           roomCode: room,
           gameName: game.name,
-          winnerId: winner,
-          players: roomRecord.players,
+          winnerId: resolvedWinner,
+          players: resolvedPlayers,
           finalState: nextState,
         });
         this.emitSystemMessage(

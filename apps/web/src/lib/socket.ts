@@ -41,9 +41,15 @@ export const connectSocket = () => {
  * server treats a re-join as a no-op for seated players, seats newcomers,
  * admits spectators when the room is full, and replies with the latest
  * persisted game state.
+ *
+ * When a JWT is stored (logged-in user), it is attached to the join payload so
+ * the server can bind the socket to the user id — game results then update the
+ * profile stats instead of being recorded against anonymous socket ids.
  */
 export const rejoinRoom = (roomCode: string) => {
   if (socket.connected) {
-    socket.emit('joinRoom', roomCode);
+    const token =
+      typeof window !== 'undefined' ? window.localStorage.getItem('bazigb_token') : null;
+    socket.emit('joinRoom', { roomCode, token: token ?? undefined });
   }
 };

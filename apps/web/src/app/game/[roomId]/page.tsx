@@ -275,10 +275,31 @@ export default function GamePage() {
     }
   };
 
-  const gameType = room?.gameType ?? (gameState?.G?.casinos ? 'vegas' : gameState?.G?.fen ? 'chess' : 'tic-tac-toe');
+  // Derive the game type from the room when known; fall back to inspecting the
+  // game state so a backgammon/vegas state arriving before the room fetch
+  // resolves is never mis-rendered as Tic-Tac-Toe (which crashed the page).
+  const gameType =
+    room?.gameType ??
+    (gameState?.G?.casinos
+      ? 'vegas'
+      : gameState?.G?.fen
+        ? 'chess'
+        : Array.isArray(gameState?.G?.points)
+          ? 'backgammon'
+          : 'tic-tac-toe');
   const isChess = gameType === 'chess';
   const isBackgammon = gameType === 'backgammon';
   const isVegas = gameType === 'vegas';
+  const isTicTacToe = gameType === 'tic-tac-toe';
+
+  // Tic-Tac-Toe cells store player ids server-side; map them to X/O for display.
+  const tttCells = useMemo(() => {
+    if (!isTicTacToe || !gameState?.G?.cells) return [];
+    const [p0, p1] = gameState.ctx.players;
+    return gameState.G.cells.map((c: string | null) =>
+      c === null ? null : c === p0 ? 'X' : c === p1 ? 'O' : null,
+    );
+  }, [isTicTacToe, gameState]);
 
   const chessData = useMemo(() => {
     if (!isChess || !gameState?.G?.fen) return null;
@@ -479,7 +500,7 @@ export default function GamePage() {
                 />
               ) : (
                 <Board
-                  cells={gameState.G.cells}
+                  cells={tttCells}
                   onCellClick={handleCellClick}
                   disabled={!isPlayer || !isMyTurn || !!winnerId}
                 />
