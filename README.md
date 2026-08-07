@@ -11,6 +11,13 @@
 - **`packages/engine`**: هسته منطق بازی‌ها که مدیریت نوبت‌ها و وضعیت را بر عهده دارد.
 - **`packages/games`**: پکیج‌های اختصاصی هر بازی (مانند شطرنج، دوز و ...).
 
+## مستندات
+- [نقشه راه پروژه (Roadmap)](docs/ROADMAP.md)
+- [لیست ایشوها و باگ‌ها (Issues)](docs/ISSUES.md)
+- [معماری فنی (Architecture)](docs/ARCHITECTURE.md)
+- [مستند هندآف (Hand-off)](docs/HANDOFF.md)
+- [راهنمای توسعه بازی (SDK)](docs/GAME_SDK.md)
+
 ## نحوه توسعه
 
 برای نصب وابستگی‌ها در تمام پکیج‌ها:
