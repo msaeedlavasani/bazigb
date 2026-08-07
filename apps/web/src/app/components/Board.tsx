@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { soundService } from '../../lib/sound-service';
 
 interface BoardProps {
   cells: (string | null)[];
@@ -44,7 +45,11 @@ export default function Board({ cells, onCellClick, disabled = false }: BoardPro
             type="button"
             role="gridcell"
             aria-label={`Cell ${index + 1}${cell ? `, ${cell}` : ', empty'}`}
-            onClick={() => onCellClick(index)}
+            onClick={() => {
+              // Only reachable for empty, enabled cells — a valid move.
+              soundService.play('move');
+              onCellClick(index);
+            }}
             disabled={disabled || cell !== null}
             className={`${CELL_BASE} ${cellClass} disabled:cursor-not-allowed`}
           >

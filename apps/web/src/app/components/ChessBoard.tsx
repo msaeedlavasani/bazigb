@@ -3,6 +3,7 @@
 import React, { useCallback, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
+import { soundService } from '../../lib/sound-service';
 
 export interface ChessMoveInput {
   from: string;
@@ -56,6 +57,7 @@ export default function ChessBoard({ fen, onMove, disabled = false, orientation 
       if (!result) return false;
 
       onMove({ from: sourceSquare, to: targetSquare });
+      soundService.play(result.captured ? 'capture' : 'move');
       return true;
     },
     [disabled, fen, onMove],
@@ -70,10 +72,13 @@ export default function ChessBoard({ fen, onMove, disabled = false, orientation 
           to: promoteToSquare,
           promotion: piece[1].toLowerCase(),
         });
+        // A promotion captures when the destination square is occupied.
+        const captures = !!new Chess(fen).get(promoteToSquare);
+        soundService.play(captures ? 'capture' : 'move');
       }
       return true;
     },
-    [onMove],
+    [fen, onMove],
   );
 
   return (

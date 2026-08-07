@@ -19,7 +19,7 @@ import {
   CHESS_RESULT_LABELS,
   HistoryMove,
 } from '../../../lib/chess';
-import { playMoveSound } from '../../../lib/sound';
+import { soundService } from '../../../lib/sound-service';
 
 type ConnStatus = 'connecting' | 'connected' | 'reconnecting';
 
@@ -71,6 +71,7 @@ export default function GamePage() {
 
   const boardKeyRef = useRef<string | null>(null);
   const pendingMyMoveRef = useRef(false);
+  const prevDiceRef = useRef('');
 
   const markMyMove = useCallback(() => {
     pendingMyMoveRef.current = true;
@@ -109,10 +110,28 @@ export default function GamePage() {
 
     const handleStateChange = (state: GameState) => {
       const G = state.G;
+      const isBackgammon = G && Array.isArray(G.points);
+
+      // Move SFX: board changed because someone (not me) played — for
+      // tic-tac-toe and chess. My own moves already chime from the board
+      // components and are suppressed here via pendingMyMoveRef.
       const key = G && typeof G.fen === 'string' ? G.fen : Array.isArray(G?.cells) ? G.cells.join(',') : null;
       const prev = boardKeyRef.current;
       boardKeyRef.current = key;
-      if (prev !== null && prev !== key && !pendingMyMoveRef.current) playMoveSound();
+      if (!isBackgammon && prev !== null && prev !== key && !pendingMyMoveRef.current) {
+        soundService.play('move');
+      }
+
+      // Dice SFX: a roll result just arrived for backgammon.
+      if (isBackgammon) {
+        const dice = Array.isArray(G.ctx?.dice) ? G.ctx.dice.join(',') : '';
+        const prevDice = prevDiceRef.current;
+        prevDiceRef.current = dice;
+        if (prevDice !== '' && dice !== '' && prevDice !== dice) {
+          soundService.play('dice');
+        }
+      }
+
       pendingMyMoveRef.current = false;
     };
 

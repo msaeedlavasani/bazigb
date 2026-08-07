@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Gamepad2, Swords, Trophy, User } from 'lucide-react';
+import { Gamepad2, Swords, Trophy, User, Volume2, VolumeX } from 'lucide-react';
+import { useSoundSettings } from '../../hooks/useSoundSettings';
 
 const NAV_LINKS = [
   { href: '/lobby', label: 'Lobby', icon: Gamepad2 },
@@ -13,6 +14,7 @@ const NAV_LINKS = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const { muted, toggleMute } = useSoundSettings();
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/85 backdrop-blur">
@@ -45,13 +47,31 @@ export default function Nav() {
           })}
         </div>
 
-        <Link
-          href="/profile"
-          className="ml-auto flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-        >
-          <User className="h-4 w-4" />
-          Profile
-        </Link>
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleMute}
+            aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
+            aria-pressed={!muted}
+            title={muted ? 'Unmute sounds' : 'Mute sounds'}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+              muted
+                ? 'border-slate-800 text-slate-500 hover:bg-slate-800 hover:text-slate-300'
+                : 'border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            <span className="hidden sm:inline">{muted ? 'Muted' : 'Sound'}</span>
+          </button>
+
+          <Link
+            href="/profile"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            <User className="h-4 w-4" />
+            Profile
+          </Link>
+        </div>
       </nav>
     </header>
   );
