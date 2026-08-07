@@ -61,14 +61,18 @@ export default function GamePage() {
   const [copied, setCopied] = useState(false);
   const [connStatus, setConnStatus] = useState<ConnStatus>('connecting');
 
-  // Beep bookkeeping: `boardKeyRef` tracks the last board signature we saw;
-  // `pendingMyMoveRef` suppresses the beep for the echo of our own move.
+  // Shared computed variables (declared early so callbacks can use them)
+  const mySocketId = socket.id ?? null;
+  const ctxPlayers = gameState?.ctx.players ?? [];
+  const isPlayer = !!mySocketId && (ctxPlayers.includes(mySocketId) || (room?.players?.includes(mySocketId) ?? false));
+  const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
+  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null) ?? room?.winnerId ?? null;
+
   const boardKeyRef = useRef<string | null>(null);
   const pendingMyMoveRef = useRef(false);
 
   const markMyMove = useCallback(() => {
     pendingMyMoveRef.current = true;
-    // If the move is rejected (no broadcast follows), stop suppressing beeps.
     window.setTimeout(() => {
       pendingMyMoveRef.current = false;
     }, 3000);
@@ -80,7 +84,6 @@ export default function GamePage() {
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    /** Re-fetch the persisted room + state so the board renders the latest DB snapshot. */
     const refreshRoomFromDb = () => {
       fetchRoom(roomCode)
         .then((r) => {
@@ -97,14 +100,12 @@ export default function GamePage() {
         });
     };
 
-    /** Re-join the room and re-sync: safe on every connect (players, spectators). */
     const joinRoom = () => {
       if (cancelled) return;
       rejoinRoom(roomCode);
       refreshRoomFromDb();
     };
 
-    /** Beep when the board changes and the change was not caused by us. */
     const handleStateChange = (state: GameState) => {
       const G = state.G;
       const key = G && typeof G.fen === 'string' ? G.fen : Array.isArray(G?.cells) ? G.cells.join(',') : null;
@@ -126,8 +127,6 @@ export default function GamePage() {
     const onConnectError = () => {
       if (cancelled) return;
       setConnStatus('reconnecting');
-      // socket.io retries automatically; nudge it in case the handshake was
-      // dropped before a retry got scheduled.
       if (!retryTimer) {
         retryTimer = setTimeout(() => {
           retryTimer = null;
@@ -178,7 +177,6 @@ export default function GamePage() {
     socket.on('disconnect', onDisconnect);
     socket.on('roomUpdate', onRoomUpdate);
 
-    // Socket may already be connected (e.g. coming from the lobby).
     if (socket.connected) onConnect();
 
     return () => {
@@ -194,20 +192,6 @@ export default function GamePage() {
     };
   }, [roomCode]);
 
-  const mySocketId = socket.id ?? null;
-
-  // Spectator vs player: the seated list from ctx is authoritative, with the
-  // room's persisted list as a fallback (e.g. before `roomUpdate` arrives).
-  const ctxPlayers = gameState?.ctx.players ?? [];
-  const isPlayer =
-    !!mySocketId &&
-    (ctxPlayers.includes(mySocketId) || (room?.players?.includes(mySocketId) ?? false));
-  const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
-
-  // Winner: live `gameOver` broadcast, then the persisted chess result, then
-  // the room's stored winner (covers hard refreshes on finished rooms).
-  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null) ?? room?.winnerId ?? null;
-
   const handleCellClick = useCallback(
     (index: number) => {
       if (!gameState || !isMyTurn || winnerId) return;
@@ -217,10 +201,6 @@ export default function GamePage() {
     [gameState, isMyTurn, winnerId, roomCode, markMyMove],
   );
 
-  /**
-   * Chess moves are sent with the standard `{ from, to, promotion }` object.
-   * The server re-validates them against the authoritative position.
-   */
   const handleChessMove = useCallback(
     (move: ChessMoveInput) => {
       if (!gameState || !isMyTurn || winnerId) return;
@@ -239,17 +219,13 @@ export default function GamePage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard unavailable — ignore
+      // ignore
     }
   };
 
-  // Generic container: pick the board component from the room's game type
-  // (falls back to the state shape so old rooms still render correctly).
   const gameType = room?.gameType ?? (gameState && 'fen' in gameState.G ? 'chess' : 'tic-tac-toe');
   const isChess = gameType === 'chess';
 
-  // Chess extras (captured pieces, move history, result label) — derived
-  // purely from the persisted state so they survive refreshes too.
   const chessData = useMemo(() => {
     if (!isChess || !gameState?.G?.fen) return null;
     return {
@@ -328,14 +304,12 @@ export default function GamePage() {
           </div>
         </header>
 
-        {/* Mobile connection indicator */}
         <div className={`sm:hidden flex items-center justify-center gap-1.5 text-xs font-semibold ${connChip.cls} rounded-full border px-3 py-1 w-fit mx-auto`}>
           <connChip.Icon className="w-3.5 h-3.5" />
           {connChip.label}
         </div>
 
         {error && !gameState ? (
-          /* Error state (room not found). */
           <div className="space-y-4 p-6 rounded-2xl bg-slate-800 border border-rose-500/40">
             <h2 className="text-xl font-bold text-rose-400">Room unavailable</h2>
             <p className="text-slate-400 text-sm">{error}</p>
@@ -347,11 +321,10 @@ export default function GamePage() {
             </Link>
           </div>
         ) : !gameState ? (
-          /* Waiting for opponent — only one player seated (or still fetching). */
           <div className="flex flex-col items-center justify-center py-16 space-y-6">
             <div className="w-14 h-14 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-sky-300">
+              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-r from-indigo-300 to-sky-300">
                 Waiting for opponent…
               </p>
               <p className="text-slate-500 text-sm">
@@ -375,9 +348,7 @@ export default function GamePage() {
             </button>
           </div>
         ) : (
-          /* Board — players and spectators share this view. */
           <div className="space-y-6">
-            {/* Status row: turn indicator for players, spectating chip otherwise. */}
             <div className="flex items-center justify-between gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
               {isPlayer ? (
                 <div className="flex items-center gap-2">
@@ -407,7 +378,6 @@ export default function GamePage() {
               </div>
             </div>
 
-            {/* Board with a "Spectating" overlay for non-players */}
             <div className="relative">
               {!isPlayer && (
                 <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-violet-400/50 bg-slate-900/85 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-violet-200 shadow-lg backdrop-blur">
@@ -432,7 +402,6 @@ export default function GamePage() {
               )}
             </div>
 
-            {/* Chess: captured pieces + move history (from the persisted state). */}
             {isChess && chessData && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-left">
                 <div className="rounded-2xl border border-slate-700 bg-slate-800/70 p-4">
@@ -502,7 +471,6 @@ export default function GamePage() {
         )}
       </div>
 
-      {/* Social chat sidebar (players and spectators). */}
       <ChatSidebar roomCode={roomCode} playerIds={ctxPlayers} myId={mySocketId} />
     </main>
   );
