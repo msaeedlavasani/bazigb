@@ -2,6 +2,8 @@ export interface GameContext {
   numPlayers: number;
   currentPlayer: string;
   turn: number;
+  /** Ordered list of seated player ids. Turn cycles through this list. */
+  players: string[];
 }
 
 export interface GameState<G = any> {
