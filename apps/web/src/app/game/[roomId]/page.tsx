@@ -8,6 +8,7 @@ import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
 import ChessBoard, { ChessMoveInput } from '../../components/ChessBoard';
+import BackgammonBoard from '../../components/BackgammonBoard';
 import ChatSidebar from '../../components/ChatSidebar';
 import {
   getCapturedPieces,
@@ -213,6 +214,10 @@ export default function GamePage() {
     [gameState, isMyTurn, winnerId, roomCode, markMyMove],
   );
 
+  const handleRollDice = useCallback(() => {
+    socket.emit('rollDice', { room: roomCode });
+  }, [roomCode]);
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(roomCode);
@@ -225,6 +230,7 @@ export default function GamePage() {
 
   const gameType = room?.gameType ?? (gameState && 'fen' in gameState.G ? 'chess' : 'tic-tac-toe');
   const isChess = gameType === 'chess';
+  const isBackgammon = gameType === 'backgammon';
 
   const chessData = useMemo(() => {
     if (!isChess || !gameState?.G?.fen) return null;
@@ -372,7 +378,7 @@ export default function GamePage() {
               )}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-indigo-300 bg-indigo-500/10 border border-indigo-400/20 rounded-full px-2.5 py-0.5">
-                  {isChess ? '♞ Chess' : 'Tic-Tac-Toe'}
+                  {isChess ? '♞ Chess' : isBackgammon ? '🎲 Backgammon' : 'Tic-Tac-Toe'}
                 </span>
                 <span className="text-xs font-mono text-slate-500">Turn {gameState.ctx.turn}</span>
               </div>
@@ -392,6 +398,15 @@ export default function GamePage() {
                   onMove={handleChessMove}
                   disabled={!isPlayer || !isMyTurn || !!winnerId}
                   orientation={isPlayer ? (mySocketId === gameState.ctx.players[0] ? 'w' : 'b') : 'w'}
+                />
+              ) : isBackgammon ? (
+                <BackgammonBoard
+                  points={gameState.G.points}
+                  dice={gameState.ctx.dice}
+                  onRoll={handleRollDice}
+                  onMove={(from, to) => console.log('move', from, to)}
+                  disabled={!isPlayer || !isMyTurn || !!winnerId}
+                  isMyTurn={isMyTurn}
                 />
               ) : (
                 <Board

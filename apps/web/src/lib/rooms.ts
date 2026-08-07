@@ -18,6 +18,8 @@ export interface GameContext {
   turn: number;
   /** Ordered list of seated player ids. Turn cycles through this list. */
   players: string[];
+  /** Current dice values (if applicable). */
+  dice?: number[];
 }
 
 export interface GameState {

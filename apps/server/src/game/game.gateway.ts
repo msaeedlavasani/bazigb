@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 import { BaziGBEngine, Game, GameState } from '@bazigb/engine';
 import { TicTacToe } from '@bazigb/game-tic-tac-toe';
 import { ChessGame } from '@bazigb/game-chess';
+import { Backgammon } from '@bazigb/game-backgammon';
 import { RoomService, MAX_PLAYERS } from '../rooms/room.service';
 import { HistoryService } from '../history/history.service';
 
@@ -17,6 +18,7 @@ import { HistoryService } from '../history/history.service';
 const GAMES: Record<string, Game> = {
   'tic-tac-toe': TicTacToe,
   chess: ChessGame,
+  backgammon: Backgammon,
 };
 
 /** Resolve the game plugin for a room, falling back to Tic-Tac-Toe. */
@@ -162,6 +164,26 @@ export class GameGateway implements OnGatewayConnection {
       message: message.slice(0, MAX_CHAT_LENGTH),
       timestamp: new Date().toISOString(),
     });
+  }
+
+  @SubscribeMessage('rollDice')
+  async handleRollDice(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
+    const { room } = data;
+    const roomRecord = await this.roomService.getRoom(room);
+    if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
+
+    if (roomRecord.currentState.ctx.currentPlayer !== client.id) {
+      client.emit('error', "It's not your turn to roll!");
+      return;
+    }
+
+    const nextState = BaziGBEngine.rollDice(roomRecord.currentState);
+    await this.roomService.saveState(room, nextState);
+    this.server.to(room).emit('gameState', nextState);
+    this.emitSystemMessage(room, `Player rolled: ${nextState.ctx.dice?.join(', ')}`, client.id, 'roll');
   }
 
   @SubscribeMessage('makeMove')

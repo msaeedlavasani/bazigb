@@ -14,13 +14,14 @@ const STATUS_LABEL: Record<Room['status'], string> = {
   finished: 'Finished',
 };
 
-type GameType = 'tic-tac-toe' | 'chess';
+type GameType = 'tic-tac-toe' | 'chess' | 'backgammon';
 
-const GAME_OPTIONS: GameType[] = ['tic-tac-toe', 'chess'];
+const GAME_OPTIONS: GameType[] = ['tic-tac-toe', 'chess', 'backgammon'];
 
-const GAME_META: Record<string, { label: string; tagline: string }> = {
+const GAME_META: Record<string, { label: string; tagline: string; isNew?: boolean }> = {
   'tic-tac-toe': { label: 'Tic-Tac-Toe', tagline: 'Classic 3×3 duel' },
   chess: { label: 'Chess', tagline: 'Full board battle' },
+  backgammon: { label: 'Backgammon', tagline: 'Dices & Strategy', isNew: true },
 };
 
 function GameIcon({ game, className }: { game: string; className?: string }) {
@@ -28,6 +29,13 @@ function GameIcon({ game, className }: { game: string; className?: string }) {
     return (
       <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
         ♞
+      </span>
+    );
+  }
+  if (game === 'backgammon') {
+    return (
+      <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
+        🎲
       </span>
     );
   }
@@ -149,9 +157,14 @@ export default function LobbyPage() {
                     }`}
                   >
                     <span className={selected ? 'text-indigo-300' : 'text-slate-500'}>
-                      <GameIcon game={type} className={type === 'chess' ? 'text-2xl' : 'w-6 h-6'} />
+                      <GameIcon game={type} className={type === 'chess' || type === 'backgammon' ? 'text-2xl' : 'w-6 h-6'} />
                     </span>
-                    <span className="text-sm font-bold">{meta.label}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-bold">{meta.label}</span>
+                      {meta.isNew && (
+                        <span className="bg-emerald-500 text-white text-[8px] px-1 rounded uppercase font-black">New</span>
+                      )}
+                    </div>
                     <span className="text-[10px] font-medium opacity-70">{meta.tagline}</span>
                   </button>
                 );
@@ -257,7 +270,7 @@ export default function LobbyPage() {
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-400/20">
                         <GameIcon
                           game={room.gameType}
-                          className={room.gameType === 'chess' ? 'text-sm' : 'w-3.5 h-3.5'}
+                          className={room.gameType === 'chess' || room.gameType === 'backgammon' ? 'text-sm' : 'w-3.5 h-3.5'}
                         />
                         {GAME_META[room.gameType]?.label ?? room.gameType}
                       </span>

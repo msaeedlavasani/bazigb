@@ -4,6 +4,10 @@ export interface GameContext {
   turn: number;
   /** Ordered list of seated player ids. Turn cycles through this list. */
   players: string[];
+  /** Current dice values (if applicable). */
+  dice?: number[];
+  /** Current phase of the game (e.g., 'rolling', 'moving'). */
+  phase?: string;
 }
 
 export interface GameState<G = any> {
