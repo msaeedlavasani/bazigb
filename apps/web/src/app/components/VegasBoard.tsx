@@ -15,7 +15,7 @@ const PLAYER_COLORS = [
 ];
 
 export interface CasinoData {
-  bills: number[];
+  cash: number[];
   dice: Record<string, number>; // playerId -> count
 }
 
@@ -84,7 +84,7 @@ export default function VegasBoard({
 
               {/* Banknotes */}
               <div className="flex flex-wrap gap-1 min-h-[40px]">
-                {casino.bills.map((bill, bIdx) => (
+                {(casino.cash ?? []).map((bill, bIdx) => (
                   <div
                     key={bIdx}
                     className="flex items-center gap-1 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold shadow-sm"

@@ -260,8 +260,13 @@ export default function GamePage() {
 
   const handleRollDice = useCallback(() => {
     if (!gameState || !isMyTurn) return;
-    const playerIndex = gameState.ctx.players.indexOf(mySocketId ?? '');
-    const count = gameState.G.playerDiceRemaining?.[playerIndex.toString()] || 8;
+    const G = gameState.G as any;
+    // Only Vegas rolls a variable number of dice (8 per round). Backgammon
+    // always rolls 2 — sending `count` there made it roll 8 dice.
+    const isVegasGame = !!G?.casinos;
+    const count = isVegasGame
+      ? (G.playerDiceRemaining?.[gameState.ctx.players.indexOf(mySocketId ?? '').toString()] ?? 8)
+      : undefined;
     socket.emit('rollDice', { room: roomCode, count });
   }, [gameState, isMyTurn, mySocketId, roomCode]);
 
