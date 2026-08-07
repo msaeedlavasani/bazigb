@@ -1,0 +1,54 @@
+/**
+ * Room API client, built on top of the shared client in lib/api.ts.
+ *
+ *   GET  /rooms            -> list rooms
+ *   POST /rooms            -> create a room, returns the room incl. invite code
+ *   GET  /rooms/:code      -> fetch a room by invite code (incl. persisted currentState)
+ *
+ * Seating players happens over the socket.io `joinRoom` event (see lib/socket.ts).
+ */
+
+import { api } from './api';
+
+export type RoomStatus = 'waiting' | 'playing' | 'finished';
+
+export interface GameContext {
+  numPlayers: number;
+  currentPlayer: string;
+  turn: number;
+  /** Ordered list of seated player ids. Turn cycles through this list. */
+  players: string[];
+}
+
+export interface GameState {
+  G: any;
+  ctx: GameContext;
+}
+
+export interface Room {
+  id: string;
+  code: string;
+  status: RoomStatus;
+  gameType: string;
+  /** Seated player ids (socket ids until auth is wired in). */
+  players: string[];
+  currentState: GameState | null;
+  winnerId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** List rooms; pass a status to filter (e.g. 'waiting'). */
+export function fetchRooms(status?: RoomStatus): Promise<Room[]> {
+  return api.get<Room[]>(`/rooms${status ? `?status=${status}` : ''}`);
+}
+
+/** Fetch a single room by its invite code (includes currentState from the DB). */
+export function fetchRoom(code: string): Promise<Room> {
+  return api.get<Room>(`/rooms/${encodeURIComponent(code)}`);
+}
+
+/** Ask the server to persist a new empty room; returns the room with its code. */
+export function createRoom(gameType = 'tic-tac-toe'): Promise<Room> {
+  return api.post<Room>('/rooms', { gameType });
+}

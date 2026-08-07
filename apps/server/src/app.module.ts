@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { RoomService } from './rooms/room.service';
 import { HistoryService } from './history/history.service';
 import { HistoryController } from './history/history.controller';
+import { RoomsController } from './rooms/room.controller';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { HistoryController } from './history/history.controller';
     PrismaModule,
     AuthModule,
   ],
-  controllers: [HistoryController],
+  controllers: [HistoryController, RoomsController],
   providers: [GameGateway, RoomService, HistoryService],
 })
 export class AppModule {}

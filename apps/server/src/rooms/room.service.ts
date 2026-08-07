@@ -1,9 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { GameState } from '@bazigb/engine';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/prisma';
 
 export const MAX_PLAYERS = 2;
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
+
+// Ambiguous characters (0, O, 1, I) are excluded so codes are easy to share by voice.
+const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const ROOM_CODE_LENGTH = 5;
 
 export interface RoomWithParsedData {
   id: string;
@@ -80,6 +85,35 @@ export class RoomService {
     return this.toParsed(room);
   }
 
+  /**
+   * Create an empty room with a fresh invite code and persist it to the DB.
+   * Players are not seated here; they join later through the socket.io
+   * `joinRoom` event (GameGateway) which seats them by socket id.
+   */
+  async createRoom(gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const code = this.generateCode();
+      try {
+        const room = await this.prisma.room.create({
+          data: {
+            code,
+            gameType,
+            status: 'waiting',
+            players: '[]',
+          },
+        });
+        return this.toParsed(room);
+      } catch (error) {
+        // P2002 = unique constraint violation on `code` -> retry with a new code.
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Could not allocate a unique room code');
+  }
+
   /** Mark a room as playing and store the initial game state. */
   async startGame(code: string, initialState: GameState): Promise<RoomWithParsedData> {
     const room = await this.prisma.room.findUnique({ where: { code } });
@@ -129,6 +163,14 @@ export class RoomService {
       ? await this.prisma.room.findMany({ where: { status } })
       : await this.prisma.room.findMany();
     return rooms.map((room) => this.toParsed(room));
+  }
+
+  private generateCode(): string {
+    let code = '';
+    for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
+      code += ROOM_CODE_ALPHABET[Math.floor(Math.random() * ROOM_CODE_ALPHABET.length)];
+    }
+    return code;
   }
 
   private parsePlayers(players: string): string[] {
