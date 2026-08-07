@@ -4,7 +4,7 @@
   "scripts": {
     "start": "ts-node src/main.ts",
     "dev": "ts-node-dev src/main.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",

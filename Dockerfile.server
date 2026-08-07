@@ -50,6 +50,4 @@ COPY --from=builder /app/apps ./apps
 EXPOSE 3001
 
 # Apply pending Prisma migrations, then boot the API + Socket.IO gateway.
-# NOTE: tsc emits the app under dist/apps/server/src because the root
-# tsconfig baseUrl/paths include the game packages' sources.
-CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/apps/server/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/main.js"]
