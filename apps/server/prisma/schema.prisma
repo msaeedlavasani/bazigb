@@ -1,13 +1,12 @@
 // BaziGB Prisma Schema
 //
-// Local development uses SQLite (file:./dev.db) for instant build stability.
-// To migrate to PostgreSQL:
-//   1. Change the datasource `provider` below to "postgresql"
-//   2. Set DATABASE_URL in .env to a postgres:// connection string
-//   3. Run `npm run prisma:migrate` (creates migrations and applies them)
+// Production uses PostgreSQL. Local development can use the same Postgres
+// instance via the docker-compose stack, or any local Postgres.
+//   DATABASE_URL="postgresql://bazigb:password@localhost:5432/bazigb?schema=public"
 //
-// NOTE: SQLite has no native enum support, so `Room.status` / `Room.gameType`
-// are stored as strings. They can be swapped for enums after moving to Postgres.
+// NOTE: Prisma does not support switching the provider at runtime. If you
+// need SQLite for a scratch environment, switch `provider` below to "sqlite"
+// and set DATABASE_URL="file:./dev.db" — but do not commit that change.
 
 generator client {
   provider = "prisma-client-js"
@@ -18,7 +17,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

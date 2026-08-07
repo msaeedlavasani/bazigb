@@ -259,8 +259,11 @@ export default function GamePage() {
   );
 
   const handleRollDice = useCallback(() => {
-    socket.emit('rollDice', { room: roomCode });
-  }, [roomCode]);
+    if (!gameState || !isMyTurn) return;
+    const playerIndex = gameState.ctx.players.indexOf(mySocketId ?? '');
+    const count = gameState.G.playerDiceRemaining?.[playerIndex.toString()] || 8;
+    socket.emit('rollDice', { room: roomCode, count });
+  }, [gameState, isMyTurn, mySocketId, roomCode]);
 
   const handleCopy = async () => {
     try {
@@ -462,7 +465,11 @@ export default function GamePage() {
               ) : isVegas ? (
                 <VegasBoard
                   casinos={gameState.G.casinos}
-                  hand={gameState.G.playerDice?.[mySocketId ?? ''] ?? []}
+                  hand={
+                    (gameState.G.playerDice?.[mySocketId ?? '']?.length > 0)
+                      ? gameState.G.playerDice[mySocketId ?? '']
+                      : (isMyTurn ? (gameState.ctx.dice || []) : [])
+                  }
                   players={gameState.ctx.players}
                   currentPlayerId={mySocketId ?? ''}
                   onPlace={handleVegasPlace}

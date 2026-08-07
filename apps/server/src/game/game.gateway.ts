@@ -171,9 +171,9 @@ export class GameGateway implements OnGatewayConnection {
   @SubscribeMessage('rollDice')
   async handleRollDice(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string },
+    @MessageBody() data: { room: string; count?: number },
   ) {
-    const { room } = data;
+    const { room, count } = data;
     const roomRecord = await this.roomService.getRoom(room);
     if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
 
@@ -182,7 +182,7 @@ export class GameGateway implements OnGatewayConnection {
       return;
     }
 
-    const nextState = BaziGBEngine.rollDice(roomRecord.currentState);
+    const nextState = BaziGBEngine.rollDice(roomRecord.currentState, count);
     await this.roomService.saveState(room, nextState);
     this.server.to(room).emit('gameState', nextState);
     this.emitSystemMessage(room, `Player rolled: ${nextState.ctx.dice?.join(', ')}`, client.id, 'roll');
@@ -231,6 +231,53 @@ export class GameGateway implements OnGatewayConnection {
           'gameOver',
         );
         console.log(`Game result logged in history for room ${room}`);
+      } else {
+        await this.roomService.saveState(room, nextState);
+        this.server.to(room).emit('gameState', nextState);
+      }
+    } catch (error: any) {
+      client.emit('error', error.message || 'An unknown error occurred');
+    }
+  }
+
+  @SubscribeMessage('gameAction')
+  async handleGameAction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string; moveName: string; args: any[]; endTurn?: boolean },
+  ) {
+    const { room, moveName, args, endTurn } = data;
+    const roomRecord = await this.roomService.getRoom(room);
+    if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
+
+    try {
+      const game = resolveGame(roomRecord.gameType);
+      const nextState = BaziGBEngine.applyAction(
+        game,
+        roomRecord.currentState,
+        moveName,
+        client.id,
+        endTurn ?? true,
+        ...args,
+      );
+
+      const result = game.endIf?.(nextState.G, nextState.ctx);
+      if (result) {
+        this.server.to(room).emit('gameOver', { state: nextState, winner: result });
+        const winner = result === 'draw' ? null : result;
+        await this.roomService.finishRoom(room, winner, nextState);
+        await this.historyService.recordGameResult({
+          roomCode: room,
+          gameName: game.name,
+          winnerId: winner,
+          players: roomRecord.players,
+          finalState: nextState,
+        });
+        this.emitSystemMessage(
+          room,
+          result === 'draw' ? 'The game ended in a draw' : `User ${result} won the game`,
+          result === 'draw' ? undefined : result,
+          'gameOver',
+        );
       } else {
         await this.roomService.saveState(room, nextState);
         this.server.to(room).emit('gameState', nextState);

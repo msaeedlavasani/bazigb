@@ -1,0 +1,25 @@
+# BaziGB reverse proxy (Caddy 2)
+#
+#  - /api/*       -> NestJS REST (prefix stripped)
+#  - /socket.io/* -> NestJS Socket.IO (WebSocket upgrade)
+#  - everything   -> Next.js web app
+#
+# With a real domain (DOMAIN=...) Caddy provisions HTTPS automatically.
+# Without a domain it serves plain HTTP on the server IP.
+
+{$DOMAIN:localhost} {
+	encode gzip
+
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy server:3001
+	}
+
+	handle /socket.io/* {
+		reverse_proxy server:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

@@ -11,7 +11,10 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@bazigb/game-backgammon": "*",
     "@bazigb/game-chess": "*",
+    "@bazigb/game-tic-tac-toe": "*",
+    "@bazigb/game-vegas": "*",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^10.0.0",

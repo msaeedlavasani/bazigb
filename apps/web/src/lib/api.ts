@@ -7,7 +7,15 @@
  *                        into a single `ApiError` with a readable message.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+/**
+ * API base URL.
+ *  - Development: NEXT_PUBLIC_API_URL unset -> http://localhost:3001
+ *  - Production:  NEXT_PUBLIC_API_URL="" (same origin) -> requests go to
+ *                 `/api/*` and are proxied by the reverse proxy (Caddy/Nginx).
+ */
+const _apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API_URL = _apiUrl === '' ? '' : _apiUrl;
+const API_PREFIX = API_URL === '' ? '/api' : '';
 
 const TOKEN_STORAGE_KEY = 'bazigb_token';
 
@@ -76,7 +84,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${API_URL}${API_PREFIX}${path}`, {
       ...options,
       headers,
     });

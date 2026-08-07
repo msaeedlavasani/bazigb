@@ -8,7 +8,8 @@ export interface Casino {
 export interface VegasState {
   casinos: Casino[];
   playerCash: Record<string, number>; // playerIndex -> total
-  playerDice: Record<string, number[]>; // playerIndex -> remaining dice
+  playerDice: Record<string, number[]>; // current roll
+  playerDiceRemaining: Record<string, number>; // total dice left for this round
   round: number;
 }
 
@@ -41,12 +42,12 @@ function setupRoundData(numPlayers: number) {
     casinos.push({ dice: {}, cash });
   }
 
-  const playerDice: Record<string, number[]> = {};
+  const playerDiceRemaining: Record<string, number> = {};
   for (let i = 0; i < numPlayers; i++) {
-    playerDice[i.toString()] = rollDice(8);
+    playerDiceRemaining[i.toString()] = 8;
   }
 
-  return { casinos, playerDice };
+  return { casinos, playerDiceRemaining };
 }
 
 function resolveRound(G: VegasState): Record<string, number> {
@@ -84,7 +85,8 @@ const placeDice: Move<VegasState> = (G, ctx, value: number) => {
   const playerIndex = ctx.players.indexOf(playerID);
   const pKey = playerIndex.toString();
 
-  const dice = G.playerDice[pKey] || [];
+  // Use ctx.dice if populated, otherwise fallback to G.playerDice (re-rolls)
+  const dice = (ctx.dice && ctx.dice.length > 0) ? ctx.dice : (G.playerDice[pKey] || []);
   const count = dice.filter(d => d === value).length;
 
   if (count === 0) return G;
@@ -99,14 +101,18 @@ const placeDice: Move<VegasState> = (G, ctx, value: number) => {
   newCasinos[casinoIndex] = casino;
   nextG.casinos = newCasinos;
 
-  // Update player hand
+  // Update player dice count
+  const newPlayerDiceRemaining = { ...G.playerDiceRemaining };
+  newPlayerDiceRemaining[pKey] -= count;
+  nextG.playerDiceRemaining = newPlayerDiceRemaining;
+
+  // Clear current roll
   const newPlayerDice = { ...G.playerDice };
-  const remainingCount = dice.filter(d => d !== value).length;
-  newPlayerDice[pKey] = rollDice(remainingCount);
+  newPlayerDice[pKey] = []; 
   nextG.playerDice = newPlayerDice;
 
   // Check if round should end
-  const allDiceGone = Object.values(newPlayerDice).every(d => d.length === 0);
+  const allDiceGone = Object.values(newPlayerDiceRemaining).every(c => c === 0);
   if (allDiceGone) {
     const resolvedCash = resolveRound(nextG);
     if (nextG.round < 4) {
@@ -114,7 +120,8 @@ const placeDice: Move<VegasState> = (G, ctx, value: number) => {
       return {
         ...nextG,
         casinos: nextRound.casinos,
-        playerDice: nextRound.playerDice,
+        playerDiceRemaining: nextRound.playerDiceRemaining,
+        playerDice: {},
         playerCash: resolvedCash,
         round: nextG.round + 1,
       };
@@ -132,13 +139,14 @@ const placeDice: Move<VegasState> = (G, ctx, value: number) => {
 export const Vegas: Game<VegasState> = {
   name: 'vegas',
   setup: (numPlayers: number) => {
-    const { casinos, playerDice } = setupRoundData(numPlayers);
+    const { casinos, playerDiceRemaining } = setupRoundData(numPlayers);
     const playerCash: Record<string, number> = {};
     for (let i = 0; i < numPlayers; i++) playerCash[i.toString()] = 0;
     return {
       casinos,
       playerCash,
-      playerDice,
+      playerDice: {},
+      playerDiceRemaining,
       round: 1,
     };
   },
@@ -146,7 +154,7 @@ export const Vegas: Game<VegasState> = {
     placeDice,
   },
   endIf: (G, ctx) => {
-    const allDiceGone = Object.values(G.playerDice).every(d => d.length === 0);
+    const allDiceGone = Object.values(G.playerDiceRemaining).every(c => c === 0);
     if (G.round >= 4 && allDiceGone) {
       // Find winner
       let maxCash = -1;

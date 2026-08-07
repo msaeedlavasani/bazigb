@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { getLegalDestinations, getLegalMoves } from '@bazigb/game-backgammon';
 import Dice3D from './Dice3D';
-import { soundService } from '../../../lib/sound-service';
+import { soundService } from '../../lib/sound-service';
 
 interface BackgammonBoardProps {
   points: number[];

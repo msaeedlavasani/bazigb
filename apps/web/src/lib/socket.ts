@@ -13,8 +13,11 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'
  *  - Pages listen for `connect` / `disconnect` / `connect_error` and call
  *    `rejoinRoom()` to re-emit `joinRoom` — the server re-seats the client
  *    (or re-admits a spectator) and re-sends the persisted game state.
+ *
+ * Production: set NEXT_PUBLIC_SOCKET_URL="" (or leave unset) to connect to
+ * the same origin — the reverse proxy forwards /socket.io/* to the server.
  */
-export const socket: Socket = io(SOCKET_URL, {
+export const socket: Socket = io(SOCKET_URL || undefined, {
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: Infinity,

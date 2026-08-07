@@ -12,13 +12,21 @@ async function bootstrap() {
     }),
   );
 
-  // Allow the Next.js web app (dev server on :3000) to call this API.
+  // CORS: allow a comma-separated ALLOWED_ORIGINS list in production
+  // (e.g. "https://bazigb.example.com"). Falls back to `origin: true`
+  // (reflect any origin) for local development.
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: true,
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
     credentials: false,
   });
 
-  await app.listen(3001);
-  console.log(`BaziGB Server is running on: http://localhost:3001`);
+  const port = Number(process.env.PORT) || 3001;
+  await app.listen(port);
+  console.log(`BaziGB Server is running on: http://localhost:${port}`);
 }
 bootstrap();
