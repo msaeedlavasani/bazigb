@@ -1,6 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+// NOTE: must use `??` — `||` would treat the empty string (same-origin mode)
+// as falsy and fall back to localhost:3001, breaking production.
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:3001';
 
 /**
  * Shared socket.io client for the whole app.
