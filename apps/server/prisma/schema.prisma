@@ -1,0 +1,70 @@
+// BaziGB Prisma Schema
+//
+// Local development uses SQLite (file:./dev.db) for instant build stability.
+// To migrate to PostgreSQL:
+//   1. Change the datasource `provider` below to "postgresql"
+//   2. Set DATABASE_URL in .env to a postgres:// connection string
+//   3. Run `npm run prisma:migrate` (creates migrations and applies them)
+//
+// NOTE: SQLite has no native enum support, so `Room.status` / `Room.gameType`
+// are stored as strings. They can be swapped for enums after moving to Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+  // Custom output (monorepo-safe): avoids the hoisted node_modules/.prisma
+  // location and keeps generated types inside the workspace.
+  // Path is relative to this file (prisma/).
+  output = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  username  String   @unique
+  wins      Int      @default(0)
+  losses    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  gameHistoryWins GameHistory[] @relation("GameWinner")
+
+  @@map("users")
+}
+
+model Room {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  status       String   @default("waiting") // waiting | playing | finished
+  gameType     String
+  players      String   @default("[]") // JSON array of seated player user ids
+  currentState String?  // JSON serialized game state (null until the game starts)
+  winnerId     String?  // player user id that won (null for draw / unfinished)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  games GameHistory[]
+
+  @@map("rooms")
+}
+
+model GameHistory {
+  id        String   @id @default(cuid())
+  winnerId  String?
+  roomId    String
+  gameName  String   @default("tic-tac-toe")
+  players   String   @default("[]") // JSON array of participating user ids
+  data      String   @default("{}") // JSON string with game-specific result data (final state)
+  createdAt DateTime @default(now())
+
+  winner User? @relation("GameWinner", fields: [winnerId], references: [id])
+  room   Room  @relation(fields: [roomId], references: [id])
+
+  @@index([roomId])
+  @@index([winnerId])
+  @@map("game_histories")
+}
