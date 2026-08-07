@@ -30,7 +30,10 @@ RUN npm run build --workspace=@bazigb/engine \
 RUN npx prisma generate --schema apps/server/prisma/schema.prisma
 
 # Build the NestJS server
-RUN npm run build --workspace=@bazigb/server
+RUN npm run build --workspace=@bazigb/server \
+ # Prisma generated client lives in src/generated (pre-generated JS); tsc
+ # does not copy it — carry it into dist so the compiled app can require it.
+ && cp -r apps/server/src/generated apps/server/dist/generated
 
 # ---------- Stage 3: runtime ----------
 FROM node:20-slim AS runner
