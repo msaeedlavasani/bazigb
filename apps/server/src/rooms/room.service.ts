@@ -45,16 +45,18 @@ export class RoomService {
 
   /**
    * Create the room if it does not exist yet, otherwise seat `playerId`.
+   * `gameType` is only used when a room is created here (socket-side join
+   * without a preceding HTTP create); existing rooms keep their own type.
    * Throws when the room is already full.
    */
-  async joinRoom(code: string, playerId: string): Promise<RoomWithParsedData> {
+  async joinRoom(code: string, playerId: string, gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
     const existing = await this.prisma.room.findUnique({ where: { code } });
 
     if (!existing) {
       const room = await this.prisma.room.create({
         data: {
           code,
-          gameType: 'tic-tac-toe',
+          gameType,
           status: 'waiting',
           players: JSON.stringify([playerId]),
         },

@@ -13,6 +13,38 @@ const STATUS_LABEL: Record<Room['status'], string> = {
   finished: 'Finished',
 };
 
+type GameType = 'tic-tac-toe' | 'chess';
+
+const GAME_OPTIONS: GameType[] = ['tic-tac-toe', 'chess'];
+
+const GAME_META: Record<string, { label: string; tagline: string }> = {
+  'tic-tac-toe': { label: 'Tic-Tac-Toe', tagline: 'Classic 3×3 duel' },
+  chess: { label: 'Chess', tagline: 'Full board battle' },
+};
+
+function GameIcon({ game, className }: { game: string; className?: string }) {
+  if (game === 'chess') {
+    return (
+      <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
+        ♞
+      </span>
+    );
+  }
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M3 8h18M3 16h18M8 3v18M16 3v18" />
+    </svg>
+  );
+}
+
 export default function LobbyPage() {
   const router = useRouter();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -23,6 +55,7 @@ export default function LobbyPage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [gameType, setGameType] = useState<GameType>('tic-tac-toe');
 
   const loadRooms = useCallback(async () => {
     try {
@@ -46,7 +79,7 @@ export default function LobbyPage() {
     setCreating(true);
     setCreateError(null);
     try {
-      const room = await createRoom();
+      const room = await createRoom(gameType);
       router.push(`/game/${room.code}`);
     } catch (e: any) {
       setCreateError(e?.message || 'Could not create a room');
@@ -94,15 +127,43 @@ export default function LobbyPage() {
 
         {/* Create / Join actions */}
         <section className="grid gap-4 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={creating}
-            className="flex items-center justify-center gap-2 px-6 py-5 rounded-2xl bg-gradient-to-r from-indigo-500 to-sky-500 font-bold text-lg shadow-lg shadow-indigo-500/20 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-            Create Room
-          </button>
+          <div className="flex flex-col gap-3 rounded-2xl bg-slate-800 border border-slate-700 p-4">
+            <span className="text-sm font-semibold uppercase tracking-wider text-slate-400">Select Game</span>
+            <div className="grid grid-cols-2 gap-2">
+              {GAME_OPTIONS.map((type) => {
+                const meta = GAME_META[type];
+                const selected = gameType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setGameType(type)}
+                    aria-pressed={selected}
+                    className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border transition-all ${
+                      selected
+                        ? 'bg-indigo-500/15 border-indigo-400/60 text-white shadow-lg shadow-indigo-500/10'
+                        : 'bg-slate-900/60 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                    }`}
+                  >
+                    <span className={selected ? 'text-indigo-300' : 'text-slate-500'}>
+                      <GameIcon game={type} className={type === 'chess' ? 'text-2xl' : 'w-6 h-6'} />
+                    </span>
+                    <span className="text-sm font-bold">{meta.label}</span>
+                    <span className="text-[10px] font-medium opacity-70">{meta.tagline}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={creating}
+              className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 font-bold text-lg shadow-lg shadow-indigo-500/20 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+              Create Room
+            </button>
+          </div>
 
           <form
             onSubmit={handleJoinByCode}
@@ -190,6 +251,13 @@ export default function LobbyPage() {
                       </button>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-400/20">
+                        <GameIcon
+                          game={room.gameType}
+                          className={room.gameType === 'chess' ? 'text-sm' : 'w-3.5 h-3.5'}
+                        />
+                        {GAME_META[room.gameType]?.label ?? room.gameType}
+                      </span>
                       <span
                         className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
                           room.status === 'waiting'

@@ -7,6 +7,7 @@ import { ArrowLeft, Copy, Loader2, Users } from 'lucide-react';
 import { socket, connectSocket } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
+import ChessBoard, { ChessMoveInput } from '../../components/ChessBoard';
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -76,6 +77,21 @@ export default function GamePage() {
     [gameState, winner, roomCode],
   );
 
+  /**
+   * Chess moves are sent with the standard `{ from, to, promotion }` object.
+   * The server re-validates them against the authoritative position.
+   */
+  const handleChessMove = useCallback(
+    (move: ChessMoveInput) => {
+      if (!gameState || winner) return;
+      const args = move.promotion
+        ? [{ from: move.from, to: move.to, promotion: move.promotion }]
+        : [{ from: move.from, to: move.to }];
+      socket.emit('makeMove', { room: roomCode, moveName: 'move', args });
+    },
+    [gameState, winner, roomCode],
+  );
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(roomCode);
@@ -88,9 +104,18 @@ export default function GamePage() {
 
   const isMyTurn = !!gameState && socket.id === gameState.ctx.currentPlayer;
 
+  // Generic container: pick the board component from the room's game type
+  // (falls back to the state shape so old rooms still render correctly).
+  const gameType = room?.gameType ?? (gameState && 'fen' in gameState.G ? 'chess' : 'tic-tac-toe');
+  const isChess = gameType === 'chess';
+
+  // Winner is emitted live via `gameOver`, but can also be reconstructed from
+  // the persisted state (e.g. after a page reload on a finished chess room).
+  const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
-      <div className="w-full max-w-md text-center space-y-6">
+      <div className={`w-full ${isChess ? 'max-w-xl' : 'max-w-md'} text-center space-y-6`}>
         <header className="flex items-center justify-between">
           <Link
             href="/lobby"
@@ -160,7 +185,7 @@ export default function GamePage() {
         ) : (
           /* Board — both players seated and a game state exists. */
           <div className="space-y-6">
-            <div className="flex justify-between items-center px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
+            <div className="flex items-center justify-between gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
               <div className="flex items-center gap-2">
                 <span
                   className={`w-3 h-3 rounded-full ${
@@ -171,19 +196,33 @@ export default function GamePage() {
                   {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
                 </span>
               </div>
-              <div className="text-xs font-mono text-slate-500">Turn {gameState.ctx.turn}</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-indigo-300 bg-indigo-500/10 border border-indigo-400/20 rounded-full px-2.5 py-0.5">
+                  {isChess ? '♞ Chess' : 'Tic-Tac-Toe'}
+                </span>
+                <span className="text-xs font-mono text-slate-500">Turn {gameState.ctx.turn}</span>
+              </div>
             </div>
 
-            <Board
-              cells={gameState.G.cells}
-              onCellClick={handleCellClick}
-              disabled={!isMyTurn || !!winner}
-            />
+            {isChess ? (
+              <ChessBoard
+                fen={gameState.G.fen}
+                onMove={handleChessMove}
+                disabled={!isMyTurn || !!winnerId}
+                orientation={socket.id === gameState.ctx.players[0] ? 'w' : 'b'}
+              />
+            ) : (
+              <Board
+                cells={gameState.G.cells}
+                onCellClick={handleCellClick}
+                disabled={!isMyTurn || !!winnerId}
+              />
+            )}
 
-            {winner && (
+            {winnerId && (
               <div className="p-4 bg-indigo-600 rounded-xl shadow-xl">
                 <h2 className="text-2xl font-bold">
-                  {winner === 'draw' ? "It's a Draw!" : `Winner: ${winner === socket.id ? 'YOU!' : 'Opponent'}`}
+                  {winnerId === 'draw' ? "It's a Draw!" : `Winner: ${winnerId === socket.id ? 'YOU!' : 'Opponent'}`}
                 </h2>
                 <Link
                   href="/lobby"
