@@ -4,6 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../generated/prisma';
 
 export const MAX_PLAYERS = 2;
+export const VEGAS_MAX_PLAYERS = 5;
+
+export function getMaxPlayers(gameType: string): number {
+  return gameType === 'vegas' ? VEGAS_MAX_PLAYERS : MAX_PLAYERS;
+}
 export type RoomStatus = 'waiting' | 'playing' | 'finished';
 
 // Ambiguous characters (0, O, 1, I) are excluded so codes are easy to share by voice.
@@ -70,7 +75,8 @@ export class RoomService {
       return this.toParsed(existing); // re-join is a no-op
     }
 
-    if (players.length >= MAX_PLAYERS) {
+    const maxPlayers = getMaxPlayers(existing.gameType);
+    if (players.length >= maxPlayers) {
       throw new BadRequestException(`Room "${code}" is full`);
     }
 

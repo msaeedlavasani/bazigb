@@ -11,7 +11,8 @@ import { BaziGBEngine, Game, GameState } from '@bazigb/engine';
 import { TicTacToe } from '@bazigb/game-tic-tac-toe';
 import { ChessGame } from '@bazigb/game-chess';
 import { Backgammon } from '@bazigb/game-backgammon';
-import { RoomService, MAX_PLAYERS } from '../rooms/room.service';
+import { Vegas } from '@bazigb/game-vegas';
+import { RoomService, getMaxPlayers } from '../rooms/room.service';
 import { HistoryService } from '../history/history.service';
 
 /** Registry of playable games keyed by the room's `gameType`. */
@@ -19,6 +20,7 @@ const GAMES: Record<string, Game> = {
   'tic-tac-toe': TicTacToe,
   chess: ChessGame,
   backgammon: Backgammon,
+  vegas: Vegas,
 };
 
 /** Resolve the game plugin for a room, falling back to Tic-Tac-Toe. */
@@ -78,7 +80,7 @@ export class GameGateway implements OnGatewayConnection {
         room = await this.roomService.joinRoom(roomCode, client.id, gameType);
       } else if (
         !room.players.includes(client.id) &&
-        room.players.length < MAX_PLAYERS
+        room.players.length < getMaxPlayers(room.gameType)
       ) {
         // Free seat -> seat the client as a player.
         try {
@@ -116,9 +118,9 @@ export class GameGateway implements OnGatewayConnection {
         status: room.status,
       });
 
-      // Two players seated and no game running yet -> start the room's game.
+      // Game starts when room is full and no game running yet.
       const shouldStart =
-        room.players.length === 2 && room.status === 'waiting' && !room.currentState;
+        room.players.length === getMaxPlayers(room.gameType) && room.status === 'waiting' && !room.currentState;
 
       if (shouldStart) {
         const game = resolveGame(room.gameType);

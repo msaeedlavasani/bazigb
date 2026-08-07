@@ -9,6 +9,7 @@ import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
 import ChessBoard, { ChessMoveInput } from '../../components/ChessBoard';
 import BackgammonBoard from '../../components/BackgammonBoard';
+import VegasBoard from '../../components/VegasBoard';
 import ChatSidebar from '../../components/ChatSidebar';
 import {
   getCapturedPieces,
@@ -233,6 +234,30 @@ export default function GamePage() {
     [gameState, isMyTurn, winnerId, roomCode, markMyMove],
   );
 
+  const handleBackgammonMove = useCallback(
+    (from: number, to: number) => {
+      if (!gameState || !isMyTurn || winnerId) return;
+      socket.emit('gameAction', { room: roomCode, moveName: 'movePiece', args: [{ from, to }], endTurn: false });
+      markMyMove();
+    },
+    [gameState, isMyTurn, winnerId, roomCode, markMyMove],
+  );
+
+  const handleEndTurn = useCallback(() => {
+    if (!gameState || !isMyTurn || winnerId) return;
+    socket.emit('gameAction', { room: roomCode, moveName: 'endTurn', args: [], endTurn: true });
+    markMyMove();
+  }, [gameState, isMyTurn, winnerId, roomCode, markMyMove]);
+
+  const handleVegasPlace = useCallback(
+    (value: number) => {
+      if (!gameState || !isMyTurn || winnerId) return;
+      socket.emit('gameAction', { room: roomCode, moveName: 'placeDice', args: [value], endTurn: true });
+      markMyMove();
+    },
+    [gameState, isMyTurn, winnerId, roomCode, markMyMove],
+  );
+
   const handleRollDice = useCallback(() => {
     socket.emit('rollDice', { room: roomCode });
   }, [roomCode]);
@@ -247,9 +272,10 @@ export default function GamePage() {
     }
   };
 
-  const gameType = room?.gameType ?? (gameState && 'fen' in gameState.G ? 'chess' : 'tic-tac-toe');
+  const gameType = room?.gameType ?? (gameState?.G?.casinos ? 'vegas' : gameState?.G?.fen ? 'chess' : 'tic-tac-toe');
   const isChess = gameType === 'chess';
   const isBackgammon = gameType === 'backgammon';
+  const isVegas = gameType === 'vegas';
 
   const chessData = useMemo(() => {
     if (!isChess || !gameState?.G?.fen) return null;
@@ -294,7 +320,7 @@ export default function GamePage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
-      <div className={`w-full ${isChess ? 'max-w-2xl' : 'max-w-md'} text-center space-y-6`}>
+      <div className={`w-full ${isVegas ? 'max-w-4xl' : isChess ? 'max-w-2xl' : 'max-w-md'} text-center space-y-6`}>
         <header className="flex items-center justify-between gap-2">
           <Link
             href="/lobby"
@@ -397,7 +423,7 @@ export default function GamePage() {
               )}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-indigo-300 bg-indigo-500/10 border border-indigo-400/20 rounded-full px-2.5 py-0.5">
-                  {isChess ? '♞ Chess' : isBackgammon ? '🎲 Backgammon' : 'Tic-Tac-Toe'}
+                  {isChess ? '♞ Chess' : isBackgammon ? '🎲 Backgammon' : isVegas ? '💵 Vegas' : 'Tic-Tac-Toe'}
                 </span>
                 <span className="text-xs font-mono text-slate-500">Turn {gameState.ctx.turn}</span>
               </div>
@@ -421,9 +447,26 @@ export default function GamePage() {
               ) : isBackgammon ? (
                 <BackgammonBoard
                   points={gameState.G.points}
+                  bar={gameState.G.bar}
+                  off={gameState.G.off}
                   dice={gameState.ctx.dice}
+                  diceRemaining={gameState.G.diceRemaining}
                   onRoll={handleRollDice}
-                  onMove={(from, to) => console.log('move', from, to)}
+                  onMove={handleBackgammonMove}
+                  onEndTurn={handleEndTurn}
+                  disabled={!isPlayer || !isMyTurn || !!winnerId}
+                  isMyTurn={isMyTurn}
+                  myColor={isPlayer ? (mySocketId === gameState.ctx.players[0] ? 'white' : 'black') : 'white'}
+                  players={gameState.ctx.players}
+                />
+              ) : isVegas ? (
+                <VegasBoard
+                  casinos={gameState.G.casinos}
+                  hand={gameState.G.playerDice?.[mySocketId ?? ''] ?? []}
+                  players={gameState.ctx.players}
+                  currentPlayerId={mySocketId ?? ''}
+                  onPlace={handleVegasPlace}
+                  onRoll={handleRollDice}
                   disabled={!isPlayer || !isMyTurn || !!winnerId}
                   isMyTurn={isMyTurn}
                 />

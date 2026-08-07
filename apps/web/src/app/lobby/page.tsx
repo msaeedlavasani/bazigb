@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Copy, Gamepad2, Loader2, Plus, RefreshCw, Users } from 'lucide-react';
+import { ArrowRight, Copy, Gamepad2, Loader2, Plus, RefreshCw, Users, Banknote, Dice6 } from 'lucide-react';
 import { createRoom, fetchRooms, Room } from '../../lib/rooms';
 import Nav from '../components/Nav';
 
@@ -14,14 +14,15 @@ const STATUS_LABEL: Record<Room['status'], string> = {
   finished: 'Finished',
 };
 
-type GameType = 'tic-tac-toe' | 'chess' | 'backgammon';
+type GameType = 'tic-tac-toe' | 'chess' | 'backgammon' | 'vegas';
 
-const GAME_OPTIONS: GameType[] = ['tic-tac-toe', 'chess', 'backgammon'];
+const GAME_OPTIONS: GameType[] = ['tic-tac-toe', 'chess', 'backgammon', 'vegas'];
 
 const GAME_META: Record<string, { label: string; tagline: string; isNew?: boolean }> = {
   'tic-tac-toe': { label: 'Tic-Tac-Toe', tagline: 'Classic 3×3 duel' },
   chess: { label: 'Chess', tagline: 'Full board battle' },
-  backgammon: { label: 'Backgammon', tagline: 'Dices & Strategy', isNew: true },
+  backgammon: { label: 'Backgammon', tagline: 'Dices & Strategy' },
+  vegas: { label: 'Vegas', tagline: 'Casino Dice Luck', isNew: true },
 };
 
 function GameIcon({ game, className }: { game: string; className?: string }) {
@@ -38,6 +39,9 @@ function GameIcon({ game, className }: { game: string; className?: string }) {
         🎲
       </span>
     );
+  }
+  if (game === 'vegas') {
+    return <Banknote className={className} />;
   }
   return (
     <svg

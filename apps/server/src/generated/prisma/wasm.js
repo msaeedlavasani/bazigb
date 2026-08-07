@@ -130,6 +130,16 @@ exports.Prisma.UserScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  body: 'body',
+  read: 'read',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.RoomScalarFieldEnum = {
   id: 'id',
   code: 'code',
@@ -198,6 +208,7 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  Notification: 'Notification',
   Room: 'Room',
   GameHistory: 'GameHistory',
   Tournament: 'Tournament',
