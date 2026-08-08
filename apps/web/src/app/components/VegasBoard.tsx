@@ -170,7 +170,7 @@ export default function VegasBoard({
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
                 <span className="font-bold text-slate-300">{isYou ? 'You' : `P${pIdx + 1}`}</span>
                 <span className="font-black text-emerald-400">${cash.toLocaleString()}</span>
-                {cards > 0 && <span className="text-[9px] font-semibold text-slate-500">{cards} 🃏</span>}
+                {cards > 0 && <span className="text-[9px] font-semibold text-slate-500">{cards} cards</span>}
               </div>
             );
           })}

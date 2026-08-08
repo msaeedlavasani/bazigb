@@ -9,8 +9,8 @@ import { Game, Move } from '@bazigb/engine';
  * - Money deck: 54 cards — 6 copies of each denomination $10k … $90k.
  * - Each round the deck is shuffled and dealt into stacks of 2 random cards.
  *   The stacks are sorted by total value: the most valuable stack sits on
- *   casino 6, the least valuable on casino 1. Round 5 deals the last 6 cards
- *   as 3 stacks on casinos 6, 5, 4 (the deck is exhausted exactly at the end).
+ *   casino 6, the least valuable on casino 1. The game lasts exactly 4 rounds
+ *   (12 cards per round = 48 cards; the last 6 cards stay unused).
  * - Each player rolls their remaining dice on their turn, chooses ONE value
  *   and places ALL dice of that value on the matching casino.
  * - When every die is placed the round is resolved: on each casino the unique
@@ -18,7 +18,7 @@ import { Game, Move } from '@bazigb/engine';
  *   the lower card. Ties at a position burn those cards (they leave the game).
  * - House rule: a player who places all 8 dice on ONE casino sweeps it — they
  *   take BOTH cards and the runner-up gets nothing.
- * - After 5 rounds the player with the most money wins; tie-break is the
+ * - After 4 rounds the player with the most money wins; tie-break is the
  *   number of cards won, then a draw.
  */
 
@@ -63,9 +63,9 @@ const COPIES_PER_DENOM = 6; // 6 copies of each value -> 54 cards
 const DECK_SIZE = DENOMS.length * COPIES_PER_DENOM; // 54
 const CARDS_PER_ROUND = 12; // 6 stacks x 2 cards
 const STACK_CARDS = 2;
-const TOTAL_ROUNDS = 5; // 4 full rounds (12 cards each) + final round (6 cards)
+const TOTAL_ROUNDS = 4; // 4 full rounds x 12 cards = 48; the last 6 cards stay unused
 
-/** Number of 2-card stacks dealt in a given round (round 5: only 6 cards left). */
+/** Number of 2-card stacks dealt in a given round (always 6 while cards last). */
 function stacksForRound(round: number): number {
   const remaining = DECK_SIZE - CARDS_PER_ROUND * (round - 1);
   return Math.max(0, Math.min(6, Math.floor(remaining / STACK_CARDS)));
