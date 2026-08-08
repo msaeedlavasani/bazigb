@@ -50,6 +50,14 @@ export const rejoinRoom = (roomCode: string) => {
   if (socket.connected) {
     const token =
       typeof window !== 'undefined' ? window.localStorage.getItem('bazigb_token') : null;
-    socket.emit('joinRoom', { roomCode, token: token ?? undefined });
+    // Seat ticket issued by the server when this client was seated (see the
+    // `seatKey` event). Proves "I held this seat" on reconnect so a spectator
+    // cannot steal a disconnected player's place. Lives in sessionStorage so
+    // it survives a refresh in the same tab.
+    const seatKey =
+      typeof window !== 'undefined'
+        ? window.sessionStorage.getItem(`bazigb_seat_${roomCode}`)
+        : null;
+    socket.emit('joinRoom', { roomCode, token: token ?? undefined, seatKey: seatKey ?? undefined });
   }
 };

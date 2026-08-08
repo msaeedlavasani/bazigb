@@ -7,6 +7,7 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { randomBytes } from 'crypto';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { BaziGBEngine, Game, GameState } from '@bazigb/engine';
@@ -44,6 +45,58 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * account (profile stats / ELO) instead of anonymous socket ids.
    */
   private readonly socketUsers = new Map<string, string>();
+
+  /**
+   * Seat-reclaim protection. When a seated socket drops mid-game, its seat in
+   * ctx.players stays stale until the ORIGINAL client reclaims it — otherwise
+   * the first spectator to (re)join steals the seat (reported bug: a spectator
+   * sat in a disconnected player's place in backgammon).
+   *
+   * Two independent proofs are kept per vacated seat:
+   *  - `vacatedUsers`: the authenticated user id bound to the dropped socket
+   *    (captured at disconnect, since socketUsers is cleared there).
+   *  - `seatKeys`: a random reconnect ticket issued to the player when seated
+   *    and stored by the web client in sessionStorage, so even anonymous
+   *    players can prove "I held this seat".
+   *
+   * A reclaim is allowed when the joining socket matches EITHER the same
+   * authenticated user id OR the same seat ticket. Pre-ticket anonymous seats
+   * (sessions started before this feature) keep the legacy first-joiner
+   * behavior via `legacyOk`.
+   */
+  private readonly vacatedUsers = new Map<string, { value: string | null; at: number }>();
+  private readonly seatKeys = new Map<string, { value: string; at: number }>();
+
+  private static readonly SEAT_CLAIM_TTL = 10 * 60 * 1000; // 10 minutes
+
+  private getVacatedUser(roomCode: string, socketId: string): string | null {
+    const key = `${roomCode}:${socketId}`;
+    const entry = this.vacatedUsers.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.at > GameGateway.SEAT_CLAIM_TTL) {
+      this.vacatedUsers.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  private getSeatKey(roomCode: string, socketId: string): string | null {
+    const key = `${roomCode}:${socketId}`;
+    const entry = this.seatKeys.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.at > GameGateway.SEAT_CLAIM_TTL) {
+      this.seatKeys.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  /** Issue a fresh reconnect ticket to a seated player and send it to them. */
+  private issueSeatKey(client: Socket, roomCode: string) {
+    const seatKey = randomBytes(16).toString('hex');
+    this.seatKeys.set(`${roomCode}:${client.id}`, { value: seatKey, at: Date.now() });
+    client.emit('seatKey', { room: roomCode, seatKey });
+  }
 
   constructor(
     private readonly roomService: RoomService,
@@ -94,11 +147,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    // Accept both the legacy plain-string form and { roomCode, gameType, token }.
-    @MessageBody() payload: string | { roomCode: string; gameType?: string; token?: string },
+    // Accept both the legacy plain-string form and { roomCode, gameType, token, seatKey }.
+    @MessageBody() payload: string | { roomCode: string; gameType?: string; token?: string; seatKey?: string },
   ) {
     const roomCode = typeof payload === 'string' ? payload : payload?.roomCode;
     const gameType = typeof payload === 'string' ? undefined : payload?.gameType;
+    const seatKey = typeof payload === 'string' ? undefined : payload?.seatKey;
     if (!roomCode) return;
 
     await this.bindUser(client, typeof payload === 'string' ? undefined : payload?.token);
@@ -113,24 +167,35 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // 1) Create the room when it does not exist (first joiner is seated).
       if (!room) {
         room = await this.roomService.joinRoom(roomCode, client.id, gameType);
+        this.issueSeatKey(client, roomCode);
       } else if (room.players.includes(client.id)) {
         // 2) Already seated — re-join is a no-op.
       } else if (room.status === 'waiting' && room.players.length < getMaxPlayers(room.gameType)) {
         // 3) Free seat in a waiting room -> seat the client as a player.
         try {
           room = await this.roomService.joinRoom(roomCode, client.id, gameType);
+          this.issueSeatKey(client, roomCode);
         } catch {
           // Lost the race for the last seat -> fall through as a spectator.
           room = (await this.roomService.getRoom(roomCode)) ?? room;
         }
       } else if (room.status === 'playing' && state) {
         // 4) Reconnection mid-game: a stale socket id (their pre-refresh
-        //    connection) may still own a seat in ctx.players. Swap it for the
-        //    fresh socket so turns keep flowing and they are a player again.
+        //    connection) may still own a seat in ctx.players. Only the ORIGINAL
+        //    player may reclaim it — same authenticated user id OR the seat
+        //    ticket they received when they were seated. Anyone else (e.g. a
+        //    spectator) stays a spectator instead of stealing the seat.
         const stale = state.ctx.players.find(
           (p) => p !== client.id && !connectedIds.has(p),
         );
-        if (stale) {
+        const staleUserId = stale ? this.getVacatedUser(roomCode, stale) : null;
+        const joinerUserId = this.socketUsers.get(client.id) ?? null;
+        const staleTicket = stale ? this.getSeatKey(roomCode, stale) : null;
+        const identityOk = !!staleUserId && !!joinerUserId && staleUserId === joinerUserId;
+        const ticketOk = !staleUserId && !!staleTicket && seatKey === staleTicket;
+        const legacyOk = !staleUserId && !staleTicket; // pre-ticket anonymous seat
+        const canReclaim = !!(stale && (identityOk || ticketOk || legacyOk));
+        if (stale && canReclaim) {
           const nextState: GameState = {
             ...state,
             ctx: {
@@ -153,6 +218,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           console.log(
             `Reconnection in room ${roomCode}: swapped stale socket ${stale} -> ${client.id}`,
           );
+          // Seat claimed — clear the old proofs and issue a fresh ticket.
+          this.seatKeys.delete(`${roomCode}:${stale}`);
+          this.vacatedUsers.delete(`${roomCode}:${stale}`);
+          this.issueSeatKey(client, roomCode);
         }
       }
       // Otherwise (waiting-but-full, playing with live players, finished) the
@@ -218,6 +287,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
+    const userId = this.socketUsers.get(client.id) ?? null;
     this.socketUsers.delete(client.id);
 
     let rooms: RoomWithParsedData[] = [];
@@ -229,6 +299,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     for (const room of rooms) {
       if (!room.players.includes(client.id)) continue;
+      // Remember who held this seat so only they can reclaim it on reconnect
+      // (the same user id or their seat ticket — see handleJoinRoom branch 4).
+      if (room.status === 'playing') {
+        this.vacatedUsers.set(`${room.code}:${client.id}`, { value: userId, at: Date.now() });
+      }
       try {
         const updated = await this.roomService.removePlayer(room.code, client.id);
         if (updated && !updated.players.includes(client.id)) {

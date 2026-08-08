@@ -192,6 +192,17 @@ export default function GamePage() {
       );
     };
 
+    // Store the seat ticket issued by the server when we were seated — it lets
+    // us reclaim our seat after a refresh instead of a spectator taking it.
+    const onSeatKey = (data: { room?: string; seatKey?: string }) => {
+      if (cancelled || !data?.room || !data?.seatKey || data.room !== roomCode) return;
+      try {
+        window.sessionStorage.setItem(`bazigb_seat_${roomCode}`, data.seatKey);
+      } catch {
+        // storage unavailable — seat reclaim falls back to the JWT identity
+      }
+    };
+
     socket.on('gameState', onGameState);
     socket.on('gameOver', onGameOver);
     socket.on('error', onError);
@@ -199,6 +210,7 @@ export default function GamePage() {
     socket.on('connect_error', onConnectError);
     socket.on('disconnect', onDisconnect);
     socket.on('roomUpdate', onRoomUpdate);
+    socket.on('seatKey', onSeatKey);
 
     if (socket.connected) onConnect();
 
@@ -212,6 +224,7 @@ export default function GamePage() {
       socket.off('connect_error', onConnectError);
       socket.off('disconnect', onDisconnect);
       socket.off('roomUpdate', onRoomUpdate);
+      socket.off('seatKey', onSeatKey);
     };
   }, [roomCode]);
 
