@@ -124,11 +124,13 @@ export default function GamePage() {
       }
 
       // Dice SFX: a roll result just arrived for backgammon.
+      // NOTE: dice live in `state.ctx`, not inside G — `G.ctx` is always
+      // undefined, which previously silenced the dice sound entirely.
       if (isBackgammon) {
-        const dice = Array.isArray(G.ctx?.dice) ? G.ctx.dice.join(',') : '';
+        const dice = Array.isArray(state.ctx?.dice) ? state.ctx.dice.join(',') : '';
         const prevDice = prevDiceRef.current;
         prevDiceRef.current = dice;
-        if (prevDice !== '' && dice !== '' && prevDice !== dice) {
+        if (dice !== '' && dice !== prevDice) {
           soundService.play('dice');
         }
       }
