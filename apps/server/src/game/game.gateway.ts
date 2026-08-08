@@ -186,11 +186,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         status: room.status,
       });
 
-      // Game starts once the minimum number of players is seated and no game
-      // is running yet. (All games start with 2 players; a Vegas room may have
-      // more joiners while still waiting.)
+      // Two-player games auto-start once the minimum number of players is
+      // seated. Vegas waits for the room owner's explicit START command so
+      // 2–5 players can join first (see handleStartGame).
       const shouldStart =
-        room.players.length >= getMinPlayers() && room.status === 'waiting' && !room.currentState;
+        room.gameType !== 'vegas' &&
+        room.players.length >= getMinPlayers() &&
+        room.status === 'waiting' &&
+        !room.currentState;
 
       if (shouldStart) {
         const game = resolveGame(room.gameType);
@@ -247,6 +250,99 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /**
+   * Vegas: the room owner (or any seated player when the owner is gone)
+   * explicitly starts the game with ALL currently seated players.
+   */
+  @SubscribeMessage('startGame')
+  async handleStartGame(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
+    const { room: roomCode } = data;
+    const roomRecord = await this.roomService.getRoom(roomCode);
+    if (!roomRecord || roomRecord.status !== 'waiting' || roomRecord.currentState) return;
+    if (roomRecord.players.length < getMinPlayers()) {
+      client.emit('error', 'Need at least 2 players to start');
+      return;
+    }
+
+    const ownerLive = roomRecord.ownerId
+      ? (this.server.sockets.adapter.rooms.get(roomCode) ?? new Set()).has(roomRecord.ownerId)
+      : false;
+    const isOwner = roomRecord.ownerId === client.id || (roomRecord.ownerId && !ownerLive);
+    if (!isOwner || !roomRecord.players.includes(client.id)) {
+      client.emit('error', 'Only the room owner can start the game');
+      return;
+    }
+
+    const game = resolveGame(roomRecord.gameType);
+    const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
+    await this.roomService.startGame(roomCode, initialState);
+    this.server.to(roomCode).emit('gameState', initialState);
+    this.emitSystemMessage(
+      roomCode,
+      `The game has started with ${roomRecord.players.length} players`,
+      undefined,
+      'gameStart',
+    );
+    console.log(`Room ${roomCode} started by ${client.id}`);
+  }
+
+  /**
+   * Rematch: seated players can restart a finished room with the same players
+   * and a fresh initial state — no need to go back to the lobby.
+   */
+  @SubscribeMessage('newGame')
+  async handleNewGame(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
+    const { room: roomCode } = data;
+    const roomRecord = await this.roomService.getRoom(roomCode);
+    if (!roomRecord || roomRecord.status !== 'finished') {
+      client.emit('error', 'Game is not finished');
+      return;
+    }
+    if (!roomRecord.players.includes(client.id)) {
+      client.emit('error', 'Only seated players can start a rematch');
+      return;
+    }
+
+    const game = resolveGame(roomRecord.gameType);
+    const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
+    await this.roomService.startGame(roomCode, initialState);
+    this.server.to(roomCode).emit('gameState', initialState);
+    this.emitSystemMessage(roomCode, 'A new game has started', undefined, 'gameStart');
+    console.log(`Rematch started in room ${roomCode} by ${client.id}`);
+  }
+
+  /**
+   * Vegas: when a player runs out of dice while others still have some, the
+   * turn must skip to the next player who still has dice — otherwise that
+   * player can neither roll, nor place, nor pass, and the game locks.
+   */
+  private skipVegasNoDicePlayers(state: GameState): GameState {
+    const G = state.G as any;
+    if (!G?.casinos || !G?.playerDiceRemaining) return state;
+
+    const remaining: Record<string, number> = G.playerDiceRemaining;
+    const players: string[] = state.ctx.players;
+    const anyDiceLeft = players.some((p) => (remaining[p] ?? 0) > 0);
+    if (!anyDiceLeft) return state;
+
+    let idx = players.indexOf(state.ctx.currentPlayer);
+    let steps = 0;
+    while ((remaining[players[idx]] ?? 0) === 0 && steps < players.length) {
+      idx = (idx + 1) % players.length;
+      steps++;
+    }
+    if (steps > 0 && (remaining[players[idx]] ?? 0) > 0) {
+      return { ...state, ctx: { ...state.ctx, currentPlayer: players[idx] } };
+    }
+    return state;
+  }
+
   @SubscribeMessage('chatMessage')
   async handleChatMessage(
     @ConnectedSocket() client: Socket,
@@ -291,10 +387,27 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const nextState = BaziGBEngine.rollDice(roomRecord.currentState, count);
+    let nextState = BaziGBEngine.rollDice(roomRecord.currentState, count);
+
+    // Backgammon keeps its own dice bookkeeping in G.diceRemaining — sync it
+    // with the roll so `endTurn` knows exactly which dice are left to play.
+    if (roomRecord.gameType === 'backgammon') {
+      try {
+        nextState = BaziGBEngine.applyAction(
+          resolveGame('backgammon'),
+          nextState,
+          'rollDice',
+          client.id,
+          false,
+        );
+      } catch (error: any) {
+        client.emit('error', error?.message || 'Dice already rolled this turn');
+        return;
+      }
+    }
+
     await this.roomService.saveState(room, nextState);
     this.server.to(room).emit('gameState', nextState);
-    this.emitSystemMessage(room, `Player rolled: ${nextState.ctx.dice?.join(', ')}`, client.id, 'roll');
   }
 
   @SubscribeMessage('makeMove')
@@ -313,7 +426,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         roomRecord.currentState,
         moveName,
         client.id,
-        ...args,
+        ...(args ?? []),
       );
 
       // Check for a winner or a draw.
@@ -362,14 +475,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       const game = resolveGame(roomRecord.gameType);
-      const nextState = BaziGBEngine.applyAction(
+      let nextState = BaziGBEngine.applyAction(
         game,
         roomRecord.currentState,
         moveName,
         client.id,
         endTurn ?? true,
-        ...args,
+        ...(args ?? []),
       );
+
+      // Vegas: skip to the next player who still has dice (a player with no
+      // dice left can neither roll, nor place, nor pass — the game would lock).
+      if (endTurn !== false) {
+        nextState = this.skipVegasNoDicePlayers(nextState);
+      }
 
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {

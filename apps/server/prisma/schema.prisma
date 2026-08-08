@@ -69,6 +69,7 @@ model Room {
   players      String   @default("[]") // JSON array of seated player user ids
   currentState String?  // JSON serialized game state (null until the game starts)
   winnerId     String?  // player user id that won (null for draw / unfinished)
+  ownerId      String?  // socket id of the room creator (can issue START)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

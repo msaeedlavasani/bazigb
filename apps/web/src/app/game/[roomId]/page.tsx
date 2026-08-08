@@ -3,7 +3,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Eye, Loader2, Users, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Copy, Eye, Loader2, Play, RotateCcw, Users, Wifi, WifiOff } from 'lucide-react';
 import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
@@ -417,17 +417,31 @@ export default function GamePage() {
             {room && (
               <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-800 rounded-full border border-slate-700 px-4 py-1.5">
                 <Users className="w-4 h-4 text-emerald-400" />
-                {room.players.length}/2 players in room
+                {room.players.length}/{room.gameType === 'vegas' ? 5 : 2} players in room
               </div>
             )}
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 font-semibold hover:bg-indigo-500/30 transition-colors"
-            >
-              {copied ? <Loader2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Code copied!' : 'Copy room code'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 font-semibold hover:bg-indigo-500/30 transition-colors"
+              >
+                {copied ? <Loader2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Code copied!' : 'Copy room code'}
+              </button>
+              {/* Vegas: the room owner explicitly starts the game once enough
+                  players have joined (2–5). */}
+              {isVegas && room && room.ownerId === mySocketId && room.players.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => socket.emit('startGame', { room: roomCode })}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/20 hover:opacity-90 active:scale-[0.98] transition-all"
+                >
+                  <Play className="w-4 h-4" />
+                  Start Game
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -571,12 +585,24 @@ export default function GamePage() {
                     {CHESS_RESULT_LABELS[chessData.result]}
                   </p>
                 )}
-                <Link
-                  href="/lobby"
-                  className="mt-4 inline-block px-6 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-slate-100 transition-colors"
-                >
-                  Back to Lobby
-                </Link>
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  {isPlayer && (
+                    <button
+                      type="button"
+                      onClick={() => socket.emit('newGame', { room: roomCode })}
+                      className="flex items-center gap-2 px-6 py-2 bg-emerald-400 text-emerald-950 font-bold rounded-lg hover:bg-emerald-300 transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Play Again
+                    </button>
+                  )}
+                  <Link
+                    href="/lobby"
+                    className="inline-block px-6 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    Back to Lobby
+                  </Link>
+                </div>
               </div>
             )}
           </div>

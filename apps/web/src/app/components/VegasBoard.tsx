@@ -7,6 +7,8 @@ import { soundService } from '../../lib/sound-service';
 
 const DiceIcons = [null, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
+const DICE_PALETTE = ['#f59e0b', '#3b82f6', '#10b981', '#a855f7', '#ef4444'];
+
 const PLAYER_COLORS = [
   { bg: 'bg-indigo-500', text: 'text-indigo-400', border: 'border-indigo-400/30' },
   { bg: 'bg-rose-500', text: 'text-rose-400', border: 'border-rose-400/30' },
@@ -48,6 +50,9 @@ export default function VegasBoard({
     handCounts[v] = (handCounts[v] || 0) + 1;
   });
 
+  const playerIndex = players.indexOf(currentPlayerId);
+  const currentPlayerColor = playerIndex !== -1 ? DICE_PALETTE[playerIndex % DICE_PALETTE.length] : undefined;
+
   const handleValueClick = (value: number) => {
     if (disabled || !isMyTurn || hand.length === 0) return;
     soundService.play('move');
@@ -67,6 +72,7 @@ export default function VegasBoard({
         {casinos.map((casino, idx) => {
           const value = idx + 1;
           const DiceIcon = DiceIcons[value]!;
+          const totalDice = Object.values(casino.dice).reduce((a, b) => a + b, 0);
           return (
             <div
               key={idx}
@@ -80,6 +86,12 @@ export default function VegasBoard({
                   </div>
                   <span className="font-bold text-slate-300">Casino {value}</span>
                 </div>
+                {totalDice > 0 && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700">
+                    <span className="text-[10px] font-black text-slate-400">{totalDice}</span>
+                    <Dice6 className="w-3 h-3 text-slate-500" />
+                  </div>
+                )}
               </div>
 
               {/* Banknotes */}
@@ -100,18 +112,19 @@ export default function VegasBoard({
                 {players.map((pId, pIdx) => {
                   const count = casino.dice[pId] || 0;
                   if (count === 0) return null;
-                  const colors = PLAYER_COLORS[pIdx % PLAYER_COLORS.length];
+                  const color = DICE_PALETTE[pIdx % DICE_PALETTE.length];
                   return (
                     <div key={pId} className="flex flex-col items-center gap-1">
                       <div className="flex -space-x-1.5 flex-wrap max-w-[80px] justify-center">
                         {Array.from({ length: count }).map((_, i) => (
                           <div
                             key={i}
-                            className={`w-3.5 h-3.5 rounded-sm ${colors.bg} border border-white/20 shadow-sm`}
+                            className="w-3.5 h-3.5 rounded-sm border border-white/20 shadow-sm"
+                            style={{ backgroundColor: color }}
                           />
                         ))}
                       </div>
-                      <span className={`text-[9px] font-bold ${colors.text}`}>{count}</span>
+                      <span className="text-[9px] font-bold" style={{ color }}>{count}</span>
                     </div>
                   );
                 })}
@@ -126,7 +139,10 @@ export default function VegasBoard({
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Your Hand</h3>
           {isMyTurn && hand.length > 0 && (
-            <span className="animate-pulse text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+            <span 
+              className="animate-pulse text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"
+              style={{ backgroundColor: `${currentPlayerColor}20`, color: currentPlayerColor }}
+            >
               Pick a value
             </span>
           )}
@@ -143,11 +159,12 @@ export default function VegasBoard({
                     key={val}
                     onClick={() => handleValueClick(val)}
                     disabled={disabled || !isMyTurn}
-                    className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:border-indigo-400/50 hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    style={isMyTurn ? { borderColor: `${currentPlayerColor}40` } : {}}
                   >
                     <div className="flex -space-x-2">
                       {Array.from({ length: Math.min(count, 5) }).map((_, i) => (
-                        <Dice3D key={i} value={val} size={32} />
+                        <Dice3D key={i} value={val} size={32} color={currentPlayerColor} />
                       ))}
                       {count > 5 && (
                         <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-white z-10 border border-slate-600">
@@ -155,7 +172,10 @@ export default function VegasBoard({
                         </div>
                       )}
                     </div>
-                    <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-300">
+                    <span 
+                      className="text-xs font-bold text-slate-400 transition-colors"
+                      style={isMyTurn ? { color: `${currentPlayerColor}cc` } : {}}
+                    >
                       Place {count} × {val}
                     </span>
                   </button>

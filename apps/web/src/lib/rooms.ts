@@ -36,6 +36,8 @@ export interface Room {
   players: string[];
   currentState: GameState | null;
   winnerId: string | null;
+  /** Socket id of the room creator (can issue the START command in Vegas). */
+  ownerId: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -11,6 +11,7 @@ interface Dice3DProps {
   value: number;          // 1..6
   rolling?: boolean;      // true -> physics-like rolling animation
   size?: number;          // px, default 48
+  color?: string;         // optional face color
   className?: string;
 }
 
@@ -23,10 +24,12 @@ const faceRotations = {
   6: 'rotateX(0deg) rotateY(180deg)',
 };
 
-const Dot = () => <div className="w-[20%] h-[20%] rounded-full bg-slate-900" />;
+const Dot = ({ inverted = false }: { inverted?: boolean }) => (
+  <div className={`w-[20%] h-[20%] rounded-full ${inverted ? 'bg-white' : 'bg-slate-900'}`} />
+);
 const Empty = () => <div className="w-[20%] h-[20%]" />;
 
-const DiceFace = ({ num }: { num: number }) => {
+const DiceFace = ({ num, color }: { num: number; color?: string }) => {
   // 3x3 Grid indices:
   // 0 1 2
   // 3 4 5
@@ -54,15 +57,18 @@ const DiceFace = ({ num }: { num: number }) => {
   }
 
   return (
-    <div className="absolute inset-0 w-full h-full bg-white border border-slate-200 rounded-[15%] flex items-center justify-center p-[18%] shadow-[inset_0_0_15px_rgba(0,0,0,0.1)] backface-hidden">
+    <div 
+      className="absolute inset-0 w-full h-full bg-white border border-slate-200 rounded-[15%] flex items-center justify-center p-[18%] shadow-[inset_0_0_15px_rgba(0,0,0,0.1)] backface-hidden"
+      style={color ? { backgroundColor: color, borderColor: 'rgba(0,0,0,0.1)' } : {}}
+    >
       <div className="grid grid-cols-3 grid-rows-3 w-full h-full gap-0.5 place-items-center">
-        {dots.map((hasDot, i) => (hasDot ? <Dot key={i} /> : <Empty key={i} />))}
+        {dots.map((hasDot, i) => (hasDot ? <Dot key={i} inverted={!!color} /> : <Empty key={i} />))}
       </div>
     </div>
   );
 };
 
-export default function Dice3D({ value, rolling = false, size = 48, className = '' }: Dice3DProps): JSX.Element {
+export default function Dice3D({ value, rolling = false, size = 48, color, className = '' }: Dice3DProps): JSX.Element {
   const rotation = faceRotations[value as keyof typeof faceRotations] || faceRotations[1];
 
   return (
@@ -104,27 +110,27 @@ export default function Dice3D({ value, rolling = false, size = 48, className = 
       >
         {/* Front - Face 1 */}
         <div className="absolute inset-0" style={{ transform: `translateZ(${size/2}px)` }}>
-          <DiceFace num={1} />
+          <DiceFace num={1} color={color} />
         </div>
         {/* Back - Face 6 */}
         <div className="absolute inset-0" style={{ transform: `rotateY(180deg) translateZ(${size/2}px)` }}>
-          <DiceFace num={6} />
+          <DiceFace num={6} color={color} />
         </div>
         {/* Right - Face 2 */}
         <div className="absolute inset-0" style={{ transform: `rotateY(90deg) translateZ(${size/2}px)` }}>
-          <DiceFace num={2} />
+          <DiceFace num={2} color={color} />
         </div>
         {/* Left - Face 5 */}
         <div className="absolute inset-0" style={{ transform: `rotateY(-90deg) translateZ(${size/2}px)` }}>
-          <DiceFace num={5} />
+          <DiceFace num={5} color={color} />
         </div>
         {/* Top - Face 3 */}
         <div className="absolute inset-0" style={{ transform: `rotateX(90deg) translateZ(${size/2}px)` }}>
-          <DiceFace num={3} />
+          <DiceFace num={3} color={color} />
         </div>
         {/* Bottom - Face 4 */}
         <div className="absolute inset-0" style={{ transform: `rotateX(-90deg) translateZ(${size/2}px)` }}>
-          <DiceFace num={4} />
+          <DiceFace num={4} color={color} />
         </div>
       </div>
     </div>

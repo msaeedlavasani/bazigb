@@ -32,6 +32,7 @@ export interface RoomWithParsedData {
   players: string[];
   currentState: GameState | null;
   winnerId: string | null;
+  ownerId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,9 +74,24 @@ export class RoomService {
           gameType,
           status: 'waiting',
           players: JSON.stringify([playerId]),
+          ownerId: playerId,
         },
       });
       return this.toParsed(room);
+    }
+
+    // First joiner of a room created via HTTP becomes its owner.
+    if (!existing.ownerId) {
+      const claimed = await this.prisma.room.update({
+        where: { id: existing.id },
+        data: { ownerId: playerId },
+      });
+      // If the first seater is also a newcomer, seat them in the same update.
+      const claimedPlayers = this.parsePlayers(claimed.players);
+      if (!claimedPlayers.includes(playerId)) {
+        return this.joinRoom(code, playerId, existing.gameType);
+      }
+      return this.toParsed(claimed);
     }
 
     const players = this.parsePlayers(existing.players);
@@ -142,7 +158,11 @@ export class RoomService {
     if (!players.includes(oldPlayerId)) return this.toParsed(existing);
     const updated = await this.prisma.room.update({
       where: { id: existing.id },
-      data: { players: JSON.stringify(players.map((p) => (p === oldPlayerId ? newPlayerId : p))) },
+      data: {
+        players: JSON.stringify(players.map((p) => (p === oldPlayerId ? newPlayerId : p))),
+        // Keep ownership when the owner's stale socket is swapped on reconnect.
+        ...(existing.ownerId === oldPlayerId ? { ownerId: newPlayerId } : {}),
+      },
     });
     return this.toParsed(updated);
   }
@@ -244,6 +264,7 @@ export class RoomService {
     players: string;
     currentState: string | null;
     winnerId: string | null;
+    ownerId: string | null;
     createdAt: Date;
     updatedAt: Date;
   }): RoomWithParsedData {
@@ -263,6 +284,7 @@ export class RoomService {
       players: this.parsePlayers(room.players),
       currentState,
       winnerId: room.winnerId,
+      ownerId: room.ownerId,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
     };

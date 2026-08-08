@@ -228,13 +228,33 @@ const movePiece: Move<BackgammonState> = (G, ctx, { from, to }) => {
   return { points, bar, off, diceRemaining };
 };
 
+/**
+ * Copies the freshly rolled dice (`ctx.dice`) into the game state
+ * (`G.diceRemaining`), expanding doubles to four dice. The gateway calls this
+ * right after the engine rolls, so `diceRemaining` is ALWAYS the source of
+ * truth for how many dice are still playable this turn — `endTurn` can then
+ * rely on it alone (previously `ctx.dice` lingered after the dice were used,
+ * which made endTurn always fail and locked the turn forever).
+ */
+const rollDiceMove: Move<BackgammonState> = (G, ctx) => {
+  if (G.diceRemaining.length > 0) {
+    throw new Error('Dice already rolled this turn');
+  }
+  const dice = Array.isArray(ctx.dice) ? ctx.dice : [];
+  let remaining = [...dice];
+  // Backgammon doubles rule: [4,4] -> [4,4,4,4]
+  if (remaining.length === 2 && remaining[0] === remaining[1]) {
+    remaining = [remaining[0], remaining[0], remaining[0], remaining[0]];
+  }
+  return { ...G, diceRemaining: remaining };
+};
+
 const endTurn: Move<BackgammonState> = (G, ctx) => {
   // A turn may only be ended when every die has been played (or no legal move
-  // exists with the remaining dice). Otherwise the player could skip their
-  // roll entirely, which broke the game flow.
-  const dice = G.diceRemaining.length > 0 ? G.diceRemaining : (ctx.dice ?? []);
-  if (dice.length > 0) {
-    const moves = getLegalMoves(G, ctx.currentPlayer, dice, ctx.players);
+  // exists with the remaining dice). `diceRemaining` is the source of truth —
+  // it is synced at roll time and consumed by each move.
+  if (G.diceRemaining.length > 0) {
+    const moves = getLegalMoves(G, ctx.currentPlayer, G.diceRemaining, ctx.players);
     if (moves.length > 0) {
       throw new Error('You still have dice to play — use them before ending your turn');
     }
@@ -246,6 +266,7 @@ export const Backgammon: Game<BackgammonState> = {
   name: 'backgammon',
   setup,
   moves: {
+    rollDice: rollDiceMove,
     movePiece,
     endTurn,
   },
