@@ -127,9 +127,19 @@ exports.Prisma.UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   username: 'username',
+  phone: 'phone',
   wins: 'wins',
   losses: 'losses',
   rating: 'rating',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.OtpCodeScalarFieldEnum = {
+  id: 'id',
+  phone: 'phone',
+  codeHash: 'codeHash',
+  attempts: 'attempts',
+  expiresAt: 'expiresAt',
   createdAt: 'createdAt'
 };
 
@@ -217,6 +227,7 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  OtpCode: 'OtpCode',
   Notification: 'Notification',
   Room: 'Room',
   GameHistory: 'GameHistory',

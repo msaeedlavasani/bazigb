@@ -26,9 +26,10 @@ datasource db {
 
 model User {
   id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
+  email     String?  @unique // null for phone-only (OTP) accounts
+  password  String? // null for phone-only (OTP) accounts
   username  String   @unique
+  phone     String?  @unique // Iranian mobile (09xxxxxxxxx) — OTP login/signup identifier
   wins      Int      @default(0)
   losses    Int      @default(0)
   rating    Int      @default(1200) // ELO rating, seeded at 1200
@@ -44,6 +45,22 @@ model User {
   notifications Notification[]
 
   @@map("users")
+}
+
+// One-time SMS verification codes (OTP login / signup via sms.ir).
+// The code itself is stored hashed; `attempts` caps brute force and the
+// record expires shortly after `expiresAt`. A new request replaces the
+// previous code for the same phone.
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@map("otp_codes")
 }
 
 model Notification {
