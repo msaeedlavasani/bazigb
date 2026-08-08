@@ -7,7 +7,14 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 COPY apps/ apps/
 COPY packages/ packages/
-RUN npm ci
+# The lockfile is generated on macOS and only pins the darwin @next/swc binary.
+# npm ci on Linux then has to fetch @next/swc-linux-x64-gnu on the fly (optional
+# dep) — flaky on this VPS, and if it fails `next build` tries to download the
+# binary itself and hangs. Install the Linux binary explicitly, with a retry.
+RUN npm ci \
+ && (npm install --no-save --package-lock=false --no-audit --no-fund @next/swc-linux-x64-gnu@14.2.33 || (sleep 3 && npm install --no-save --package-lock=false --no-audit --no-fund @next/swc-linux-x64-gnu@14.2.33)) \
+ && ls node_modules/@next/swc-linux-x64-gnu >/dev/null 2>&1 \
+ || (echo "ERROR: linux swc binary missing" && exit 1)
 
 # ---------- Stage 2: build ----------
 FROM node:20-slim AS builder
