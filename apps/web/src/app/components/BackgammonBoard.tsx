@@ -199,7 +199,10 @@ export default function BackgammonBoard({
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-5xl mx-auto p-4 sm:p-8 rounded-3xl bg-[#3d2b1f] border-8 border-[#2d1b0f] shadow-2xl">
-      <div className="flex w-full aspect-[3/2] bg-[#e6b98e] relative border-4 border-[#2d1b0f] overflow-hidden rounded-lg">
+      {/* NOTE: no aspect-ratio / overflow-hidden here — the fixed 3/2 ratio
+          clipped the bottom row's checkers on many viewports. The board now
+          sizes to its content so every checker stays visible. */}
+      <div className="flex w-full bg-[#e6b98e] relative border-4 border-[#2d1b0f] rounded-lg">
         {/* Board Sections */}
         <div className="flex flex-1 flex-col">
           {/* Top Half */}

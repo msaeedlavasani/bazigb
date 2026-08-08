@@ -228,7 +228,17 @@ const movePiece: Move<BackgammonState> = (G, ctx, { from, to }) => {
   return { points, bar, off, diceRemaining };
 };
 
-const endTurn: Move<BackgammonState> = (G) => {
+const endTurn: Move<BackgammonState> = (G, ctx) => {
+  // A turn may only be ended when every die has been played (or no legal move
+  // exists with the remaining dice). Otherwise the player could skip their
+  // roll entirely, which broke the game flow.
+  const dice = G.diceRemaining.length > 0 ? G.diceRemaining : (ctx.dice ?? []);
+  if (dice.length > 0) {
+    const moves = getLegalMoves(G, ctx.currentPlayer, dice, ctx.players);
+    if (moves.length > 0) {
+      throw new Error('You still have dice to play — use them before ending your turn');
+    }
+  }
   return { ...G, diceRemaining: [] };
 };
 
@@ -239,9 +249,11 @@ export const Backgammon: Game<BackgammonState> = {
     movePiece,
     endTurn,
   },
-  endIf: (G) => {
-    if (G.off.white === 15) return 'white';
-    if (G.off.black === 15) return 'black';
+  endIf: (G, ctx) => {
+    // Return the winning PLAYER id (not a color string) so the winner is
+    // recorded against the actual user account in the leaderboard/history.
+    if (G.off.white === 15) return ctx.players[0];
+    if (G.off.black === 15) return ctx.players[1];
     return null;
   },
 };
