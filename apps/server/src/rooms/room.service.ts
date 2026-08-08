@@ -50,6 +50,28 @@ export class RoomService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Per-room mutation lock. The `players` JSON column is read-modify-written
+   * (join/remove/swap/start/finish) and two concurrent joins on a freshly
+   * HTTP-created room used to lose a player (last write wins). The server is
+   * a single instance, so an in-process promise chain per room code is enough.
+   */
+  private readonly roomLocks = new Map<string, Promise<unknown>>();
+
+  private withRoomLock<T>(code: string, fn: () => Promise<T>): Promise<T> {
+    const tail = this.roomLocks.get(code) ?? Promise.resolve();
+    const run = tail.then(fn, fn);
+    const tracked = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.roomLocks.set(code, tracked);
+    tracked.finally(() => {
+      if (this.roomLocks.get(code) === tracked) this.roomLocks.delete(code);
+    });
+    return run;
+  }
+
+  /**
    * Load a room by its invite code, with the JSON `players` / `currentState`
    * columns decoded. Returns null when the room does not exist.
    */
@@ -65,6 +87,10 @@ export class RoomService {
    * Throws when the room is already full.
    */
   async joinRoom(code: string, playerId: string, gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
+    return this.withRoomLock(code, () => this.joinRoomUnlocked(code, playerId, gameType));
+  }
+
+  private async joinRoomUnlocked(code: string, playerId: string, gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
     const existing = await this.prisma.room.findUnique({ where: { code } });
 
     if (!existing) {
@@ -80,22 +106,7 @@ export class RoomService {
       return this.toParsed(room);
     }
 
-    // First joiner of a room created via HTTP becomes its owner.
-    if (!existing.ownerId) {
-      const claimed = await this.prisma.room.update({
-        where: { id: existing.id },
-        data: { ownerId: playerId },
-      });
-      // If the first seater is also a newcomer, seat them in the same update.
-      const claimedPlayers = this.parsePlayers(claimed.players);
-      if (!claimedPlayers.includes(playerId)) {
-        return this.joinRoom(code, playerId, existing.gameType);
-      }
-      return this.toParsed(claimed);
-    }
-
     const players = this.parsePlayers(existing.players);
-
     if (players.includes(playerId)) {
       return this.toParsed(existing); // re-join is a no-op
     }
@@ -105,10 +116,13 @@ export class RoomService {
       throw new BadRequestException(`Room "${code}" is full`);
     }
 
+    // Seat the player and (only for the very first joiner of an HTTP-created
+    // room) claim ownership in ONE atomic update — no read-modify-write race.
     const room = await this.prisma.room.update({
       where: { id: existing.id },
       data: {
         players: JSON.stringify([...players, playerId]),
+        ...(existing.ownerId ? {} : { ownerId: playerId }),
         // Reuse a finished room for a rematch.
         ...(existing.status === 'finished'
           ? { status: 'waiting', winnerId: null, currentState: null }
@@ -147,11 +161,11 @@ export class RoomService {
     throw new Error('Could not allocate a unique room code');
   }
 
-  /**
-   * Replace `oldPlayerId` with `newPlayerId` in the room's seats. Used when a
-   * disconnected player reconnects with a fresh socket id mid-game.
-   */
   async swapPlayer(code: string, oldPlayerId: string, newPlayerId: string): Promise<RoomWithParsedData | null> {
+    return this.withRoomLock(code, () => this.swapPlayerUnlocked(code, oldPlayerId, newPlayerId));
+  }
+
+  private async swapPlayerUnlocked(code: string, oldPlayerId: string, newPlayerId: string): Promise<RoomWithParsedData | null> {
     const existing = await this.prisma.room.findUnique({ where: { code } });
     if (!existing) return null;
     const players = this.parsePlayers(existing.players);
@@ -173,6 +187,10 @@ export class RoomService {
    * stale socket id filling the room (which turned them into spectators).
    */
   async removePlayer(code: string, playerId: string): Promise<RoomWithParsedData | null> {
+    return this.withRoomLock(code, () => this.removePlayerUnlocked(code, playerId));
+  }
+
+  private async removePlayerUnlocked(code: string, playerId: string): Promise<RoomWithParsedData | null> {
     const existing = await this.prisma.room.findUnique({ where: { code } });
     if (!existing || existing.status === 'finished') return existing ? this.toParsed(existing) : null;
 
@@ -190,6 +208,10 @@ export class RoomService {
 
   /** Mark a room as playing and store the initial game state. */
   async startGame(code: string, initialState: GameState): Promise<RoomWithParsedData> {
+    return this.withRoomLock(code, () => this.startGameUnlocked(code, initialState));
+  }
+
+  private async startGameUnlocked(code: string, initialState: GameState): Promise<RoomWithParsedData> {
     const room = await this.prisma.room.findUnique({ where: { code } });
     if (!room) {
       throw new NotFoundException(`Room "${code}" not found`);
@@ -216,6 +238,14 @@ export class RoomService {
 
   /** Mark a room as finished and store the final state + winner. */
   async finishRoom(
+    code: string,
+    winnerId: string | null,
+    finalState: GameState,
+  ): Promise<RoomWithParsedData> {
+    return this.withRoomLock(code, () => this.finishRoomUnlocked(code, winnerId, finalState));
+  }
+
+  private async finishRoomUnlocked(
     code: string,
     winnerId: string | null,
     finalState: GameState,
