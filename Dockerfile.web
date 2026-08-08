@@ -31,6 +31,12 @@ ARG NEXT_PUBLIC_SOCKET_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
 
+# The committed lockfile only pins the macOS @next/swc binary; `next build`
+# would otherwise try to fetch the Linux one from the npm registry during the
+# build (slow/unreliable on the VPS -> BodyTimeoutError). The Linux binary is
+# already installed by `npm ci` — skip Next's lockfile-patch fetch entirely.
+ENV NEXT_IGNORE_INCORRECT_LOCKFILE=1
+
 RUN npm run build --workspace=@bazigb/web
 
 # ---------- Stage 3: runtime ----------
