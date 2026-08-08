@@ -308,6 +308,18 @@ export default function GamePage() {
     );
   }, [isTicTacToe, gameState]);
 
+  // Vegas hand: the server stores every per-player ledger (playerDice,
+  // playerDiceRemaining, casino.dice) keyed by the player's INDEX (e.g. "0"),
+  // not by socket id — resolve our own index before reading the roll.
+  const vegasHand = useMemo(() => {
+    if (!isVegas || !gameState?.G?.playerDice) return [];
+    const idx = gameState.ctx.players.indexOf(mySocketId ?? '');
+    if (idx < 0) return [];
+    const mine = gameState.G.playerDice[idx.toString()];
+    if (Array.isArray(mine) && mine.length > 0) return mine;
+    return isMyTurn ? (gameState.ctx.dice ?? []) : [];
+  }, [isVegas, gameState, mySocketId, isMyTurn]);
+
   const chessData = useMemo(() => {
     if (!isChess || !gameState?.G?.fen) return null;
     return {
@@ -507,17 +519,20 @@ export default function GamePage() {
               ) : isVegas ? (
                 <VegasBoard
                   casinos={gameState.G.casinos}
-                  hand={
-                    (gameState.G.playerDice?.[mySocketId ?? '']?.length > 0)
-                      ? gameState.G.playerDice[mySocketId ?? '']
-                      : (isMyTurn ? (gameState.ctx.dice || []) : [])
-                  }
+                  hand={vegasHand}
                   players={gameState.ctx.players}
                   currentPlayerId={mySocketId ?? ''}
                   onPlace={handleVegasPlace}
                   onRoll={handleRollDice}
+                  onNextRound={isPlayer ? () => socket.emit('nextRound', { room: roomCode }) : undefined}
                   disabled={!isPlayer || !isMyTurn || !!winnerId}
                   isMyTurn={isMyTurn}
+                  phase={gameState.G.phase ?? 'playing'}
+                  round={gameState.G.round ?? 1}
+                  totalRounds={gameState.G.totalRounds ?? 5}
+                  playerCash={gameState.G.playerCash ?? {}}
+                  playerCards={gameState.G.playerCards ?? {}}
+                  winnerId={winnerId}
                 />
               ) : (
                 <Board

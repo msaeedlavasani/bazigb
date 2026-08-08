@@ -326,21 +326,61 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const G = state.G as any;
     if (!G?.casinos || !G?.playerDiceRemaining) return state;
 
+    // NOTE: Vegas state keys every player ledger by the player's INDEX
+    // (e.g. "0", "1"), not by socket id — lookups must use idx.toString().
     const remaining: Record<string, number> = G.playerDiceRemaining;
     const players: string[] = state.ctx.players;
-    const anyDiceLeft = players.some((p) => (remaining[p] ?? 0) > 0);
+    const anyDiceLeft = players.some((_, i) => (remaining[i.toString()] ?? 0) > 0);
     if (!anyDiceLeft) return state;
 
     let idx = players.indexOf(state.ctx.currentPlayer);
     let steps = 0;
-    while ((remaining[players[idx]] ?? 0) === 0 && steps < players.length) {
+    while ((remaining[idx.toString()] ?? 0) === 0 && steps < players.length) {
       idx = (idx + 1) % players.length;
       steps++;
     }
-    if (steps > 0 && (remaining[players[idx]] ?? 0) > 0) {
+    if (steps > 0 && (remaining[idx.toString()] ?? 0) > 0) {
       return { ...state, ctx: { ...state.ctx, currentPlayer: players[idx] } };
     }
     return state;
+  }
+
+  /**
+   * Vegas: after a round resolves (phase === 'roundEnd') any seated player can
+   * deal the next round. This intentionally bypasses the engine's turn check —
+   * `applyAction` would reject anyone who is not the current player.
+   */
+  @SubscribeMessage('nextRound')
+  async handleNextRound(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
+    const { room: roomCode } = data;
+    const roomRecord = await this.roomService.getRoom(roomCode);
+    if (
+      !roomRecord ||
+      roomRecord.gameType !== 'vegas' ||
+      roomRecord.status !== 'playing' ||
+      !roomRecord.currentState
+    ) {
+      return;
+    }
+    if (!roomRecord.players.includes(client.id)) {
+      client.emit('error', 'Only seated players can start the next round');
+      return;
+    }
+    const state = roomRecord.currentState;
+    if ((state.G as any)?.phase !== 'roundEnd') return;
+
+    try {
+      const nextG = Vegas.moves.nextRound(state.G, state.ctx);
+      const nextState: GameState = { G: nextG, ctx: state.ctx };
+      await this.roomService.saveState(roomCode, nextState);
+      this.server.to(roomCode).emit('gameState', nextState);
+      console.log(`Vegas room ${roomCode}: next round started by ${client.id}`);
+    } catch (error: any) {
+      client.emit('error', error?.message || 'Could not start the next round');
+    }
   }
 
   @SubscribeMessage('chatMessage')
