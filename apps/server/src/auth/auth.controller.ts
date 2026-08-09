@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,12 +18,14 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
   /** Send a one-time SMS verification code (login or signup). */
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('otp/request')
   requestOtp(@Body() dto: OtpRequestDto) {
     return this.authService.requestOtp(dto);

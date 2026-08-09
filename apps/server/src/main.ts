@@ -1,9 +1,16 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Behind the Caddy reverse proxy: trust the first hop so req.ip (used by
+  // the global ThrottlerGuard) reflects the REAL client IP from
+  // X-Forwarded-For — otherwise every user shares the proxy IP and the whole
+  // site is throttled as one client.
+  app.set('trust proxy', 1);
 
   app.useGlobalPipes(
     new ValidationPipe({

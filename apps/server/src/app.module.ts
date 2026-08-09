@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { GameGateway } from './game/game.gateway';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -15,6 +17,10 @@ import { TournamentsController } from './tournaments/tournament.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 20,
+    }]),
     PrismaModule,
     AuthModule,
   ],
@@ -24,6 +30,16 @@ import { TournamentsController } from './tournaments/tournament.controller';
     LeaderboardController,
     TournamentsController,
   ],
-  providers: [GameGateway, RoomService, HistoryService, LeaderboardService, TournamentService],
+  providers: [
+    GameGateway,
+    RoomService,
+    HistoryService,
+    LeaderboardService,
+    TournamentService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
