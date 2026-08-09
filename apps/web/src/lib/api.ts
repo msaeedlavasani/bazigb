@@ -119,4 +119,9 @@ export const api = {
       method: 'POST',
       body: data === undefined ? undefined : JSON.stringify(data),
     }),
+  patch: <T>(path: string, data?: unknown): Promise<T> =>
+    request<T>(path, {
+      method: 'PATCH',
+      body: data === undefined ? undefined : JSON.stringify(data),
+    }),
 };

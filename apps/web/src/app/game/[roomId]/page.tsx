@@ -3,7 +3,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Eye, Loader2, Play, RotateCcw, Share2, Users, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Copy, Eye, Loader2, Play, RotateCcw, Share2, Undo2, Users, Wifi, WifiOff } from 'lucide-react';
 import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
@@ -510,6 +510,16 @@ export default function GamePage() {
                   <span className="text-sm font-semibold uppercase tracking-wider">
                     {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
                   </span>
+                  {isMyTurn && (isBackgammon || isVegas) && !winnerId && (
+                    <button
+                      type="button"
+                      onClick={() => socket.emit('undo', { room: roomCode })}
+                      className="ml-3 flex items-center gap-1.5 rounded-full border border-slate-600 bg-slate-700/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:bg-slate-600 hover:text-white transition-all active:scale-[0.96]"
+                    >
+                      <Undo2 className="w-3.5 h-3.5 text-indigo-400" />
+                      Undo
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-violet-300">

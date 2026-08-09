@@ -15,6 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { OtpRequestDto } from './dto/otp-request.dto';
 import { OtpVerifyDto } from './dto/otp-verify.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 
 const SALT_ROUNDS = 10;
 
@@ -177,6 +178,30 @@ export class AuthService {
 
     const auth = await this.buildAuthResponse(user);
     return { ...auth, isNewUser };
+  }
+
+  async updateMe(userId: string, dto: UpdateMeDto) {
+    if (!USERNAME_REGEX.test(dto.username)) {
+      throw new BadRequestException(
+        'نام کاربری معتبر نیست — ۳ تا ۲۰ کاراکتر لاتین (حروف، عدد، _)',
+      );
+    }
+
+    const existing = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
+
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('این یوزرنیم قبلاً استفاده شده است');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { username: dto.username },
+    });
+
+    const { password: _p, ...safe } = updated;
+    return safe;
   }
 
   private async buildAuthResponse(user: {

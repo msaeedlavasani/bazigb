@@ -69,7 +69,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly vacatedUsers = new Map<string, { value: string | null; at: number }>();
   private readonly seatKeys = new Map<string, { value: string; at: number }>();
 
+  /** Snapshot stack for undo functionality (per room). */
+  private readonly undoStacks = new Map<string, { state: GameState; actorId: string }[]>();
+
   private static readonly SEAT_CLAIM_TTL = 10 * 60 * 1000; // 10 minutes
+
+  private cloneState(state: GameState): GameState {
+    return JSON.parse(JSON.stringify(state));
+  }
 
   private getVacatedUser(roomCode: string, socketId: string): string | null {
     const key = `${roomCode}:${socketId}`;
@@ -289,6 +296,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const game = resolveGame(room.gameType);
         const initialState = BaziGBEngine.createInitialState(game, room.players);
         await this.roomService.startGame(roomCode, initialState);
+        this.undoStacks.delete(roomCode);
         this.server.to(roomCode).emit('gameState', initialState);
         this.emitSystemMessage(roomCode, 'The game has started', undefined, 'gameStart');
         console.log(`Game started in room ${roomCode}`);
@@ -299,6 +307,48 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } catch (error: any) {
       client.emit('error', error.message || 'An unknown error occurred');
     }
+  }
+
+  @SubscribeMessage('undo')
+  async handleUndo(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { room: string },
+  ) {
+    const { room } = data;
+    const roomRecord = await this.roomService.getRoom(room);
+    if (
+      !roomRecord ||
+      roomRecord.status !== 'playing' ||
+      !roomRecord.players.includes(client.id)
+    ) {
+      return;
+    }
+
+    const stack = this.undoStacks.get(room);
+    if (!stack || stack.length === 0) {
+      client.emit('error', 'Nothing to undo');
+      return;
+    }
+
+    // Only the MOST RECENT action can be undone, and only by the player who
+    // made it. Once the next player acts, their snapshot sits on top and this
+    // undo is rejected — a natural "take-back" rule that also prevents
+    // reverting an opponent's move.
+    const top = stack[stack.length - 1];
+    if (top.actorId !== client.id) {
+      client.emit('error', 'Nothing to undo');
+      return;
+    }
+
+    stack.pop();
+    if (stack.length === 0) {
+      this.undoStacks.delete(room);
+    }
+    const entry = top;
+
+    await this.roomService.saveState(room, entry.state);
+    this.server.to(room).emit('gameState', entry.state);
+    console.log(`Undo performed in room ${room} by ${client.id}`);
   }
 
   /**
@@ -379,6 +429,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const game = resolveGame(roomRecord.gameType);
     const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
     await this.roomService.startGame(roomCode, initialState);
+    this.undoStacks.delete(roomCode);
     this.server.to(roomCode).emit('gameState', initialState);
     this.emitSystemMessage(
       roomCode,
@@ -412,6 +463,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const game = resolveGame(roomRecord.gameType);
     const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
     await this.roomService.startGame(roomCode, initialState);
+    this.undoStacks.delete(roomCode);
     this.server.to(roomCode).emit('gameState', initialState);
     this.emitSystemMessage(roomCode, 'A new game has started', undefined, 'gameStart');
     console.log(`Rematch started in room ${roomCode} by ${client.id}`);
@@ -476,6 +528,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const nextG = Vegas.moves.nextRound(state.G, state.ctx);
       const nextState: GameState = { G: nextG, ctx: state.ctx };
       await this.roomService.saveState(roomCode, nextState);
+      this.undoStacks.delete(roomCode);
       this.server.to(roomCode).emit('gameState', nextState);
       console.log(`Vegas room ${roomCode}: next round started by ${client.id}`);
     } catch (error: any) {
@@ -572,6 +625,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check for a winner or a draw.
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
+        this.undoStacks.delete(room);
         console.log(`Game over in room ${room}. Winner: ${result}`);
         this.server.to(room).emit('gameOver', { state: nextState, winner: result });
 
@@ -613,6 +667,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const roomRecord = await this.roomService.getRoom(room);
     if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
 
+    // Snapshot before action for undo support (Backgammon & Vegas only)
+    const isUndoable = roomRecord.gameType === 'backgammon' || roomRecord.gameType === 'vegas';
+    if (isUndoable) {
+      const stack = this.undoStacks.get(room) ?? [];
+      if (!this.undoStacks.has(room)) this.undoStacks.set(room, stack);
+      stack.push({ state: this.cloneState(roomRecord.currentState), actorId: client.id });
+      if (stack.length > 50) stack.shift();
+    }
+
     try {
       const game = resolveGame(roomRecord.gameType);
       let nextState = BaziGBEngine.applyAction(
@@ -632,6 +695,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
+        this.undoStacks.delete(room);
         this.server.to(room).emit('gameOver', { state: nextState, winner: result });
         const winner = result === 'draw' ? null : result;
         await this.roomService.finishRoom(room, winner, nextState);
@@ -651,10 +715,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           'gameOver',
         );
       } else {
+        // The undo stack is intentionally NOT cleared on turn rotation: undo
+        // only pops the TOP snapshot and only when it belongs to the requester
+        // (see handleUndo), so a player can take back their latest action until
+        // the next player acts — this also makes Vegas undo work, where every
+        // placement rotates the turn.
         await this.roomService.saveState(room, nextState);
         this.server.to(room).emit('gameState', nextState);
       }
     } catch (error: any) {
+      if (isUndoable) {
+        const stack = this.undoStacks.get(room);
+        if (stack) stack.pop();
+      }
       client.emit('error', error.message || 'An unknown error occurred');
     }
   }

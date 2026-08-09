@@ -4,6 +4,16 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Paper,
+  Alert,
+  CircularProgress,
+  Link as MuiLink,
+} from '@mui/material';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,13 +23,6 @@ interface FormErrors {
   password?: string;
   confirmPassword?: string;
 }
-
-const INPUT_BASE =
-  'w-full rounded-lg bg-slate-900/60 border border-slate-700 px-4 py-2.5 text-sm text-white ' +
-  'placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 ' +
-  'focus:border-indigo-400/60 transition-colors';
-
-const INPUT_ERROR = 'border-rose-500/60 focus:ring-rose-400/60 focus:border-rose-400/60';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -93,123 +96,178 @@ export default function RegisterPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-500 animate-pulse">Checking your session...</p>
-      </div>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 10, gap: 2 }}>
+        <CircularProgress size={48} thickness={4} color="primary" />
+        <Typography color="text.secondary">Checking your session...</Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       {serverError && (
-        <div
-          role="alert"
-          className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/40 text-rose-300 text-sm"
-        >
+        <Alert severity="error" variant="outlined" sx={{ borderRadius: 2 }}>
           {serverError}
-        </div>
+        </Alert>
       )}
 
-      <form
+      <Paper
+        component="form"
         onSubmit={handleSubmit}
         noValidate
-        className="space-y-5 bg-slate-800/60 border border-slate-700 rounded-2xl p-6 shadow-xl"
+        elevation={0}
+        sx={{
+          p: 3,
+          borderRadius: 4,
+          bgcolor: 'rgba(30, 41, 59, 0.6)',
+          border: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2.5,
+        }}
       >
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="block text-sm font-semibold text-slate-300">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }} color="text.secondary">
             Email
-          </label>
-          <input
+          </Typography>
+          <TextField
+            fullWidth
             id="email"
             type="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            aria-invalid={!!fieldErrors.email}
-            className={`${INPUT_BASE} ${fieldErrors.email ? INPUT_ERROR : ''}`}
+            error={!!fieldErrors.email}
+            helperText={fieldErrors.email}
+            variant="outlined"
+            size="small"
+            slotProps={{
+              input: {
+                sx: {
+                  bgcolor: 'rgba(15, 23, 42, 0.6)',
+                  borderRadius: 2,
+                },
+              },
+            }}
           />
-          {fieldErrors.email && (
-            <p className="text-xs text-rose-400 mt-1">{fieldErrors.email}</p>
-          )}
-        </div>
+        </Box>
 
-        <div className="space-y-1.5">
-          <label htmlFor="username" className="block text-sm font-semibold text-slate-300">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }} color="text.secondary">
             Username
-          </label>
-          <input
+          </Typography>
+          <TextField
+            fullWidth
             id="username"
             type="text"
             autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="e.g. boardmaster"
-            aria-invalid={!!fieldErrors.username}
-            className={`${INPUT_BASE} ${fieldErrors.username ? INPUT_ERROR : ''}`}
+            error={!!fieldErrors.username}
+            helperText={fieldErrors.username}
+            variant="outlined"
+            size="small"
+            slotProps={{
+              input: {
+                sx: {
+                  bgcolor: 'rgba(15, 23, 42, 0.6)',
+                  borderRadius: 2,
+                },
+              },
+            }}
           />
-          {fieldErrors.username && (
-            <p className="text-xs text-rose-400 mt-1">{fieldErrors.username}</p>
-          )}
-        </div>
+        </Box>
 
-        <div className="space-y-1.5">
-          <label htmlFor="password" className="block text-sm font-semibold text-slate-300">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }} color="text.secondary">
             Password
-          </label>
-          <input
+          </Typography>
+          <TextField
+            fullWidth
             id="password"
             type="password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="At least 6 characters"
-            aria-invalid={!!fieldErrors.password}
-            className={`${INPUT_BASE} ${fieldErrors.password ? INPUT_ERROR : ''}`}
+            error={!!fieldErrors.password}
+            helperText={fieldErrors.password}
+            variant="outlined"
+            size="small"
+            slotProps={{
+              input: {
+                sx: {
+                  bgcolor: 'rgba(15, 23, 42, 0.6)',
+                  borderRadius: 2,
+                },
+              },
+            }}
           />
-          {fieldErrors.password && (
-            <p className="text-xs text-rose-400 mt-1">{fieldErrors.password}</p>
-          )}
-        </div>
+        </Box>
 
-        <div className="space-y-1.5">
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-semibold text-slate-300"
-          >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }} color="text.secondary">
             Confirm Password
-          </label>
-          <input
+          </Typography>
+          <TextField
+            fullWidth
             id="confirmPassword"
             type="password"
             autoComplete="new-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repeat your password"
-            aria-invalid={!!fieldErrors.confirmPassword}
-            className={`${INPUT_BASE} ${fieldErrors.confirmPassword ? INPUT_ERROR : ''}`}
+            error={!!fieldErrors.confirmPassword}
+            helperText={fieldErrors.confirmPassword}
+            variant="outlined"
+            size="small"
+            slotProps={{
+              input: {
+                sx: {
+                  bgcolor: 'rgba(15, 23, 42, 0.6)',
+                  borderRadius: 2,
+                },
+              },
+            }}
           />
-          {fieldErrors.confirmPassword && (
-            <p className="text-xs text-rose-400 mt-1">{fieldErrors.confirmPassword}</p>
-          )}
-        </div>
+        </Box>
 
-        <button
+        <Button
           type="submit"
+          fullWidth
           disabled={submitting}
-          className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-3 font-semibold text-white hover:from-indigo-400 hover:to-sky-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          variant="contained"
+          size="large"
+          sx={{
+            py: 1.5,
+            fontWeight: 600,
+            textTransform: 'none',
+            borderRadius: 2,
+            background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+            '&:hover': {
+              background: 'linear-gradient(to right, #4f46e5, #0284c7)',
+            },
+          }}
         >
-          {submitting ? 'Creating account...' : 'Create Account'}
-        </button>
-      </form>
+          {submitting ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+        </Button>
+      </Paper>
 
-      <p className="text-center text-sm text-slate-400">
+      <Typography variant="body2" align="center" color="text.secondary">
         Already have an account?{' '}
-        <Link href="/login" className="font-semibold text-indigo-400 hover:text-indigo-300">
+        <MuiLink
+          component={Link}
+          href="/login"
+          underline="hover"
+          sx={{ fontWeight: 600 }}
+          color="primary.light"
+        >
           Sign in
-        </Link>
-      </p>
-    </div>
+        </MuiLink>
+      </Typography>
+    </Box>
   );
 }

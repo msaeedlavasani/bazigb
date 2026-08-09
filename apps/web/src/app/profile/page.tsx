@@ -3,7 +3,24 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gamepad2, Trophy, Swords, TrendingUp, RefreshCw, LogOut, ChevronLeft } from 'lucide-react';
+import {
+  Box,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  Typography,
+} from '@mui/material';
+import {
+  Gamepad2,
+  Trophy,
+  Swords,
+  TrendingUp,
+  RefreshCw,
+  LogOut,
+  ChevronLeft,
+  Edit2,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
 
@@ -143,12 +160,19 @@ function SkeletonRows() {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, updateUser, logout } = useAuth();
 
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [matches, setMatches] = useState<HistoryMatch[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Edit profile state
+  const [isEditing, setIsEditing] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const loadHistory = useCallback(async () => {
     if (!user) return;
@@ -170,6 +194,44 @@ export default function ProfilePage() {
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
+
+  const handleStartEdit = () => {
+    setNewUsername(user?.username || '');
+    setIsEditing(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setSaveError(null);
+  };
+
+  const handleSaveUsername = async () => {
+    if (!newUsername) return;
+    const USERNAME_REGEX = /^[A-Za-z0-9_]{3,20}$/;
+    if (!USERNAME_REGEX.test(newUsername)) {
+      setSaveError('نام کاربری باید ۳ تا ۲۰ کاراکتر لاتین (حروف، عدد، _) باشد');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await updateUser({ username: newUsername });
+      setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      if (err.status === 409) {
+        setSaveError('این یوزرنیم قبلاً استفاده شده است');
+      } else {
+        setSaveError(err.message || 'خطا در بروزرسانی پروفایل');
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Not signed in -> send to the login page after the session check settles.
   useEffect(() => {
@@ -237,17 +299,79 @@ export default function ProfilePage() {
         </header>
 
         {/* Identity card */}
-        <section className="mt-8 flex flex-wrap items-center gap-5 rounded-2xl bg-slate-800/60 border border-slate-700/70 p-6 shadow-xl">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 text-2xl font-extrabold uppercase">
-            {user.username.charAt(0) || '?'}
+        <section className="mt-8 rounded-2xl bg-slate-800/60 border border-slate-700/70 p-6 shadow-xl">
+          <div className="flex flex-wrap items-center gap-5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 text-2xl font-extrabold uppercase">
+              {user.username.charAt(0) || '?'}
+            </div>
+            <div className="min-w-0 flex-1">
+              {isEditing ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 300 }}>
+                  <TextField
+                    size="small"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="Username"
+                    disabled={isSaving}
+                    error={!!saveError}
+                    helperText={saveError}
+                    autoFocus
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        color: 'white',
+                        '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                        '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                        '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+                      },
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleSaveUsername}
+                      disabled={isSaving || newUsername === user.username}
+                      startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : null}
+                      sx={{ bgcolor: '#6366f1', '&:hover': { bgcolor: '#4f46e5' } }}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                      sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-extrabold tracking-tight">{user.username}</h1>
+                    <button
+                      onClick={handleStartEdit}
+                      className="p-1 text-slate-400 hover:text-white transition-colors"
+                      title="Edit username"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    {saveSuccess && (
+                      <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 'bold' }}>
+                        Saved!
+                      </Typography>
+                    )}
+                  </div>
+                  <p className="truncate text-sm text-slate-400">{user.email}</p>
+                </>
+              )}
+            </div>
+            <p className="ml-auto hidden text-xs font-mono text-slate-500 sm:block">
+              ID: {truncateId(user.id, 16)}
+            </p>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-extrabold tracking-tight">{user.username}</h1>
-            <p className="truncate text-sm text-slate-400">{user.email}</p>
-          </div>
-          <p className="ml-auto hidden text-xs font-mono text-slate-500 sm:block">
-            ID: {truncateId(user.id, 16)}
-          </p>
         </section>
 
         {/* Stats */}

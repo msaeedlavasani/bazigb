@@ -1,6 +1,7 @@
 import React from 'react';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import ThemeRegistry from './ThemeRegistry';
 
 export const metadata = {
   title: 'BaziG3 — بازی جیبی',
@@ -19,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeRegistry>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeRegistry>
       </body>
     </html>
   );
