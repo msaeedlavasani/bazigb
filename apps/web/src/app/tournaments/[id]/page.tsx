@@ -3,6 +3,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Stack,
+  Paper,
+  Chip,
+  Alert,
+  CircularProgress,
+  IconButton,
+  alpha,
+  useTheme,
+  Grid,
+} from '@mui/material';
+import {
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -27,47 +42,44 @@ const FALLBACK_DESCRIPTION =
 
 /* ------------------------------- helpers --------------------------------- */
 
-const STATUS_META: Record<
-  TournamentStatus,
-  { label: string; className: string; dot: string }
-> = {
-  registration: {
-    label: 'Registration Open',
-    className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40',
-    dot: 'bg-emerald-400',
-  },
-  in_progress: {
-    label: 'In Progress',
-    className: 'bg-amber-500/15 text-amber-400 border-amber-500/40',
-    dot: 'bg-amber-400',
-  },
-  completed: {
-    label: 'Completed',
-    className: 'bg-slate-500/15 text-slate-400 border-slate-500/40',
-    dot: 'bg-slate-400',
-  },
+const STATUS_COLORS: Record<TournamentStatus, { color: 'success' | 'warning' | 'default'; label: string }> = {
+  registration: { color: 'success', label: 'Registration Open' },
+  in_progress: { color: 'warning', label: 'In Progress' },
+  completed: { color: 'default', label: 'Completed' },
 };
 
-function GameIcon({ game, className }: { game: string; className?: string }) {
+function GameIcon({ game, size = 32 }: { game: string; size?: number }) {
   if (game === 'chess') {
     return (
-      <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
+      <Box
+        component="span"
+        sx={{
+          fontSize: size * 1.1,
+          lineHeight: 1,
+          userSelect: 'none',
+        }}
+        aria-hidden
+      >
         ♞
-      </span>
+      </Box>
     );
   }
   return (
-    <svg
+    <Box
+      component="svg"
       viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
+      sx={{
+        width: size,
+        height: size,
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2.2,
+        strokeLinecap: 'round',
+      }}
       aria-hidden
     >
       <path d="M3 8h18M3 16h18M8 3v18M16 3v18" />
-    </svg>
+    </Box>
   );
 }
 
@@ -157,74 +169,136 @@ function PlayerRow({
   isWinner: boolean;
   live: boolean;
 }) {
+  const theme = useTheme();
   if (!name) {
     return (
-      <div className="flex items-center gap-2 px-2">
-        <span className="text-xs italic text-slate-600">TBD</span>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1 }}>
+        <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.disabled' }}>
+          TBD
+        </Typography>
+      </Box>
     );
   }
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-extrabold uppercase text-slate-300">
-        {name.charAt(0)}
-      </span>
-      <span
-        className={`truncate text-xs font-medium ${
-          isWinner ? 'font-bold text-emerald-400' : 'text-slate-200'
-        }`}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, minWidth: 0, flex: 1 }}>
+      <Box
+        sx={{
+          width: 20,
+          height: 20,
+          borderRadius: '50%',
+          bgcolor: alpha(theme.palette.text.primary, 0.1),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '10px',
+          fontWeight: 800,
+          color: 'text.secondary',
+          flexShrink: 0,
+        }}
+      >
+        {name.charAt(0).toUpperCase()}
+      </Box>
+      <Typography
+        noWrap
+        variant="caption"
+        sx={{
+          fontWeight: isWinner ? 700 : 500,
+          color: isWinner ? '#10b981' : 'text.primary',
+        }}
       >
         {name}
-      </span>
-      {isWinner && <CheckCircle2 className="ml-auto h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+      </Typography>
+      {isWinner && <CheckCircle2 size={14} style={{ color: '#10b981', flexShrink: 0, marginLeft: 'auto' }} />}
       {live && !isWinner && (
-        <span className="ml-auto flex shrink-0 items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
-          Live
-        </span>
+        <Stack direction="row" spacing={0.5} sx={{ ml: 'auto', flexShrink: 0, alignItems: 'center' }}>
+          <Box
+            sx={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              bgcolor: '#fbbf24',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              '@keyframes pulse': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.5 },
+              },
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{ fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', color: '#fcd34d' }}
+          >
+            Live
+          </Typography>
+        </Stack>
       )}
-    </div>
+    </Box>
   );
 }
 
 function MatchCard({ match }: { match: BracketMatch }) {
-  const border =
-    match.status === 'completed'
-      ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
-      : match.status === 'in_progress'
-        ? 'border-amber-500/50 bg-amber-500/[0.05] shadow-lg shadow-amber-500/10'
-        : 'border-slate-800 bg-slate-900/50';
+  const theme = useTheme();
+  const isCompleted = match.status === 'completed';
+  const isInProgress = match.status === 'in_progress';
 
   return (
-    <div
-      className={`flex h-16 flex-col justify-center overflow-hidden rounded-lg border ${border} transition-colors`}
+    <Paper
+      elevation={0}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        height: 64,
+        width: '100%',
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: isCompleted
+          ? alpha(theme.palette.success.main, 0.3)
+          : isInProgress
+            ? alpha(theme.palette.warning.main, 0.5)
+            : 'divider',
+        bgcolor: isCompleted
+          ? alpha(theme.palette.success.main, 0.04)
+          : isInProgress
+            ? alpha(theme.palette.warning.main, 0.05)
+            : alpha(theme.palette.background.paper, 0.5),
+        boxShadow: isInProgress ? `0 4px 20px ${alpha(theme.palette.warning.main, 0.1)}` : 'none',
+        overflow: 'hidden',
+        transition: 'all 0.2s',
+      }}
     >
-      <div className="flex min-h-0 flex-1 items-stretch">
+      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minHeight: 0 }}>
         <PlayerRow
           name={match.playerA}
           isWinner={match.winnerId === match.playerA}
-          live={match.status === 'in_progress'}
+          live={isInProgress}
         />
         {match.score && (
-          <span className="hidden items-center pr-2 text-xs font-bold text-slate-400 sm:flex">
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 700, px: 1, color: 'text.disabled', display: { xs: 'none', sm: 'block' } }}
+          >
             {match.score.split('–')[0]}
-          </span>
+          </Typography>
         )}
-      </div>
-      <div className="mx-3 h-px bg-slate-700/60" />
-      <div className="flex min-h-0 flex-1 items-stretch">
+      </Box>
+      <Box sx={{ height: '1px', bgcolor: 'divider', mx: 1, opacity: 0.6 }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minHeight: 0 }}>
         <PlayerRow
           name={match.playerB}
           isWinner={match.winnerId === match.playerB}
-          live={match.status === 'in_progress'}
+          live={isInProgress}
         />
         {match.score && (
-          <span className="hidden items-center pr-2 text-xs font-bold text-slate-400 sm:flex">
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 700, px: 1, color: 'text.disabled', display: { xs: 'none', sm: 'block' } }}
+          >
             {match.score.split('–')[1]}
-          </span>
+          </Typography>
         )}
-      </div>
-    </div>
+      </Box>
+    </Paper>
   );
 }
 
@@ -236,6 +310,7 @@ export default function TournamentDetailPage({
   params: { id: string };
 }) {
   const { user } = useAuth();
+  const theme = useTheme();
   const [tournament, setTournament] = useState<TournamentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -322,220 +397,341 @@ export default function TournamentDetailPage({
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-900 text-white">
+      <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
         <Nav />
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
-        </div>
-      </main>
+        <Box sx={{ display: 'flex', minHeight: '60vh', alignItems: 'center', justifyContent: 'center' }}>
+          <CircularProgress size={40} />
+        </Box>
+      </Box>
     );
   }
 
   if (error && !tournament) {
     return (
-      <main className="min-h-screen bg-slate-900 text-white">
+      <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
         <Nav />
-        <div className="mx-auto w-full max-w-4xl px-6 py-16 text-center">
-          <p className="text-rose-400">{error}</p>
-          <Link
+        <Container maxWidth="md" sx={{ py: 10, textAlign: 'center' }}>
+          <Typography color="error" sx={{ mb: 4 }}>{error}</Typography>
+          <Button
+            component={Link}
             href="/tournaments"
-            className="mt-6 inline-block rounded-lg bg-gradient-to-r from-indigo-500 to-sky-500 px-5 py-2.5 text-sm font-semibold text-white"
+            variant="contained"
+            sx={{ background: 'linear-gradient(to right, #6366f1, #38bdf8)' }}
           >
             Back to Tournaments
-          </Link>
-        </div>
-      </main>
+          </Button>
+        </Container>
+      </Box>
     );
   }
 
   if (!tournament) {
     return (
-      <main className="min-h-screen bg-slate-900 text-white">
+      <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
         <Nav />
-        <div className="mx-auto w-full max-w-4xl px-6 py-16 text-center">
-          <Swords className="mx-auto h-10 w-10 text-slate-600" />
-          <h1 className="mt-4 text-2xl font-extrabold">Tournament not found</h1>
-          <p className="mt-2 text-sm text-slate-400">
+        <Container maxWidth="md" sx={{ py: 10, textAlign: 'center' }}>
+          <Swords size={40} style={{ color: theme.palette.text.disabled, margin: '0 auto' }} />
+          <Typography variant="h5" sx={{ mt: 2, fontWeight: 800 }}>Tournament not found</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
             The tournament you are looking for does not exist.
-          </p>
-          <Link
+          </Typography>
+          <Button
+            component={Link}
             href="/tournaments"
-            className="mt-6 inline-block rounded-lg bg-gradient-to-r from-indigo-500 to-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            variant="contained"
+            sx={{ background: 'linear-gradient(to right, #6366f1, #38bdf8)' }}
           >
             Back to Tournaments
-          </Link>
-        </div>
-      </main>
+          </Button>
+        </Container>
+      </Box>
     );
   }
 
-  const status = STATUS_META[tournament.status];
+  const statusInfo = STATUS_COLORS[tournament.status];
   const hasBracket = tournament.rounds > 0 && tournament.matches.length > 0;
 
   return (
-    <main className="min-h-screen bg-slate-900 text-white">
+    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Nav />
-      <div className="mx-auto w-full max-w-5xl px-6 py-10">
+      <Container maxWidth="lg" sx={{ py: 6 }}>
         {/* Back link */}
-        <Link
+        <Button
+          component={Link}
           href="/tournaments"
-          className="inline-flex items-center gap-1 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+          startIcon={<ChevronLeft size={16} />}
+          sx={{
+            p: 0,
+            mb: 4,
+            color: 'text.secondary',
+            textTransform: 'none',
+            fontSize: '0.875rem',
+            '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+          }}
         >
-          <ChevronLeft className="h-4 w-4" />
           All tournaments
-        </Link>
+        </Button>
 
         {/* Header */}
-        <header className="mt-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-400/30 bg-indigo-500/10 text-3xl text-indigo-300">
-              <GameIcon
-                game={tournament.gameType}
-                className={tournament.gameType === 'chess' ? 'text-3xl' : 'w-8 h-8'}
-              />
-            </span>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-extrabold tracking-tight">
-                  {tournament.name}
-                </h1>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${status.className}`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                  {status.label}
-                </span>
-              </div>
-              <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-300">
-                <div className="flex items-center gap-1.5">
-                  <CalendarDays className="h-4 w-4 text-slate-500" />
-                  {formatDate(tournament.startsAt)}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Users className="h-4 w-4 text-slate-500" />
-                  {tournament.playersJoined}/{tournament.maxPlayers} players
-                </div>
-                {tournament.prize && (
-                  <div className="flex items-center gap-1.5">
-                    <Trophy className="h-4 w-4 text-amber-400" />
-                    <span className="font-medium text-amber-300">{tournament.prize}</span>
-                  </div>
-                )}
-              </dl>
-              <p className="mt-2 max-w-xl text-sm text-slate-400">
-                {tournament.description || FALLBACK_DESCRIPTION}
-              </p>
-            </div>
-          </div>
-
-          {/* Join action (registration phase only) */}
-          {tournament.status === 'registration' &&
-            (!user ? (
-              <Link
-                href="/login"
-                className="rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-6 py-3 text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all hover:opacity-90 active:scale-[0.99]"
-              >
-                Sign in to join
-              </Link>
-            ) : (
-            <button
-              type="button"
-              onClick={() => void handleJoin()}
-              disabled={joining || joined || tournament.playersJoined >= tournament.maxPlayers}
-              className="rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-6 py-3 text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        <Box
+          component="header"
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 4,
+            mb: 6,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5 }}>
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: alpha(theme.palette.primary.main, 0.3),
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'primary.light',
+                flexShrink: 0,
+              }}
             >
-              {joining ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : joined ? (
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> Joined
-                </span>
-              ) : tournament.playersJoined >= tournament.maxPlayers ? (
-                'Full'
+              <GameIcon game={tournament.gameType} />
+            </Box>
+            <Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.025em' }}>
+                  {tournament.name}
+                </Typography>
+                <Chip
+                  label={statusInfo.label}
+                  size="small"
+                  color={statusInfo.color}
+                  variant="outlined"
+                  icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'currentColor', ml: 1 }} />}
+                  sx={{
+                    height: 24,
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    '& .MuiChip-icon': { ml: 0.5, mr: 0 },
+                  }}
+                />
+              </Box>
+              <Stack
+                direction="row"
+                spacing={3}
+                useFlexGap
+                sx={{ mb: 1.5, color: 'text.secondary', flexWrap: 'wrap' }}
+              >
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <CalendarDays size={16} style={{ opacity: 0.6 }} />
+                  <Typography variant="body2">{formatDate(tournament.startsAt)}</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <Users size={16} style={{ opacity: 0.6 }} />
+                  <Typography variant="body2">{tournament.playersJoined}/{tournament.maxPlayers} players</Typography>
+                </Stack>
+                {tournament.prize && (
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <Trophy size={16} style={{ color: '#fbbf24' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#fcd34d' }}>{tournament.prize}</Typography>
+                  </Stack>
+                )}
+              </Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 600 }}>
+                {tournament.description || FALLBACK_DESCRIPTION}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Join action */}
+          {tournament.status === 'registration' && (
+            <Box>
+              {!user ? (
+                <Button
+                  component={Link}
+                  href="/login"
+                  variant="contained"
+                  sx={{
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 800,
+                    borderRadius: 3,
+                    background: 'linear-gradient(to right, #6366f1, #38bdf8)',
+                    boxShadow: `0 8px 20px ${alpha('#6366f1', 0.4)}`,
+                  }}
+                >
+                  Sign in to join
+                </Button>
               ) : (
-                'Join Tournament'
+                <Button
+                  onClick={() => void handleJoin()}
+                  disabled={joining || joined || tournament.playersJoined >= tournament.maxPlayers}
+                  variant="contained"
+                  sx={{
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 800,
+                    borderRadius: 3,
+                    background: 'linear-gradient(to right, #6366f1, #38bdf8)',
+                    boxShadow: `0 8px 20px ${alpha('#6366f1', 0.4)}`,
+                  }}
+                >
+                  {joining ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : joined ? (
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                      <CheckCircle2 size={18} />
+                      <span>Joined</span>
+                    </Stack>
+                  ) : tournament.playersJoined >= tournament.maxPlayers ? (
+                    'Full'
+                  ) : (
+                    'Join Tournament'
+                  )}
+                </Button>
               )}
-            </button>
-            ))}
-        </header>
+            </Box>
+          )}
+        </Box>
 
         {joinNote && (
-          <p className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <Alert severity="success" variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
             {joinNote}
-          </p>
+          </Alert>
         )}
 
         {/* Champion banner */}
         {champion && (
-          <div className="mt-8 flex items-center gap-3 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/5 px-5 py-4">
-            <Crown className="h-7 w-7 text-amber-400" />
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-amber-400/80">
+          <Paper
+            elevation={0}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2.5,
+              p: 3,
+              mb: 6,
+              borderRadius: 4,
+              border: '1px solid',
+              borderColor: alpha('#fbbf24', 0.3),
+              background: `linear-gradient(to right, ${alpha('#f59e0b', 0.1)}, ${alpha('#fcd34d', 0.05)})`,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                bgcolor: alpha('#f59e0b', 0.2),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Crown size={28} style={{ color: '#fbbf24' }} />
+            </Box>
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{ fontWeight: 800, textTransform: 'uppercase', color: '#f59e0b', opacity: 0.8 }}
+              >
                 Champion
-              </div>
-              <div className="text-xl font-extrabold">{champion}</div>
-            </div>
-          </div>
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>{champion}</Typography>
+            </Box>
+          </Paper>
         )}
 
         {/* Bracket */}
-        <section className="mt-10" aria-label="Tournament bracket">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold tracking-tight">Bracket</h2>
+        <Box component="section" aria-label="Tournament bracket">
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800 }}>Bracket</Typography>
             {hasBracket && (
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Winner
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" /> Live
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-600" /> Upcoming
-                </span>
-              </div>
+              <Stack direction="row" spacing={2.5} useFlexGap sx={{ color: 'text.disabled', fontSize: '11px', flexWrap: 'wrap' }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <CheckCircle2 size={14} style={{ color: '#10b981' }} />
+                  <Typography variant="inherit" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>Winner</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#fbbf24', animation: 'pulse 2s infinite' }} />
+                  <Typography variant="inherit" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>Live</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: alpha(theme.palette.text.secondary, 0.4) }} />
+                  <Typography variant="inherit" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>Upcoming</Typography>
+                </Stack>
+              </Stack>
             )}
-          </div>
+          </Box>
 
           {!hasBracket ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-700 p-14 text-center">
-              <Trophy className="mx-auto h-10 w-10 text-slate-600" />
-              <p className="mt-3 font-medium text-slate-300">
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 10,
+                textAlign: 'center',
+                borderRadius: 4,
+                borderStyle: 'dashed',
+                bgcolor: 'transparent',
+              }}
+            >
+              <Trophy size={40} style={{ color: theme.palette.text.disabled, margin: '0 auto' }} />
+              <Typography sx={{ mt: 2, fontWeight: 600, color: 'text.secondary' }}>
                 {tournament.status === 'registration'
                   ? 'Bracket not generated yet'
                   : 'No bracket data'}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
+              </Typography>
+              <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
                 {tournament.status === 'registration'
                   ? 'The bracket is built automatically once registration closes.'
                   : 'Results for this tournament are unavailable.'}
-              </p>
-            </div>
+              </Typography>
+            </Paper>
           ) : (
-            <div className="mt-4 overflow-x-auto pb-4">
-              <div className="min-w-[720px]">
-                {/* Round labels (aligned with the match columns) */}
-                <div
-                  className="mb-3 grid"
-                  style={{
+            <Box sx={{ overflowX: 'auto', pb: 4 }}>
+              <Box sx={{ minWidth: 720 }}>
+                {/* Round labels */}
+                <Box
+                  sx={{
+                    display: 'grid',
                     gridTemplateColumns: `repeat(${tournament.rounds}, minmax(180px, 1fr))`,
                     columnGap: `${gapPct}%`,
+                    mb: 3,
                   }}
                 >
                   {matchesByRound.map((_, r) => (
-                    <div
+                    <Typography
                       key={r}
-                      className="text-center text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                      variant="caption"
+                      sx={{
+                        textAlign: 'center',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        color: 'text.disabled',
+                      }}
                     >
                       {roundLabel(r, tournament.rounds)}
-                    </div>
+                    </Typography>
                   ))}
-                </div>
+                </Box>
 
-                {/* Bracket area: connector lines behind the match cards */}
-                <div className="relative">
-                  <svg
-                    className="pointer-events-none absolute inset-0 h-full w-full"
+                {/* Bracket area */}
+                <Box sx={{ position: 'relative' }}>
+                  <Box
+                    component="svg"
+                    sx={{
+                      pointerEvents: 'none',
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                    }}
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
                     aria-hidden
@@ -547,14 +743,16 @@ export default function TournamentDetailPage({
                         fill="none"
                         strokeWidth={1.5}
                         vectorEffect="non-scaling-stroke"
-                        className={c.isFinal ? 'text-indigo-400/70' : 'text-slate-700'}
+                        style={{
+                          stroke: c.isFinal ? alpha(theme.palette.primary.light, 0.6) : alpha(theme.palette.divider, 0.4),
+                        }}
                       />
                     ))}
-                  </svg>
+                  </Box>
 
-                  <div
-                    className="grid"
-                    style={{
+                  <Box
+                    sx={{
+                      display: 'grid',
                       gridTemplateColumns: `repeat(${tournament.rounds}, minmax(180px, 1fr))`,
                       gridAutoRows: '5rem',
                       columnGap: `${gapPct}%`,
@@ -564,25 +762,26 @@ export default function TournamentDetailPage({
                       roundMatches.map((m) => {
                         const span = Math.pow(2, m.round);
                         return (
-                          <div
+                          <Box
                             key={m.id}
-                            className="flex items-center"
-                            style={{
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
                               gridRow: `${m.slot * span + 1} / span ${span}`,
                             }}
                           >
                             <MatchCard match={m} />
-                          </div>
+                          </Box>
                         );
                       }),
                     )}
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
-        </section>
-      </div>
-    </main>
+        </Box>
+      </Container>
+    </Box>
   );
 }

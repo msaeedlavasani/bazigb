@@ -1,7 +1,23 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageSquare, Send, X } from 'lucide-react';
+import {
+  Box,
+  Typography,
+  IconButton,
+  TextField,
+  Paper,
+  Chip,
+  Badge,
+  Fab,
+  Drawer,
+  alpha,
+  useTheme,
+  Divider,
+  Tooltip,
+  CircularProgress,
+} from '@mui/material';
+import { MessageSquare, Send, X, Wifi, WifiOff } from 'lucide-react';
 import { socket } from '../../lib/socket';
 
 /** Chat entries rendered by the sidebar. */
@@ -52,6 +68,7 @@ export default function ChatSidebar({ roomCode, playerIds, myId, names }: ChatSi
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState('');
   const [unread, setUnread] = useState(0);
+  const theme = useTheme();
 
   const openRef = useRef(open);
   useEffect(() => {
@@ -169,113 +186,251 @@ export default function ChatSidebar({ roomCode, playerIds, myId, names }: ChatSi
   return (
     <>
       {/* Floating toggle button with unread badge */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+      <Fab
+        color="primary"
         aria-label={open ? 'Close chat' : 'Open chat'}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-sky-500 text-white shadow-xl shadow-indigo-500/30 transition-transform hover:scale-105 active:scale-95"
+        onClick={() => setOpen((v) => !v)}
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          zIndex: theme.zIndex.drawer + 1,
+          boxShadow: `0 8px 24px 0 ${alpha(theme.palette.primary.main, 0.4)}`,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+          '&:hover': {
+            background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.info.dark})`,
+          },
+        }}
       >
-        {open ? <X className="h-6 w-6" /> : <MessageSquare className="h-6 w-6" />}
-        {!open && unread > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-bold shadow">
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
-      </button>
+        <Badge
+          badgeContent={unread > 9 ? '9+' : unread}
+          color="error"
+          invisible={open || unread === 0}
+          sx={{ '& .MuiBadge-badge': { fontWeight: 700 } }}
+        >
+          {open ? <X size={24} /> : <MessageSquare size={24} />}
+        </Badge>
+      </Fab>
 
       {/* Slide-over chat panel */}
-      <div
-        className={`fixed inset-y-0 right-0 z-40 transition-transform duration-300 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        aria-hidden={!open}
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={() => setOpen(false)}
+        variant="persistent"
+        slotProps={{
+          paper: {
+            sx: {
+              width: { xs: '100%', sm: 384 },
+              bgcolor: alpha(theme.palette.background.default, 0.95),
+              backdropFilter: 'blur(8px)',
+              borderLeft: '1px solid',
+              borderColor: 'divider',
+              boxShadow: theme.shadows[24],
+              display: 'flex',
+              flexDirection: 'column',
+            },
+          },
+        }}
       >
-        <div className="flex h-full w-full max-w-sm flex-col border-l border-slate-700 bg-slate-900/95 shadow-2xl shadow-black/60 backdrop-blur sm:w-96">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-            <div>
-              <h2 className="font-bold text-white">Room chat</h2>
-              <p className="text-xs text-slate-500">
-                Room <span className="font-mono font-semibold tracking-wider text-slate-400">{roomCode}</span>
-              </p>
-            </div>
-            <span
-              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                connected
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                  : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-              }`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-              {connected ? 'Live' : 'Reconnecting'}
-            </span>
-          </div>
-
-          {/* Messages */}
-          <div ref={listRef} className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
-            {entries.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-slate-600">
-                <MessageSquare className="h-8 w-8" />
-                <p className="text-sm font-medium">No messages yet</p>
-                <p className="text-xs">Say hi to your opponent before the first move!</p>
-              </div>
-            ) : (
-              entries.map((entry) =>
-                entry.kind === 'system' ? (
-                  <div key={entry.key} className="flex justify-center">
-                    <span className="rounded-full bg-slate-800/80 px-3 py-1 text-[11px] font-medium text-slate-400">
-                      {entry.message}
-                    </span>
-                  </div>
-                ) : (
-                  <div key={entry.key} className={`flex ${entry.senderId === myId ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow ${
-                        entry.senderId === myId
-                          ? 'rounded-br-md bg-gradient-to-br from-indigo-500 to-sky-500 text-white'
-                          : 'rounded-bl-md bg-slate-800 border border-slate-700 text-slate-100'
-                      }`}
-                    >
-                      <div className={`mb-0.5 flex items-baseline gap-2 text-[10px] font-semibold uppercase tracking-wide ${entry.senderId === myId ? 'text-indigo-100' : 'text-slate-500'}`}>
-                        <span>{senderLabel(entry.senderId)}</span>
-                        <span>{entry.pending ? 'sending…' : formatTime(entry.timestamp)}</span>
-                      </div>
-                      <p className="break-words whitespace-pre-wrap">{entry.message}</p>
-                    </div>
-                  </div>
-                ),
-              )
-            )}
-          </div>
-
-          {/* Composer */}
-          <form
-            className="flex items-center gap-2 border-t border-slate-800 p-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
+        {/* Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1.5,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+              Room chat
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', gap: 0.5 }}>
+              Room{' '}
+              <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'text.primary' }}>
+                {roomCode}
+              </Box>
+            </Typography>
+          </Box>
+          <Chip
+            size="small"
+            icon={connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+            label={connected ? 'Live' : 'Reconnecting'}
+            sx={{
+              height: 24,
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              bgcolor: alpha(connected ? theme.palette.success.main : theme.palette.warning.main, 0.1),
+              color: connected ? 'success.light' : 'warning.light',
+              borderColor: alpha(connected ? theme.palette.success.main : theme.palette.warning.main, 0.3),
+              border: '1px solid',
+              '& .MuiChip-icon': { color: 'inherit' },
             }}
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              maxLength={500}
-              placeholder={connected ? 'Type a message…' : 'Reconnecting…'}
-              disabled={!connected}
-              className="flex-1 min-w-0 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-indigo-400/60 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:opacity-60"
-            />
-            <button
+          />
+        </Box>
+
+        {/* Messages */}
+        <Box
+          ref={listRef}
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+          }}
+        >
+          {entries.length === 0 ? (
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                color: 'text.disabled',
+                textAlign: 'center',
+              }}
+            >
+              <MessageSquare size={48} strokeWidth={1} />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                No messages yet
+              </Typography>
+              <Typography variant="caption">Say hi to your opponent before the first move!</Typography>
+            </Box>
+          ) : (
+            entries.map((entry) =>
+              entry.kind === 'system' ? (
+                <Box key={entry.key} sx={{ display: 'flex', justifyContent: 'center', my: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      bgcolor: 'background.paper',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 10,
+                      fontWeight: 500,
+                      color: 'text.secondary',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    {entry.message}
+                  </Typography>
+                </Box>
+              ) : (
+                <Box
+                  key={entry.key}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: entry.senderId === myId ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  <Paper
+                    elevation={1}
+                    sx={{
+                      maxWidth: '85%',
+                      p: 1.5,
+                      borderRadius: 3,
+                      borderTopRightRadius: entry.senderId === myId ? 4 : 12,
+                      borderTopLeftRadius: entry.senderId === myId ? 12 : 4,
+                      bgcolor:
+                        entry.senderId === myId
+                          ? 'primary.main'
+                          : alpha(theme.palette.background.paper, 0.8),
+                      color: entry.senderId === myId ? 'white' : 'text.primary',
+                      border: entry.senderId === myId ? 'none' : '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 1,
+                        mb: 0.5,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        color: entry.senderId === myId ? alpha('#fff', 0.7) : 'text.disabled',
+                      }}
+                    >
+                      <Box component="span">{senderLabel(entry.senderId)}</Box>
+                      <Box component="span">
+                        {entry.pending ? (
+                          <CircularProgress size={8} color="inherit" />
+                        ) : (
+                          formatTime(entry.timestamp)
+                        )}
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" sx={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                      {entry.message}
+                    </Typography>
+                  </Paper>
+                </Box>
+              ),
+            )
+          )}
+        </Box>
+
+        {/* Composer */}
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          sx={{
+            p: 2,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            gap: 1,
+          }}
+        >
+          <TextField
+            fullWidth
+            size="small"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={connected ? 'Type a message…' : 'Reconnecting…'}
+            disabled={!connected}
+            autoComplete="off"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 3,
+                bgcolor: alpha(theme.palette.background.paper, 0.5),
+              },
+            }}
+          />
+          <Tooltip title="Send message">
+            <IconButton
               type="submit"
               disabled={!connected || !input.trim()}
-              aria-label="Send message"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white shadow transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+              sx={{
+                borderRadius: 3,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' },
+                '&.Mui-disabled': {
+                  bgcolor: 'action.disabledBackground',
+                  color: 'action.disabled',
+                },
+              }}
             >
-              <Send className="h-4 w-4" />
-            </button>
-          </form>
-        </div>
-      </div>
+              <Send size={18} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Drawer>
     </>
   );
 }

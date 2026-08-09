@@ -3,7 +3,35 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Eye, Loader2, Play, RotateCcw, Share2, Undo2, Users, Wifi, WifiOff } from 'lucide-react';
+import {
+  Box,
+  Typography,
+  Button,
+  IconButton,
+  Chip,
+  Paper,
+  CircularProgress,
+  Alert,
+  Container,
+  Divider,
+  alpha,
+  useTheme,
+  Tooltip,
+} from '@mui/material';
+import {
+  ArrowLeft,
+  Copy,
+  Eye,
+  Loader2,
+  Play,
+  RotateCcw,
+  Share2,
+  Undo2,
+  Users,
+  Wifi,
+  WifiOff,
+  Check,
+} from 'lucide-react';
 import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
@@ -27,33 +55,55 @@ type ConnStatus = 'connecting' | 'connected' | 'reconnecting';
 /** One row of the captured-pieces tray. */
 function CapturedRow({ label, pieces }: { label: string; pieces: string[] }) {
   const value = materialValue(pieces);
+  const theme = useTheme();
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="w-16 shrink-0 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          width: 64,
+          flexShrink: 0,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: 'text.secondary',
+        }}
+      >
         {label}
-      </span>
-      <span className="flex min-h-6 flex-1 flex-wrap items-center gap-1 text-xl leading-none">
+      </Typography>
+      <Box sx={{ display: 'flex', minHeight: 24, flex: 1, flexWrap: 'wrap', alignItems: 'center', gap: 0.5, fontSize: '1.25rem', lineHeight: 1 }}>
         {pieces.length === 0 ? (
-          <span className="text-xs text-slate-600">—</span>
+          <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
         ) : (
           pieces.map((piece, i) => (
-            <span key={i} className="drop-shadow">
+            <Box key={i} component="span" sx={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))' }}>
               {PIECE_GLYPHS[piece] ?? piece}
-            </span>
+            </Box>
           ))
         )}
-      </span>
+      </Box>
       {value > 0 && (
-        <span className="shrink-0 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-          +{value}
-        </span>
+        <Chip
+          label={`+${value}`}
+          size="small"
+          sx={{
+            height: 20,
+            fontSize: '0.625rem',
+            fontWeight: 700,
+            bgcolor: alpha(theme.palette.success.main, 0.15),
+            color: 'success.light',
+            border: '1px solid',
+            borderColor: alpha(theme.palette.success.main, 0.3),
+          }}
+        />
       )}
-    </div>
+    </Box>
   );
 }
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
+  const theme = useTheme();
   const roomCode = useMemo(() => (roomId ?? '').trim().toUpperCase(), [roomId]);
 
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -396,154 +446,408 @@ export default function GamePage() {
 
   const connChip =
     connStatus === 'connected'
-      ? { label: 'Connected', Icon: Wifi, cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' }
+      ? {
+          label: 'Connected',
+          Icon: Wifi,
+          bgcolor: alpha(theme.palette.success.main, 0.1),
+          color: theme.palette.success.light,
+          borderColor: alpha(theme.palette.success.main, 0.3),
+        }
       : {
           label: connStatus === 'reconnecting' ? 'Reconnecting…' : 'Connecting…',
           Icon: WifiOff,
-          cls: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+          bgcolor: alpha(theme.palette.warning.main, 0.1),
+          color: theme.palette.warning.light,
+          borderColor: alpha(theme.palette.warning.main, 0.3),
         };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
-      <div className={`w-full ${isVegas ? 'max-w-4xl' : isChess ? 'max-w-2xl' : 'max-w-md'} text-center space-y-6`}>
-        <header className="flex items-center justify-between gap-2">
-          <Link
+    <Box
+      component="main"
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: { xs: 2, sm: 6 },
+        bgcolor: 'background.default',
+        color: 'text.primary',
+      }}
+    >
+      <Container
+        maxWidth={isVegas ? 'lg' : isChess ? 'md' : 'sm'}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          textAlign: 'center',
+        }}
+      >
+        <Box
+          component="header"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1,
+          }}
+        >
+          <Button
+            component={Link}
             href="/lobby"
-            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+            startIcon={<ArrowLeft size={18} />}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': { color: 'text.primary' },
+              textTransform: 'none',
+              fontWeight: 500,
+            }}
           >
-            <ArrowLeft className="w-4 h-4" />
             Lobby
-          </Link>
-          <div className="flex items-center gap-2">
-            <span
-              className={`hidden sm:flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${connChip.cls}`}
-            >
-              <connChip.Icon className="w-3.5 h-3.5" />
-              {connChip.label}
-            </span>
-            <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700 px-4 py-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Room</span>
-              <span className="font-mono font-bold tracking-widest">{roomCode}</span>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="text-slate-500 hover:text-white transition-colors"
-                aria-label="Copy room code"
-              >
-                {copied ? (
-                  <span className="text-xs text-emerald-400 font-semibold">Copied!</span>
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
-          </div>
-        </header>
+          </Button>
 
-        <div className={`sm:hidden flex items-center justify-center gap-1.5 text-xs font-semibold ${connChip.cls} rounded-full border px-3 py-1 w-fit mx-auto`}>
-          <connChip.Icon className="w-3.5 h-3.5" />
-          {connChip.label}
-        </div>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Chip
+              icon={<connChip.Icon size={14} />}
+              label={connChip.label}
+              size="small"
+              variant="outlined"
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                bgcolor: connChip.bgcolor,
+                color: connChip.color,
+                borderColor: connChip.borderColor,
+                fontWeight: 700,
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                '& .MuiChip-icon': { color: 'inherit' },
+              }}
+            />
+            <Paper
+              elevation={0}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                borderRadius: 10,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                px: 2,
+                py: 0.75,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: 'text.secondary',
+                  display: { xs: 'none', md: 'inline' },
+                }}
+              >
+                Room
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                }}
+              >
+                {roomCode}
+              </Typography>
+              <Tooltip title={copied ? 'Copied!' : 'Copy room code'}>
+                <IconButton
+                  size="small"
+                  onClick={handleCopy}
+                  sx={{
+                    color: copied ? 'success.main' : 'text.disabled',
+                    '&:hover': { color: 'text.primary' },
+                  }}
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                </IconButton>
+              </Tooltip>
+            </Paper>
+          </Box>
+        </Box>
+
+        <Chip
+          icon={<connChip.Icon size={14} />}
+          label={connChip.label}
+          size="small"
+          variant="outlined"
+          sx={{
+            display: { xs: 'inline-flex', sm: 'none' },
+            bgcolor: connChip.bgcolor,
+            color: connChip.color,
+            borderColor: connChip.borderColor,
+            fontWeight: 700,
+            fontSize: '0.7rem',
+            textTransform: 'uppercase',
+            width: 'fit-content',
+            mx: 'auto',
+            '& .MuiChip-icon': { color: 'inherit' },
+          }}
+        />
 
         {error && !gameState ? (
-          <div className="space-y-4 p-6 rounded-2xl bg-slate-800 border border-rose-500/40">
-            <h2 className="text-xl font-bold text-rose-400">Room unavailable</h2>
-            <p className="text-slate-400 text-sm">{error}</p>
-            <Link
+          <Paper
+            sx={{
+              p: 4,
+              borderRadius: 4,
+              bgcolor: alpha(theme.palette.error.main, 0.05),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.error.main, 0.3),
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="h5" sx={{ fontWeight: 800, color: 'error.light' }}>
+              Room unavailable
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {error}
+            </Typography>
+            <Button
+              component={Link}
               href="/lobby"
-              className="inline-block px-6 py-2 rounded-xl bg-white text-indigo-600 font-bold hover:bg-slate-100 transition-colors"
+              variant="contained"
+              sx={{
+                mt: 1,
+                bgcolor: 'text.primary',
+                color: 'background.default',
+                '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.8) },
+                fontWeight: 700,
+                borderRadius: 2,
+                px: 3,
+              }}
             >
               Back to Lobby
-            </Link>
-          </div>
+            </Button>
+          </Paper>
         ) : !gameState ? (
-          <div className="flex flex-col items-center justify-center py-16 space-y-6">
-            <div className="w-14 h-14 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-r from-indigo-300 to-sky-300">
-                Waiting for opponent…
-              </p>
-              <p className="text-slate-500 text-sm">
-                Share room code <span className="font-mono font-bold tracking-widest text-slate-300">{roomCode}</span>{' '}
-                to invite a friend
-              </p>
-            </div>
-            {room && (
-              <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-800 rounded-full border border-slate-700 px-4 py-1.5">
-                <Users className="w-4 h-4 text-emerald-400" />
-                {room.players.length}/{room.gameType === 'vegas' ? 5 : 2} players in room
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 font-semibold hover:bg-indigo-500/30 transition-colors"
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 3 }}>
+            <CircularProgress size={56} thickness={4} />
+            <Box>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 900,
+                  background: `linear-gradient(to right, ${theme.palette.primary.light}, #7dd3fc)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  mb: 1,
+                }}
               >
-                {copied ? <Loader2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-                {copied ? 'Code copied!' : 'Share room'}
-              </button>
-              {/* Vegas: the room owner explicitly starts the game once enough
-                  players have joined (2–5). */}
-              {isVegas && room && room.ownerId === mySocketId && room.players.length >= 2 && (
-                <button
-                  type="button"
-                  onClick={() => socket.emit('startGame', { room: roomCode })}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg shadow-emerald-500/20 hover:opacity-90 active:scale-[0.98] transition-all"
-                >
-                  <Play className="w-4 h-4" />
-                  Start Game
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between gap-2 px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
-              {isPlayer ? (
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      isMyTurn ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-600'
-                    }`}
-                  />
-                  <span className="text-sm font-semibold uppercase tracking-wider">
-                    {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
-                  </span>
-                  {isMyTurn && (isBackgammon || isVegas) && !winnerId && (
-                    <button
-                      type="button"
-                      onClick={() => socket.emit('undo', { room: roomCode })}
-                      className="ml-3 flex items-center gap-1.5 rounded-full border border-slate-600 bg-slate-700/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:bg-slate-600 hover:text-white transition-all active:scale-[0.96]"
-                    >
-                      <Undo2 className="w-3.5 h-3.5 text-indigo-400" />
-                      Undo
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-violet-300">
-                  <Eye className="w-4 h-4" />
-                  <span className="text-sm font-bold uppercase tracking-wider">Spectating</span>
-                  <span className="hidden sm:inline text-xs font-normal text-violet-300/70 normal-case">
-                    — you&apos;re watching live
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-indigo-300 bg-indigo-500/10 border border-indigo-400/20 rounded-full px-2.5 py-0.5">
-                  {isChess ? '♞ Chess' : isBackgammon ? '🎲 Backgammon' : isVegas ? '💵 Vegas' : 'Tic-Tac-Toe'}
-                </span>
-                <span className="text-xs font-mono text-slate-500">Turn {gameState.ctx.turn}</span>
-              </div>
-            </div>
+                Waiting for opponent…
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Share room code{' '}
+                <Typography component="span" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'text.primary' }}>
+                  {roomCode}
+                </Typography>{' '}
+                to invite a friend
+              </Typography>
+            </Box>
 
-            <div className="relative">
+            {room && (
+              <Chip
+                icon={<Users size={16} />}
+                label={`${room.players.length}/${room.gameType === 'vegas' ? 5 : 2} players in room`}
+                variant="outlined"
+                sx={{
+                  borderRadius: 10,
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
+                  '& .MuiChip-icon': { color: 'success.main' },
+                }}
+              />
+            )}
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handleShare}
+                startIcon={copied ? <CircularProgress size={16} color="inherit" /> : <Share2 size={16} />}
+                sx={{
+                  borderRadius: 3,
+                  borderColor: alpha(theme.palette.primary.main, 0.4),
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.light',
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                    borderColor: alpha(theme.palette.primary.main, 0.6),
+                  },
+                }}
+              >
+                {copied ? 'Code copied!' : 'Share room'}
+              </Button>
+
+              {isVegas && room && room.ownerId === mySocketId && room.players.length >= 2 && (
+                <Button
+                  variant="contained"
+                  onClick={() => socket.emit('startGame', { room: roomCode })}
+                  startIcon={<Play size={16} />}
+                  sx={{
+                    borderRadius: 3,
+                    background: `linear-gradient(to right, ${theme.palette.success.main}, ${theme.palette.success.dark})`,
+                    color: 'white',
+                    px: 3,
+                    py: 1,
+                    fontWeight: 700,
+                    boxShadow: `0 4px 14px 0 ${alpha(theme.palette.success.main, 0.4)}`,
+                    '&:hover': {
+                      boxShadow: `0 6px 20px 0 ${alpha(theme.palette.success.main, 0.5)}`,
+                      opacity: 0.9,
+                    },
+                  }}
+                >
+                  Start Game
+                </Button>
+              )}
+            </Box>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+                px: 2,
+                py: 1,
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+              }}
+            >
+              {isPlayer ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      bgcolor: isMyTurn ? 'success.main' : 'text.disabled',
+                      boxShadow: isMyTurn ? `0 0 8px ${theme.palette.success.main}` : 'none',
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    {isMyTurn ? 'Your Turn' : "Opponent's Turn"}
+                  </Typography>
+                  {isMyTurn && (isBackgammon || isVegas) && !winnerId && (
+                    <Button
+                      size="small"
+                      onClick={() => socket.emit('undo', { room: roomCode })}
+                      startIcon={<Undo2 size={14} />}
+                      sx={{
+                        ml: 1,
+                        py: 0.25,
+                        px: 1.5,
+                        borderRadius: 10,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        color: 'text.secondary',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                          color: 'text.primary',
+                        },
+                      }}
+                    >
+                      Undo
+                    </Button>
+                  )}
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'secondary.light' }}>
+                  <Eye size={16} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Spectating
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: { xs: 'none', sm: 'inline' },
+                      color: alpha(theme.palette.secondary.light, 0.7),
+                    }}
+                  >
+                    — you&apos;re watching live
+                  </Typography>
+                </Box>
+              )}
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Chip
+                  label={isChess ? '♞ Chess' : isBackgammon ? '🎲 Backgammon' : isVegas ? '💵 Vegas' : 'Tic-Tac-Toe'}
+                  size="small"
+                  sx={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: 'primary.light',
+                    border: '1px solid',
+                    borderColor: alpha(theme.palette.primary.main, 0.2),
+                  }}
+                />
+                <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.disabled' }}>
+                  Turn {gameState.ctx.turn}
+                </Typography>
+              </Box>
+            </Paper>
+
+            <Box sx={{ position: 'relative' }}>
               {!isPlayer && (
-                <div className="pointer-events-none absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-violet-400/50 bg-slate-900/85 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-violet-200 shadow-lg backdrop-blur">
-                  <Eye className="h-3.5 w-3.5" />
-                  Spectating
-                </div>
+                <Chip
+                  icon={<Eye size={14} />}
+                  label="Spectating"
+                  sx={{
+                    position: 'absolute',
+                    top: 12,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 10,
+                    bgcolor: alpha(theme.palette.background.default, 0.85),
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid',
+                    borderColor: alpha(theme.palette.secondary.main, 0.4),
+                    color: 'secondary.light',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    fontSize: '0.7rem',
+                    pointerEvents: 'none',
+                    boxShadow: theme.shadows[4],
+                  }}
+                />
               )}
 
               {isChess ? (
@@ -594,95 +898,165 @@ export default function GamePage() {
                   disabled={!isPlayer || !isMyTurn || !!winnerId}
                 />
               )}
-            </div>
+            </Box>
 
             {isChess && chessData && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-left">
-                <div className="rounded-2xl border border-slate-700 bg-slate-800/70 p-4">
-                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                  gap: 2,
+                  textAlign: 'left',
+                }}
+              >
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 4,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      mb: 2,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: 'text.secondary',
+                    }}
+                  >
                     Captured pieces
-                  </h3>
-                  <div className="space-y-2.5">
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <CapturedRow label="White" pieces={chessData.captured.white} />
                     <CapturedRow label="Black" pieces={chessData.captured.black} />
-                  </div>
-                </div>
+                  </Box>
+                </Paper>
 
-                <div className="flex max-h-56 flex-col rounded-2xl border border-slate-700 bg-slate-800/70 p-4">
-                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 4,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxHeight: 224,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      mb: 2,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: 'text.secondary',
+                    }}
+                  >
                     Move history
-                  </h3>
+                  </Typography>
                   {historyPairs.length === 0 ? (
-                    <p className="text-sm text-slate-500">No moves yet — White to move.</p>
+                    <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                      No moves yet — White to move.
+                    </Typography>
                   ) : (
-                    <div className="min-h-0 flex-1 overflow-y-auto pr-1 font-mono">
-                      <div className="grid grid-cols-[2.5rem_1fr_1fr] gap-x-2 gap-y-1.5">
+                    <Box sx={{ flex: 1, overflowY: 'auto', pr: 1, fontFamily: 'monospace' }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '2.5rem 1fr 1fr', gap: 1.5 }}>
                         {historyPairs.map((pair) => (
                           <Fragment key={pair.number}>
-                            <span className="text-xs text-slate-500">{pair.number}.</span>
-                            <span className="flex flex-col">
-                              <span className="text-sm font-semibold text-slate-100">
+                            <Typography variant="caption" sx={{ color: 'text.disabled', py: 0.5 }}>
+                              {pair.number}.
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
                                 {pair.white ? (pair.white.san ?? `${pair.white.from}–${pair.white.to}`) : ''}
-                              </span>
-                              <span className="text-[10px] text-slate-500">
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.625rem' }}>
                                 {pair.white ? `${pair.white.from}–${pair.white.to}` : ''}
-                              </span>
-                            </span>
-                            <span className="flex flex-col">
-                              <span className="text-sm font-semibold text-slate-300">
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
                                 {pair.black ? (pair.black.san ?? `${pair.black.from}–${pair.black.to}`) : ''}
-                              </span>
-                              <span className="text-[10px] text-slate-600">
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.625rem' }}>
                                 {pair.black ? `${pair.black.from}–${pair.black.to}` : ''}
-                              </span>
-                            </span>
+                              </Typography>
+                            </Box>
                           </Fragment>
                         ))}
-                      </div>
-                    </div>
+                      </Box>
+                    </Box>
                   )}
-                </div>
-              </div>
+                </Paper>
+              </Box>
             )}
 
             {winnerLabel && (
-              <div className="p-4 bg-indigo-600 rounded-xl shadow-xl">
-                <h2 className="text-2xl font-bold">{winnerLabel}</h2>
+              <Paper
+                elevation={8}
+                sx={{
+                  p: 3,
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  borderRadius: 3,
+                  boxShadow: `0 8px 32px 0 ${alpha(theme.palette.primary.main, 0.4)}`,
+                }}
+              >
+                <Typography variant="h4" sx={{ fontWeight: 900, mb: 0.5 }}>
+                  {winnerLabel}
+                </Typography>
                 {isChess && chessData?.result && (
-                  <p className="mt-1 text-sm font-medium text-indigo-200">
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: alpha('#fff', 0.8), mb: 2 }}>
                     {CHESS_RESULT_LABELS[chessData.result]}
-                  </p>
+                  </Typography>
                 )}
-                <div className="mt-4 flex items-center justify-center gap-3">
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
                   {isPlayer && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="contained"
                       onClick={() => socket.emit('newGame', { room: roomCode })}
-                      className="flex items-center gap-2 px-6 py-2 bg-emerald-400 text-emerald-950 font-bold rounded-lg hover:bg-emerald-300 transition-colors"
+                      startIcon={<RotateCcw size={18} />}
+                      sx={{
+                        bgcolor: 'success.main',
+                        color: 'white',
+                        fontWeight: 700,
+                        '&:hover': { bgcolor: 'success.dark' },
+                      }}
                     >
-                      <RotateCcw className="w-4 h-4" />
                       Play Again
-                    </button>
+                    </Button>
                   )}
-                  <Link
+                  <Button
+                    component={Link}
                     href="/lobby"
-                    className="inline-block px-6 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-slate-100 transition-colors"
+                    variant="contained"
+                    sx={{
+                      bgcolor: 'white',
+                      color: 'primary.main',
+                      fontWeight: 700,
+                      '&:hover': { bgcolor: alpha('#fff', 0.9) },
+                    }}
                   >
                     Back to Lobby
-                  </Link>
-                </div>
-              </div>
+                  </Button>
+                </Box>
+              </Paper>
             )}
-          </div>
+          </Box>
         )}
-      </div>
+      </Container>
 
-      <ChatSidebar
-        roomCode={roomCode}
-        playerIds={ctxPlayers}
-        myId={mySocketId}
-        names={playerNames}
-      />
-    </main>
+      <ChatSidebar roomCode={roomCode} playerIds={ctxPlayers} myId={mySocketId} names={playerNames} />
+    </Box>
   );
 }

@@ -1,7 +1,25 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Crown, Loader2, Medal, RefreshCw, Search, Trophy } from 'lucide-react';
+import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  TextField,
+  InputAdornment,
+  Paper,
+  Stack,
+  Avatar,
+  Chip,
+  LinearProgress,
+  Skeleton,
+  Alert,
+  IconButton,
+  alpha,
+  useTheme,
+} from '@mui/material';
+import { Crown, Medal, RefreshCw, Search, Trophy } from 'lucide-react';
 import Nav from '../components/Nav';
 import { fetchLeaderboard, LeaderboardEntry } from '../../lib/leaderboard';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,60 +31,74 @@ const RANK_META: Record<
   { ring: string; badge: string; gradient: string; label: string }
 > = {
   1: {
-    ring: 'ring-amber-400/60',
-    badge: 'bg-gradient-to-br from-amber-300 to-yellow-500 text-amber-950',
-    gradient: 'from-amber-400/80 to-yellow-500/80',
+    ring: '#fbbf2499', // ring-amber-400/60
+    badge: 'linear-gradient(to bottom right, #fcd34d, #eab308)',
+    gradient: 'linear-gradient(to bottom right, #fbbf24cc, #eab308cc)',
     label: 'Gold',
   },
   2: {
-    ring: 'ring-slate-300/60',
-    badge: 'bg-gradient-to-br from-slate-200 to-slate-400 text-slate-900',
-    gradient: 'from-slate-300/80 to-slate-400/80',
+    ring: '#cbd5e199', // ring-slate-300/60
+    badge: 'linear-gradient(to bottom right, #e2e8f0, #94a3b8)',
+    gradient: 'linear-gradient(to bottom right, #cbd5e1cc, #94a3b8cc)',
     label: 'Silver',
   },
   3: {
-    ring: 'ring-amber-600/60',
-    badge: 'bg-gradient-to-br from-amber-500 to-orange-700 text-amber-100',
-    gradient: 'from-amber-600/80 to-orange-700/80',
+    ring: '#d9770699', // ring-amber-600/60
+    badge: 'linear-gradient(to bottom right, #f59e0b, #c2410c)',
+    gradient: 'linear-gradient(to bottom right, #d97706cc, #c2410ccc)',
     label: 'Bronze',
   },
 };
 
 const MEDAL_ICON: Record<number, React.ReactNode> = {
-  1: <Crown className="h-5 w-5" />,
-  2: <Medal className="h-5 w-5" />,
-  3: <Medal className="h-5 w-5" />,
+  1: <Crown size={20} />,
+  2: <Medal size={20} />,
+  3: <Medal size={20} />,
 };
 
 function WinRateBar({ value }: { value: number }) {
   return (
-    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-700/70">
-      <div
-        className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-sky-400"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+    <Box sx={{ width: 80, height: 6, borderRadius: 10, bgcolor: 'rgba(51, 65, 85, 0.7)', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          height: '100%',
+          borderRadius: 10,
+          background: 'linear-gradient(to right, #818cf8, #38bdf8)',
+          width: `${Math.min(100, Math.max(0, value))}%`,
+        }}
       />
-    </div>
+    </Box>
   );
 }
 
 function SkeletonRows() {
   return (
-    <div className="space-y-2">
+    <Stack spacing={1}>
       {Array.from({ length: 8 }).map((_, i) => (
-        <div
+        <Paper
           key={i}
-          className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-4"
+          elevation={0}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            p: 2,
+            borderRadius: 4,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: alpha('#1e293b', 0.6),
+          }}
         >
-          <div className="h-5 w-6 animate-pulse rounded bg-slate-800" />
-          <div className="h-10 w-10 animate-pulse rounded-full bg-slate-800" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3.5 w-32 animate-pulse rounded bg-slate-800" />
-            <div className="h-2.5 w-24 animate-pulse rounded bg-slate-800" />
-          </div>
-          <div className="h-4 w-14 animate-pulse rounded bg-slate-800" />
-        </div>
+          <Skeleton variant="rectangular" width={24} height={20} />
+          <Skeleton variant="circular" width={40} height={40} />
+          <Box sx={{ flex: 1 }}>
+            <Skeleton variant="text" width={128} height={20} />
+            <Skeleton variant="text" width={96} height={14} />
+          </Box>
+          <Skeleton variant="rectangular" width={56} height={24} />
+        </Paper>
       ))}
-    </div>
+    </Stack>
   );
 }
 
@@ -74,6 +106,7 @@ function SkeletonRows() {
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+  const theme = useTheme();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,201 +140,359 @@ export default function LeaderboardPage() {
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
 
   return (
-    <main className="min-h-screen bg-slate-900 text-white">
+    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Nav />
-      <div className="mx-auto w-full max-w-4xl px-6 py-10">
+      <Container maxWidth="md" sx={{ py: 6 }}>
         {/* Header */}
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2.5 text-3xl font-extrabold tracking-tight">
-              <Trophy className="h-8 w-8 text-amber-400" />
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 4,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <Trophy size={32} style={{ color: '#fbbf24' }} />
               Leaderboard
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               Top 50 players ranked by competitive rating.
-            </p>
-          </div>
-          <button
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-colors"
+            startIcon={
+              <RefreshCw
+                size={16}
+                className={loading ? 'animate-spin' : ''}
+              />
+            }
+            sx={{
+              borderColor: 'divider',
+              color: 'text.secondary',
+              '&:hover': {
+                borderColor: 'text.primary',
+                color: 'text.primary',
+                bgcolor: alpha(theme.palette.text.primary, 0.05),
+              },
+            }}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
-        </header>
+          </Button>
+        </Box>
 
         {/* Search */}
-        <div className="mt-6">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search players by username…"
-              aria-label="Search players"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-3 pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/60"
-            />
-          </div>
-        </div>
+        <TextField
+          fullWidth
+          placeholder="Search players by username…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          variant="outlined"
+          sx={{
+            mb: 4,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 3,
+              bgcolor: alpha(theme.palette.background.default, 0.7),
+              '& fieldset': { borderColor: 'divider' },
+              '&:hover fieldset': { borderColor: alpha(theme.palette.primary.main, 0.5) },
+            },
+          }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} style={{ color: theme.palette.text.disabled }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
 
         {error && (
-          <div
-            role="alert"
-            className="mt-6 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300"
-          >
+          <Alert severity="error" variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Podium */}
         {!loading && top3.length > 0 && (
-          <section className="mt-8" aria-label="Top 3">
-            <div className="flex items-end justify-center gap-4">
-              {podiumOrder.map((entry) => {
-                const meta = RANK_META[entry.rank];
-                const first = entry.rank === 1;
-                return (
-                  <div
-                    key={entry.userId}
-                    className={`flex flex-col items-center rounded-2xl border border-slate-700/70 bg-slate-800/60 px-6 pt-6 shadow-xl ${
-                      first ? 'pb-8' : 'pb-6'
-                    }`}
+          <Box
+            component="section"
+            aria-label="Top 3"
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              gap: { xs: 2, sm: 3 },
+              mb: 6,
+            }}
+          >
+            {podiumOrder.map((entry) => {
+              const meta = RANK_META[entry.rank];
+              const isFirst = entry.rank === 1;
+              return (
+                <Paper
+                  key={entry.userId}
+                  elevation={0}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    p: isFirst ? { xs: 2, sm: 3 } : { xs: 1.5, sm: 2.5 },
+                    pt: 3,
+                    pb: isFirst ? 4 : 3,
+                    borderRadius: 4,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: alpha(theme.palette.background.paper, 0.6),
+                    boxShadow: isFirst ? `0 10px 25px -5px ${alpha(theme.palette.common.black, 0.3)}` : 'none',
+                    minWidth: { xs: 100, sm: 140 },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: isFirst ? 56 : 48,
+                      height: isFirst ? 56 : 48,
+                      borderRadius: '50%',
+                      background: meta.gradient,
+                      boxShadow: `0 0 0 2px ${meta.ring}`,
+                      mb: 2,
+                    }}
                   >
-                    <span
-                      className={`flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br ${meta.gradient} ring-2 ${meta.ring} ${
-                        first ? 'h-14 w-14' : ''
-                      }`}
+                    {MEDAL_ICON[entry.rank]}
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography
+                      variant="body1"
+                      sx={{ fontWeight: 800, fontSize: isFirst ? '1.1rem' : '0.9rem' }}
                     >
-                      {MEDAL_ICON[entry.rank]}
-                    </span>
-                    <div className="mt-3 text-center">
-                      <div className="text-base font-extrabold">{entry.username}</div>
-                      <div className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                        #{entry.rank} · {meta.label}
-                      </div>
-                      <div className="mt-2 text-xl font-extrabold text-amber-300">
-                        {entry.rating}
-                      </div>
-                      <div className="text-[11px] uppercase tracking-wider text-slate-500">
-                        rating
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                      {entry.username}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: 'block',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      #{entry.rank} • {meta.label}
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 800,
+                        color: '#fcd34d',
+                        mt: 1.5,
+                        fontSize: isFirst ? '1.5rem' : '1.25rem',
+                      }}
+                    >
+                      {entry.rating}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: 'block',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.disabled',
+                        fontSize: '10px',
+                      }}
+                    >
+                      rating
+                    </Typography>
+                  </Box>
+                </Paper>
+              );
+            })}
+          </Box>
         )}
 
         {/* Ranked list */}
-        <section className="mt-10">
-          <h2 className="text-lg font-bold text-slate-300">
+        <Box component="section">
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, color: 'text.secondary', mb: 2 }}
+          >
             Full Rankings
-            <span className="ml-2 text-sm font-medium text-slate-500">
+            <Box component="span" sx={{ ml: 1, fontSize: '0.875rem', fontWeight: 500, color: 'text.disabled' }}>
               {loading ? '…' : `${filtered.length} ${filtered.length === 1 ? 'player' : 'players'}`}
-            </span>
-          </h2>
+            </Box>
+          </Typography>
 
-          <div className="mt-4">
-            {loading ? (
-              <SkeletonRows />
-            ) : filtered.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-700 p-12 text-center">
-                <Search className="mx-auto h-8 w-8 text-slate-600" />
-                <p className="mt-3 font-medium text-slate-300">No players found</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Nobody matches “{query}” — try a different username.
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {filtered.map((entry) => {
-                  const meta = RANK_META[entry.rank];
-                  const isMe = user?.id === entry.userId;
-                  return (
-                    <li
-                      key={entry.userId}
-                      className={`flex items-center gap-4 rounded-2xl border p-4 transition-colors ${
-                        isMe
-                          ? 'border-indigo-400/50 bg-indigo-500/10'
-                          : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                      }`}
+          {loading ? (
+            <SkeletonRows />
+          ) : filtered.length === 0 ? (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 6,
+                textAlign: 'center',
+                borderRadius: 4,
+                borderStyle: 'dashed',
+                bgcolor: 'transparent',
+              }}
+            >
+              <Search size={32} style={{ color: theme.palette.text.disabled, margin: '0 auto' }} />
+              <Typography sx={{ mt: 2, fontWeight: 600, color: 'text.secondary' }}>
+                No players found
+              </Typography>
+              <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+                Nobody matches “{query}” — try a different username.
+              </Typography>
+            </Paper>
+          ) : (
+            <Stack spacing={1}>
+              {filtered.map((entry) => {
+                const meta = RANK_META[entry.rank];
+                const isMe = user?.id === entry.userId;
+                return (
+                  <Paper
+                    key={entry.userId}
+                    elevation={0}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: { xs: 1.5, sm: 2 },
+                      p: 2,
+                      borderRadius: 4,
+                      border: '1px solid',
+                      borderColor: isMe ? alpha(theme.palette.primary.main, 0.5) : 'divider',
+                      bgcolor: isMe ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.background.paper, 0.6),
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        borderColor: isMe ? alpha(theme.palette.primary.main, 0.7) : 'text.disabled',
+                      },
+                    }}
+                  >
+                    {/* Rank badge */}
+                    <Box sx={{ width: 40, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                      {meta ? (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            background: meta.badge,
+                          }}
+                        >
+                          {MEDAL_ICON[entry.rank]}
+                        </Box>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, fontFamily: 'monospace', color: 'text.disabled' }}
+                        >
+                          {entry.rank}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {/* Avatar */}
+                    <Avatar
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        fontWeight: 800,
+                        fontSize: '0.875rem',
+                        background: meta ? meta.gradient : 'linear-gradient(to bottom right, #6366f1, #0ea5e9)',
+                      }}
                     >
-                      {/* Rank badge */}
-                      <div className="w-10 shrink-0 text-center">
-                        {meta ? (
-                          <span
-                            className={`inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br ${meta.badge} font-extrabold`}
-                          >
-                            {MEDAL_ICON[entry.rank]}
-                          </span>
-                        ) : (
-                          <span className="font-mono text-sm font-bold text-slate-400">
-                            {entry.rank}
-                          </span>
+                      {entry.username.charAt(0).toUpperCase() || '?'}
+                    </Avatar>
+
+                    {/* Identity + stats */}
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography noWrap sx={{ fontWeight: 600 }}>
+                          {entry.username}
+                        </Typography>
+                        {isMe && (
+                          <Chip
+                            label="You"
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: '10px',
+                              fontWeight: 800,
+                              textTransform: 'uppercase',
+                              bgcolor: alpha(theme.palette.primary.main, 0.2),
+                              color: 'primary.light',
+                            }}
+                          />
                         )}
-                      </div>
-
-                      {/* Avatar */}
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${
-                          meta
-                            ? meta.gradient
-                            : 'from-indigo-500 to-sky-500'
-                        } text-sm font-extrabold uppercase`}
-                      >
-                        {entry.username.charAt(0) || '?'}
-                      </div>
-
-                      {/* Identity + stats */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate font-semibold">
-                            {entry.username}
-                          </span>
-                          {isMe && (
-                            <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-                              You
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
-                          <span>
-                            <span className="font-semibold text-emerald-400">
-                              {entry.wins}W
-                            </span>
-                            <span className="mx-1 text-slate-600">/</span>
-                            <span className="font-semibold text-rose-400">
-                              {entry.losses}L
-                            </span>
-                          </span>
-                          <span>{entry.gamesPlayed} games</span>
-                          <span className="flex items-center gap-1.5">
-                            <WinRateBar value={entry.winRate} />
+                      </Box>
+                      <Stack direction="row" spacing={1.5} sx={{ mt: 0.5, alignItems: 'center' }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          <Box component="span" sx={{ fontWeight: 700, color: '#10b981' }}>
+                            {entry.wins}W
+                          </Box>
+                          <Box component="span" sx={{ mx: 0.5, color: 'text.disabled' }}>
+                            /
+                          </Box>
+                          <Box component="span" sx={{ fontWeight: 700, color: '#f43f5e' }}>
+                            {entry.losses}L
+                          </Box>
+                        </Typography>
+                        <Typography variant="caption" color="text.disabled" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                          {entry.gamesPlayed} games
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <WinRateBar value={entry.winRate} />
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
                             {entry.winRate}%
-                          </span>
-                        </div>
-                      </div>
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
 
-                      {/* Rating */}
-                      <div className="shrink-0 text-right">
-                        <div className="text-lg font-extrabold text-sky-300">
-                          {entry.rating}
-                        </div>
-                        <div className="text-[10px] uppercase tracking-wider text-slate-500">
-                          rating
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </section>
-      </div>
-    </main>
+                    {/* Rating */}
+                    <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#7dd3fc', lineHeight: 1 }}>
+                        {entry.rating}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: 'text.disabled',
+                          fontSize: '10px',
+                        }}
+                      >
+                        rating
+                      </Typography>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          )}
+        </Box>
+      </Container>
+    </Box>
   );
 }

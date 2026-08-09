@@ -2,7 +2,32 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Copy, Gamepad2, Loader2, Plus, RefreshCw, Users, Banknote, Dice6 } from 'lucide-react';
+import {
+  ArrowRight,
+  Copy,
+  Gamepad2,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Users,
+  Banknote,
+} from 'lucide-react';
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  Paper,
+  Chip,
+  IconButton,
+  CircularProgress,
+  Alert,
+  alpha,
+  useTheme,
+  Grid,
+  ButtonBase,
+  Tooltip,
+} from '@mui/material';
 import { createRoom, fetchRooms, Room } from '../../lib/rooms';
 import Nav from '../components/Nav';
 
@@ -25,41 +50,47 @@ const GAME_META: Record<string, { label: string; tagline: string; isNew?: boolea
   vegas: { label: 'Vegas', tagline: 'Casino Dice Luck', isNew: true },
 };
 
-function GameIcon({ game, className }: { game: string; className?: string }) {
+function GameIcon({ game, sx }: { game: string; sx?: any }) {
   if (game === 'chess') {
     return (
-      <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
+      <Box component="span" sx={{ fontSize: '1.5rem', lineHeight: 1, userSelect: 'none', ...sx }} aria-hidden>
         ♞
-      </span>
+      </Box>
     );
   }
   if (game === 'backgammon') {
     return (
-      <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
+      <Box component="span" sx={{ fontSize: '1.5rem', lineHeight: 1, userSelect: 'none', ...sx }} aria-hidden>
         🎲
-      </span>
+      </Box>
     );
   }
   if (game === 'vegas') {
-    return <Banknote className={className} />;
+    return <Banknote size={sx?.fontSize === 'text-2xl' ? 24 : 20} />;
   }
   return (
-    <svg
+    <Box
+      component="svg"
       viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
+      sx={{
+        width: 24,
+        height: 24,
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2.2,
+        strokeLinecap: 'round',
+        ...sx
+      }}
       aria-hidden
     >
       <path d="M3 8h18M3 16h18M8 3v18M16 3v18" />
-    </svg>
+    </Box>
   );
 }
 
 export default function LobbyPage() {
   const router = useRouter();
+  const theme = useTheme();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -120,7 +151,6 @@ export default function LobbyPage() {
     }
   };
 
-  // Rooms the lobby cares about: anything still waiting or being played.
   const activeRooms = rooms
     .filter((r) => r.status !== 'finished')
     .sort((a, b) => {
@@ -131,184 +161,385 @@ export default function LobbyPage() {
   return (
     <>
       <Nav />
-      <main className="flex min-h-screen flex-col items-center p-6 bg-slate-900 text-white">
-      <div className="w-full max-w-2xl space-y-8 py-8">
-        <header className="text-center space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-400">
-            BaziGB Lobby
-          </h1>
-          <p className="text-slate-400 font-medium">Create a room or join a friend with a code</p>
-        </header>
-
-        {/* Create / Join actions */}
-        <section className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-3 rounded-2xl bg-slate-800 border border-slate-700 p-4">
-            <span className="text-sm font-semibold uppercase tracking-wider text-slate-400">Select Game</span>
-            <div className="grid grid-cols-2 gap-2">
-              {GAME_OPTIONS.map((type) => {
-                const meta = GAME_META[type];
-                const selected = gameType === type;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setGameType(type)}
-                    aria-pressed={selected}
-                    className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border transition-all ${
-                      selected
-                        ? 'bg-indigo-500/15 border-indigo-400/60 text-white shadow-lg shadow-indigo-500/10'
-                        : 'bg-slate-900/60 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200'
-                    }`}
-                  >
-                    <span className={selected ? 'text-indigo-300' : 'text-slate-500'}>
-                      <GameIcon game={type} className={type === 'chess' || type === 'backgammon' ? 'text-2xl' : 'w-6 h-6'} />
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-bold">{meta.label}</span>
-                      {meta.isNew && (
-                        <span className="bg-emerald-500 text-white text-[8px] px-1 rounded uppercase font-black">New</span>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-medium opacity-70">{meta.tagline}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={creating}
-              className="flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 font-bold text-lg shadow-lg shadow-indigo-500/20 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+      <Box
+        component="main"
+        sx={{
+          display: 'flex',
+          minHeight: '100vh',
+          flexDirection: 'column',
+          alignItems: 'center',
+          p: 3,
+          bgcolor: '#0f172a',
+          color: 'white',
+        }}
+      >
+        <Box sx={{ w: '100%', maxWidth: 'sm', width: '100%', display: 'flex', flexDirection: 'column', gap: 4, py: 4 }}>
+          <Box component="header" sx={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: 'tight',
+                background: 'linear-gradient(to right, #818cf8, #38bdf8)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
             >
-              {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-              Create Room
-            </button>
-          </div>
+              BaziGB Lobby
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              Create a room or join a friend with a code
+            </Typography>
+          </Box>
 
-          <form
-            onSubmit={handleJoinByCode}
-            className="flex flex-col gap-2 rounded-2xl bg-slate-800 border border-slate-700 p-4"
-          >
-            <label htmlFor="room-code" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-              Join by code
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="room-code"
-                value={codeInput}
-                onChange={(e) => {
-                  setCodeInput(e.target.value.toUpperCase());
-                  setJoinError(null);
+          {/* Create / Join actions */}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 4,
+                  bgcolor: alpha('#1e293b', 0.6),
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
                 }}
-                placeholder="e.g. ABCDE"
-                maxLength={8}
-                className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-slate-900 border border-slate-600 text-lg font-mono tracking-widest placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 uppercase"
-              />
-              <button
-                type="submit"
-                className="px-4 py-3 rounded-xl bg-white text-indigo-600 font-bold hover:bg-slate-100 transition-colors disabled:opacity-50"
-                disabled={!codeInput.trim()}
               >
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-            {joinError && <p className="text-sm text-rose-400">{joinError}</p>}
-          </form>
-        </section>
-
-        {(createError || loadError) && (
-          <p className="text-center text-sm text-rose-400">
-            {createError || loadError}
-          </p>
-        )}
-
-        {/* Room list */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-300 flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-indigo-400" />
-              Active Rooms
-            </h2>
-            <button
-              type="button"
-              onClick={loadRooms}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12 text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin" />
-            </div>
-          ) : activeRooms.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-700 p-10 text-center text-slate-500">
-              No active rooms yet — create the first one!
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {activeRooms.map((room) => (
-                <li
-                  key={room.id}
-                  className="flex items-center gap-4 rounded-2xl bg-slate-800 border border-slate-700 p-4 hover:border-indigo-400/50 transition-colors"
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'text.secondary' }}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-lg font-bold tracking-widest">{room.code}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(room.code)}
-                        className="text-slate-500 hover:text-white transition-colors"
-                        aria-label={`Copy room code ${room.code}`}
-                      >
-                        {copiedCode === room.code ? (
-                          <span className="text-xs text-emerald-400 font-semibold">Copied!</span>
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-400/20">
-                        <GameIcon
-                          game={room.gameType}
-                          className={room.gameType === 'chess' || room.gameType === 'backgammon' ? 'text-sm' : 'w-3.5 h-3.5'}
-                        />
-                        {GAME_META[room.gameType]?.label ?? room.gameType}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          room.status === 'waiting'
-                            ? 'bg-emerald-500/15 text-emerald-400'
-                            : 'bg-amber-500/15 text-amber-400'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        {STATUS_LABEL[room.status]}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" />
-                        {room.players.length}/{room.gameType === 'vegas' ? 5 : 2}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/game/${room.code}`)}
-                    disabled={room.status !== 'waiting'}
-                    className="px-4 py-2 rounded-xl bg-indigo-500/80 hover:bg-indigo-500 font-semibold text-sm transition-colors disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed"
+                  Select Game
+                </Typography>
+                <Grid container spacing={1}>
+                  {GAME_OPTIONS.map((type) => {
+                    const meta = GAME_META[type];
+                    const selected = gameType === type;
+                    return (
+                      <Grid size={6} key={type}>
+                        <ButtonBase
+                          onClick={() => setGameType(type)}
+                          sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            p: 1.5,
+                            borderRadius: 3,
+                            border: '1px solid',
+                            transition: 'all 0.2s',
+                            bgcolor: selected ? alpha('#6366f1', 0.15) : alpha('#0f172a', 0.6),
+                            borderColor: selected ? alpha('#818cf8', 0.6) : 'divider',
+                            color: selected ? 'white' : alpha('#94a3b8', 0.8),
+                            boxShadow: selected ? '0 10px 15px -3px rgba(99, 102, 241, 0.1)' : 'none',
+                            '&:hover': {
+                              borderColor: selected ? alpha('#818cf8', 0.8) : 'text.disabled',
+                              color: selected ? 'white' : 'text.primary',
+                            },
+                          }}
+                        >
+                          <Box sx={{ color: selected ? '#a5b4fc' : 'text.disabled', display: 'flex' }}>
+                            <GameIcon game={type} />
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                              {meta.label}
+                            </Typography>
+                            {meta.isNew && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  bgcolor: '#10b981',
+                                  color: 'white',
+                                  fontSize: '8px',
+                                  px: 0.5,
+                                  borderRadius: 0.5,
+                                  textTransform: 'uppercase',
+                                  fontWeight: 900,
+                                }}
+                              >
+                                New
+                              </Box>
+                            )}
+                          </Box>
+                          <Typography variant="caption" sx={{ fontSize: '10px', fontWeight: 500, opacity: 0.7 }}>
+                            {meta.tagline}
+                          </Typography>
+                        </ButtonBase>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={handleCreate}
+                  disabled={creating}
+                  startIcon={creating ? <CircularProgress size={20} color="inherit" /> : <Plus size={20} />}
+                  sx={{
+                    mt: 0.5,
+                    py: 1.5,
+                    borderRadius: 3,
+                    background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+                    fontWeight: 700,
+                    fontSize: '1.125rem',
+                    boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',
+                    '&:hover': {
+                      opacity: 0.9,
+                    },
+                    '&:active': {
+                      transform: 'scale(0.99)',
+                    },
+                  }}
+                >
+                  Create Room
+                </Button>
+              </Paper>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Paper
+                component="form"
+                onSubmit={handleJoinByCode}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 4,
+                  bgcolor: alpha('#1e293b', 0.6),
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                  height: '100%',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'text.secondary' }}
+                >
+                  Join by code
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={codeInput}
+                    placeholder="e.g. ABCDE"
+                    onChange={(e) => {
+                      setCodeInput(e.target.value.toUpperCase());
+                      setJoinError(null);
+                    }}
+                    slotProps={{
+                      input: {
+                        sx: {
+                          bgcolor: '#0f172a',
+                          borderRadius: 3,
+                          fontFamily: 'monospace',
+                          letterSpacing: '0.2em',
+                          fontWeight: 700,
+                          fontSize: '1.125rem',
+                          textTransform: 'uppercase',
+                        },
+                      },
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={!codeInput.trim()}
+                    sx={{
+                      minWidth: 56,
+                      borderRadius: 3,
+                      bgcolor: 'white',
+                      color: '#4f46e5',
+                      '&:hover': {
+                        bgcolor: alpha('#f8fafc', 0.9),
+                      },
+                    }}
                   >
-                    {room.status === 'waiting' ? 'Join' : 'Playing'}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <ArrowRight size={20} />
+                  </Button>
+                </Box>
+                {joinError && (
+                  <Typography variant="caption" sx={{ color: '#fb7185' }}>
+                    {joinError}
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {(createError || loadError) && (
+            <Alert severity="error" variant="outlined" sx={{ borderRadius: 3, borderColor: alpha('#f43f5e', 0.5) }}>
+              {createError || loadError}
+            </Alert>
           )}
-        </section>
-      </div>
-      </main>
+
+          {/* Room list */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Gamepad2 size={20} style={{ color: '#818cf8' }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: alpha('#cbd5e1', 0.9) }}>
+                  Active Rooms
+                </Typography>
+              </Box>
+              <Button
+                size="small"
+                onClick={loadRooms}
+                startIcon={<RefreshCw size={16} />}
+                sx={{ color: 'text.secondary', textTransform: 'none', '&:hover': { color: 'white' } }}
+              >
+                Refresh
+              </Button>
+            </Box>
+
+            {loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
+                <CircularProgress size={32} sx={{ color: 'text.disabled' }} />
+              </Box>
+            ) : activeRooms.length === 0 ? (
+              <Box
+                sx={{
+                  borderRadius: 4,
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  p: 6,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography sx={{ color: 'text.disabled' }}>
+                  No active rooms yet — create the first one!
+                </Typography>
+              </Box>
+            ) : (
+              <Box component="ul" sx={{ p: 0, m: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {activeRooms.map((room) => (
+                  <Paper
+                    key={room.id}
+                    component="li"
+                    elevation={0}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 2,
+                      borderRadius: 4,
+                      bgcolor: alpha('#1e293b', 0.6),
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      transition: 'border-color 0.2s',
+                      '&:hover': {
+                        borderColor: alpha('#818cf8', 0.5),
+                      },
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography
+                          sx={{
+                            fontFamily: 'monospace',
+                            fontSize: '1.125rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.2em',
+                          }}
+                        >
+                          {room.code}
+                        </Typography>
+                        <Tooltip title={copiedCode === room.code ? "Copied!" : "Copy code"}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(room.code)}
+                            sx={{ color: 'text.disabled', '&:hover': { color: 'white' } }}
+                          >
+                            {copiedCode === room.code ? (
+                              <Typography variant="caption" sx={{ color: '#34d399', fontWeight: 600 }}>
+                                Copied!
+                              </Typography>
+                            ) : (
+                              <Copy size={16} />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
+                        <Chip
+                          icon={<GameIcon game={room.gameType} sx={{ fontSize: '0.875rem', color: 'inherit' }} />}
+                          label={GAME_META[room.gameType]?.label ?? room.gameType}
+                          size="small"
+                          sx={{
+                            height: 24,
+                            bgcolor: alpha('#6366f1', 0.1),
+                            color: '#a5b4fc',
+                            fontWeight: 600,
+                            border: '1px solid',
+                            borderColor: alpha('#818cf8', 0.2),
+                            '& .MuiChip-icon': {
+                              ml: 0.5,
+                              mr: -0.5,
+                            },
+                          }}
+                        />
+                        <Chip
+                          label={STATUS_LABEL[room.status]}
+                          size="small"
+                          sx={{
+                            height: 24,
+                            bgcolor: room.status === 'waiting' ? alpha('#10b981', 0.1) : alpha('#f59e0b', 0.1),
+                            color: room.status === 'waiting' ? '#4ade80' : '#fbbf24',
+                            fontWeight: 600,
+                            '&::before': {
+                              content: '""',
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              bgcolor: 'currentColor',
+                              mr: 1,
+                            },
+                          }}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+                          <Users size={14} />
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                            {room.players.length}/{room.gameType === 'vegas' ? 5 : 2}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => router.push(`/game/${room.code}`)}
+                      disabled={room.status !== 'waiting'}
+                      sx={{
+                        borderRadius: 2.5,
+                        px: 3,
+                        bgcolor: alpha('#6366f1', 0.8),
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        '&:hover': {
+                          bgcolor: '#6366f1',
+                        },
+                        '&:disabled': {
+                          bgcolor: alpha('#334155', 0.8),
+                          color: 'text.disabled',
+                        },
+                      }}
+                    >
+                      {room.status === 'waiting' ? 'Join' : 'Playing'}
+                    </Button>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Box>
     </>
   );
 }

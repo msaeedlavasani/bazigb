@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef } from 'react';
+import { Paper } from '@mui/material';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { soundService } from '../../lib/sound-service';
@@ -82,7 +83,17 @@ export default function ChessBoard({ fen, onMove, disabled = false, orientation 
   );
 
   return (
-    <div className="w-full rounded-2xl bg-gradient-to-br from-amber-700/50 via-amber-900/30 to-slate-800/40 p-2 sm:p-3 border border-amber-500/20 shadow-2xl shadow-black/50">
+    <Paper
+      elevation={24}
+      sx={{
+        width: '100%',
+        borderRadius: 4,
+        background: 'linear-gradient(to bottom right, rgba(180, 83, 9, 0.5), rgba(120, 53, 15, 0.3), rgba(30, 41, 59, 0.4))',
+        p: { xs: 1, sm: 1.5 },
+        border: '1px solid rgba(245, 158, 11, 0.2)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+      }}
+    >
       <Chessboard
         id="bazigb-chess"
         position={fen}
@@ -100,6 +111,6 @@ export default function ChessBoard({ fen, onMove, disabled = false, orientation 
         }}
         customNotationStyle={{ fontSize: '11px', fontWeight: 600 }}
       />
-    </div>
+    </Paper>
   );
 }

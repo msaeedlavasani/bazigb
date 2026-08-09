@@ -3,14 +3,38 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Nav from './components/Nav';
+import { Box, Container, Typography, Button, alpha, useTheme } from '@mui/material';
 
 export default function Home() {
   return (
     <>
       <Nav />
-      <main className="relative flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white overflow-hidden">
+      <Box
+        component="main"
+        sx={{
+          position: 'relative',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 3,
+          bgcolor: '#0f172a',
+          color: 'white',
+          overflow: 'hidden',
+        }}
+      >
         {/* Banner Background */}
-        <div className="absolute inset-0 z-0 opacity-20 blur-2xl scale-110">
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            opacity: 0.2,
+            filter: 'blur(40px)',
+            transform: 'scale(1.1)',
+          }}
+        >
           <Image
             src="/brand/banner.webp"
             alt=""
@@ -18,11 +42,30 @@ export default function Home() {
             className="object-cover"
             priority
           />
-        </div>
+        </Box>
 
-        <div className="relative z-10 max-w-2xl w-full text-center space-y-10">
-          <header className="space-y-6">
-            <div className="relative mx-auto h-32 w-32 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 10,
+            maxWidth: 'sm',
+            width: '100%',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 5,
+          }}
+        >
+          <Box component="header" sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box
+              sx={{
+                position: 'relative',
+                mx: 'auto',
+                filter: 'drop-shadow(0 0 15px rgba(99, 102, 241, 0.5))',
+                width: 128,
+                height: 128,
+              }}
+            >
               <Image
                 src="/brand/logo-512.webp"
                 alt="BaziG3 Logo"
@@ -30,43 +73,111 @@ export default function Home() {
                 className="object-contain"
                 priority
               />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-sky-300 to-emerald-300">
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography
+                variant="h1"
+                sx={{
+                  fontSize: { xs: '3.5rem', sm: '4.5rem' },
+                  fontWeight: 900,
+                  letterSpacing: '-0.05em',
+                  background: 'linear-gradient(to right, #a5b4fc, #7dd3fc, #6ee7b7)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
                 BaziG3
-              </h1>
-              <p className="text-xl font-bold tracking-widest text-indigo-400/90 uppercase">
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  color: alpha('#6366f1', 0.9),
+                  textTransform: 'uppercase',
+                }}
+              >
                 بازی جیبی
-              </p>
-              <p className="text-slate-400 font-medium">همه‌ی بازی‌ها، توی جیبت</p>
-            </div>
-          </header>
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                همه‌ی بازی‌ها، توی جیبت
+              </Typography>
+            </Box>
+          </Box>
 
-          <div className="max-w-md mx-auto space-y-4">
-            <Link
+          <Box sx={{ maxWidth: 400, mx: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Button
+              component={Link}
               href="/lobby"
-              className="flex items-center justify-center gap-2 w-full px-6 py-5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-sky-600 font-black text-xl shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              variant="contained"
+              size="large"
+              endIcon={<ArrowRight size={24} />}
+              sx={{
+                py: 2.5,
+                borderRadius: 4,
+                background: 'linear-gradient(to right, #6366f1, #4f46e5, #0284c7)',
+                fontSize: '1.25rem',
+                fontWeight: 900,
+                boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                  background: 'linear-gradient(to right, #4f46e5, #4338ca, #0369a1)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
+              }}
             >
               Enter Lobby
-              <ArrowRight className="w-6 h-6" />
-            </Link>
-            <div className="grid grid-cols-2 gap-3">
-              <Link
+            </Button>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+              <Button
+                component={Link}
                 href="/leaderboard"
-                className="flex items-center justify-center gap-2 w-full px-4 py-4 rounded-2xl border border-slate-700 bg-slate-800/40 backdrop-blur-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-all hover:border-slate-500"
+                variant="outlined"
+                sx={{
+                  py: 2,
+                  borderRadius: 4,
+                  borderColor: 'divider',
+                  bgcolor: alpha('#1e293b', 0.4),
+                  backdropFilter: 'blur(4px)',
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  '&:hover': {
+                    bgcolor: alpha('#1e293b', 0.8),
+                    color: 'white',
+                    borderColor: 'text.disabled',
+                  },
+                }}
               >
                 Leaderboard
-              </Link>
-              <Link
+              </Button>
+              <Button
+                component={Link}
                 href="/tournaments"
-                className="flex items-center justify-center gap-2 w-full px-4 py-4 rounded-2xl border border-slate-700 bg-slate-800/40 backdrop-blur-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-all hover:border-slate-500"
+                variant="outlined"
+                sx={{
+                  py: 2,
+                  borderRadius: 4,
+                  borderColor: 'divider',
+                  bgcolor: alpha('#1e293b', 0.4),
+                  backdropFilter: 'blur(4px)',
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  '&:hover': {
+                    bgcolor: alpha('#1e293b', 0.8),
+                    color: 'white',
+                    borderColor: 'text.disabled',
+                  },
+                }}
               >
                 Tournaments
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
     </>
   );
 }

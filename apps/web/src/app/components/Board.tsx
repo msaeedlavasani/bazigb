@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Box } from '@mui/material';
 import { soundService } from '../../lib/sound-service';
 
 interface BoardProps {
@@ -26,8 +27,14 @@ const O_CELL = 'bg-sky-500/15 border border-sky-400/40 text-sky-400 cursor-defau
  */
 export default function Board({ cells, onCellClick, disabled = false }: BoardProps) {
   return (
-    <div
-      className="grid w-full max-w-sm grid-cols-3 gap-2 sm:gap-3"
+    <Box
+      sx={{
+        display: 'grid',
+        width: '100%',
+        maxWidth: 384,
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: { xs: 1, sm: 1.5 },
+      }}
       role="grid"
       aria-label="Tic-Tac-Toe board"
     >
@@ -57,6 +64,6 @@ export default function Board({ cells, onCellClick, disabled = false }: BoardPro
           </button>
         );
       })}
-    </div>
+    </Box>
   );
 }

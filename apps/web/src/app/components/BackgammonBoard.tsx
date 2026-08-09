@@ -1,6 +1,13 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import {
+  Box,
+  Button,
+  Typography,
+  Paper,
+  Chip,
+} from '@mui/material';
 import { getLegalDestinations, getLegalMoves } from '@bazigb/game-backgammon';
 import Dice3D from './Dice3D';
 import { soundService } from '../../lib/sound-service';
@@ -198,7 +205,23 @@ export default function BackgammonBoard({
   const bottomPoints = [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-5xl mx-auto p-4 sm:p-8 rounded-3xl bg-[#3d2b1f] border-8 border-[#2d1b0f] shadow-2xl">
+    <Paper
+      elevation={24}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 3,
+        width: '100%',
+        maxWidth: '1024px',
+        mx: 'auto',
+        p: { xs: 2, sm: 4 },
+        borderRadius: 8,
+        bgcolor: '#3d2b1f',
+        border: '8px solid #2d1b0f',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+      }}
+    >
       {/* NOTE: no aspect-ratio / overflow-hidden here — the fixed 3/2 ratio
           clipped the bottom row's checkers on many viewports. The board now
           sizes to its content so every checker stays visible. */}
@@ -286,46 +309,100 @@ export default function BackgammonBoard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full px-4">
-        <div className="flex gap-6 items-center">
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', px: 2 }}>
+        <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
           {dice && dice.length > 0 ? (
-            <div className="flex gap-4 items-center">
+            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'center' }}>
               {dice.map((d, i) => (
                 <Dice3D key={i} value={d} size={48} />
               ))}
               {diceRemaining.length > 0 && diceRemaining.length !== (dice[0] === dice[1] ? 4 : 2) && (
-                <div className="text-xs text-amber-500/60 font-mono ml-2">
-                  Used: { (dice[0] === dice[1] ? 4 : 2) - diceRemaining.length }
-                </div>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`Used: ${(dice[0] === dice[1] ? 4 : 2) - diceRemaining.length}`}
+                  sx={{
+                    color: '#f59e0b',
+                    borderColor: 'rgba(245, 158, 11, 0.2)',
+                    fontFamily: 'monospace',
+                    fontSize: '0.7rem',
+                    height: 20,
+                  }}
+                />
               )}
-            </div>
+            </Box>
           ) : (
-            <div className="text-amber-500 font-bold tracking-widest uppercase animate-pulse text-sm">
+            <Typography
+              variant="overline"
+              sx={{
+                color: '#f59e0b',
+                fontWeight: 'bold',
+                letterSpacing: '0.15em',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                fontSize: '0.875rem',
+                lineHeight: 1.2,
+                '@keyframes pulse': {
+                  '0%, 100%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                },
+              }}
+            >
               {isMyTurn ? "Your turn to roll" : "Waiting for opponent..."}
-            </div>
+            </Typography>
           )}
-        </div>
+        </Box>
 
-        <div className="flex gap-3">
+        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1.5 }}>
           {isMyTurn && effectiveDice.length > 0 && (
-            <button
+            <Button
+              variant="contained"
               onClick={onEndTurn}
               disabled={disabled}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-lg transition-colors border border-slate-600"
+              sx={{
+                px: 3,
+                bgcolor: '#334155',
+                '&:hover': { bgcolor: '#475569' },
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '0.75rem',
+                borderRadius: 2,
+              }}
             >
               END TURN
-            </button>
+            </Button>
           )}
           
-          <button
+          <Button
+            variant="contained"
             onClick={onRoll}
             disabled={disabled || !isMyTurn || (dice && dice.length > 0)}
-            className="px-8 py-3 bg-gradient-to-br from-amber-500 to-orange-600 text-white font-black rounded-xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100"
+            sx={{
+              px: 4,
+              py: 1.5,
+              background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+              color: 'white',
+              fontWeight: 900,
+              borderRadius: 3,
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'scale(1.05)',
+                background: 'linear-gradient(135deg, #fbbf24 0%, #f97316 100%)',
+              },
+              '&:active': {
+                transform: 'scale(0.95)',
+              },
+              '&.Mui-disabled': {
+                opacity: 0.5,
+                filter: 'grayscale(1)',
+                color: 'rgba(255, 255, 255, 0.7)',
+              }
+            }}
           >
             ROLL DICE
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Box>
+      </Box>
+    </Paper>
   );
 }

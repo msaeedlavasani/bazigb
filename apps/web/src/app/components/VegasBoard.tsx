@@ -1,6 +1,15 @@
 'use client';
 
 import React from 'react';
+import {
+  Box,
+  Button,
+  Chip,
+  Paper,
+  Typography,
+  Divider,
+  CircularProgress,
+} from '@mui/material';
 import { Banknote, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Flame, Loader2, Trophy } from 'lucide-react';
 import Dice3D from './Dice3D';
 import { soundService } from '../../lib/sound-service';
@@ -64,25 +73,51 @@ function MoneyCard({
   const color = ownerIdx !== null ? playerColor(parseInt(ownerIdx, 10)) : undefined;
   const burned = resolved && ownerIdx === null;
   return (
-    <div
-      className={`relative flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1.5 shadow-sm transition-all ${
-        swept ? 'shadow-[0_0_14px_rgba(250,204,21,0.45)]' : ''
-      } ${burned ? 'opacity-40 grayscale' : ''}`}
-      style={{
-        backgroundColor: color ? `${color}1f` : 'rgba(16,185,129,0.08)',
+    <Box
+      sx={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 0.5,
+        borderRadius: 2,
+        border: '1px solid',
+        px: 2,
+        py: 1.5,
+        boxShadow: swept ? '0 0 14px rgba(250,204,21,0.45)' : 1,
+        transition: 'all 0.2s',
+        opacity: burned ? 0.4 : 1,
+        filter: burned ? 'grayscale(1)' : 'none',
+        bgcolor: color ? `${color}1f` : 'rgba(16,185,129,0.08)',
         borderColor: color ? color : swept ? 'rgba(250,204,21,0.6)' : 'rgba(16,185,129,0.25)',
       }}
     >
-      <Banknote className="w-3 h-3" style={{ color: color ?? '#34d399' }} />
-      <span className="text-[10px] font-black leading-none" style={{ color: color ?? '#34d399' }}>
+      <Banknote size={12} style={{ color: color ?? '#34d399' }} />
+      <Typography
+        variant="caption"
+        sx={{ fontSize: '10px', fontWeight: 900, lineHeight: 1, color: color ?? '#34d399' }}
+      >
         ${value.toLocaleString()}
-      </span>
+      </Typography>
       {burned && (
-        <span className="absolute -top-1.5 -right-1.5 rounded-full bg-slate-700 p-0.5 text-slate-400" title="Burned">
-          <Flame className="w-2.5 h-2.5" />
-        </span>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            borderRadius: '50%',
+            bgcolor: 'rgb(51, 65, 85)', // slate-700
+            p: 0.5,
+            color: 'rgb(148, 163, 184)', // slate-400
+            display: 'flex',
+          }}
+          title="Burned"
+        >
+          <Flame size={10} />
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -139,48 +174,111 @@ export default function VegasBoard({
   const isFinalRound = round >= totalRounds;
 
   return (
-    <div className="flex flex-col gap-5 w-full max-w-4xl mx-auto p-3 sm:p-6 rounded-3xl bg-slate-800/50 border border-slate-700 shadow-2xl">
+    <Paper
+      elevation={0}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2.5,
+        width: '100%',
+        maxWidth: '4xl',
+        mx: 'auto',
+        p: { xs: 1.5, sm: 3 },
+        borderRadius: 6,
+        bgcolor: 'rgba(30, 41, 59, 0.5)',
+        border: '1px solid',
+        borderColor: 'divider',
+        boxShadow: 24,
+      }}
+    >
       {/* Round header + cash strip */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-300">
-            Round {round}/{totalRounds}
-          </span>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Chip
+            label={`Round ${round}/${totalRounds}`}
+            size="small"
+            sx={{
+              fontWeight: 'bold',
+              bgcolor: 'rgba(99, 102, 241, 0.1)',
+              color: 'indigo.300',
+              borderColor: 'rgba(129, 140, 248, 0.3)',
+            }}
+            variant="outlined"
+          />
           {phase === 'roundEnd' && (
-            <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-300">
-              <Trophy className="w-3.5 h-3.5" />
-              Round complete — payouts settled
-            </span>
+            <Chip
+              icon={<Trophy size={14} />}
+              label="Round complete — payouts settled"
+              size="small"
+              sx={{
+                fontWeight: 'bold',
+                bgcolor: 'rgba(245, 158, 11, 0.1)',
+                color: 'amber.300',
+                borderColor: 'rgba(251, 191, 36, 0.4)',
+              }}
+              variant="outlined"
+            />
           )}
           {isFinalRound && phase === 'roundEnd' && (
-            <span className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
-              Final round!
-            </span>
+            <Chip
+              label="Final round!"
+              size="small"
+              sx={{
+                fontWeight: 'bold',
+                bgcolor: 'rgba(16, 185, 129, 0.1)',
+                color: 'emerald.300',
+                borderColor: 'rgba(52, 211, 153, 0.4)',
+              }}
+              variant="outlined"
+            />
           )}
-        </div>
+        </Box>
 
         {/* Compact per-player money strip (always visible) */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           {leaderboard.map(({ pIdx, cash, cards }) => {
             const color = playerColor(pIdx);
             const isYou = players[pIdx] === currentPlayerId;
             return (
-              <div
+              <Chip
                 key={pIdx}
-                className="flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1 text-xs"
-              >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                <span className="font-bold text-slate-300">{isYou ? 'You' : names?.[players[pIdx]] ?? `P${pIdx + 1}`}</span>
-                <span className="font-black text-emerald-400">${cash.toLocaleString()}</span>
-                {cards > 0 && <span className="text-[9px] font-semibold text-slate-500">{cards} cards</span>}
-              </div>
+                variant="outlined"
+                size="small"
+                avatar={<Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color, ml: 1 }} />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                      {isYou ? 'You' : names?.[players[pIdx]] ?? `P${pIdx + 1}`}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 900, color: 'success.light' }}>
+                      ${cash.toLocaleString()}
+                    </Typography>
+                    {cards > 0 && (
+                      <Typography variant="caption" sx={{ fontSize: '9px', fontWeight: 600, color: 'text.disabled' }}>
+                        {cards} cards
+                      </Typography>
+                    )}
+                  </Box>
+                }
+                sx={{
+                  bgcolor: 'rgba(15, 23, 42, 0.7)',
+                  borderColor: 'divider',
+                  px: 0.5,
+                }}
+              />
             );
           })}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Casinos Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' },
+          gap: { xs: 1.5, sm: 2 },
+        }}
+      >
         {casinos.map((casino, idx) => {
           const value = idx + 1;
           const DiceIcon = DiceIcons[value]!;
@@ -189,48 +287,109 @@ export default function VegasBoard({
           const stack = casino.stack;
 
           return (
-            <div
+            <Paper
               key={idx}
-              className={`flex flex-col gap-3 p-3 sm:p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-inner relative overflow-hidden transition-colors min-h-[150px] ${
-                stack === null ? 'opacity-60' : ''
-              }`}
+              elevation={0}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+                p: 2,
+                borderRadius: 4,
+                bgcolor: 'rgba(15, 23, 42, 0.6)',
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'colors 0.2s',
+                minHeight: 150,
+                opacity: stack === null ? 0.6 : 1,
+              }}
             >
               {/* Casino Header */}
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-                    <DiceIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </div>
-                  <span className="font-bold text-slate-300">Casino {value}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  pb: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      p: 0.75,
+                      borderRadius: 2,
+                      bgcolor: 'rgba(99, 102, 241, 0.1)',
+                      color: 'indigo.400',
+                      display: 'flex',
+                    }}
+                  >
+                    <DiceIcon size={24} />
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                    Casino {value}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   {stack?.swept && (
-                    <span className="rounded-full bg-yellow-500/20 border border-yellow-400/50 px-2 py-0.5 text-[9px] font-black text-yellow-300">
-                      SWEEP!
-                    </span>
+                    <Chip
+                      label="SWEEP!"
+                      size="small"
+                      sx={{
+                        fontSize: '9px',
+                        fontWeight: 900,
+                        bgcolor: 'rgba(245, 158, 11, 0.2)',
+                        color: 'amber.300',
+                        borderColor: 'rgba(251, 191, 36, 0.5)',
+                        height: 20,
+                      }}
+                      variant="outlined"
+                    />
                   )}
                   {stack?.burned && (
-                    <span className="rounded-full bg-rose-500/15 border border-rose-400/40 px-2 py-0.5 text-[9px] font-black text-rose-400">
-                      BURNED
-                    </span>
+                    <Chip
+                      label="BURNED"
+                      size="small"
+                      sx={{
+                        fontSize: '9px',
+                        fontWeight: 900,
+                        bgcolor: 'rgba(244, 63, 94, 0.15)',
+                        color: 'rose.400',
+                        borderColor: 'rgba(251, 113, 133, 0.4)',
+                        height: 20,
+                      }}
+                      variant="outlined"
+                    />
                   )}
                   {totalDice > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700">
-                      <span className="text-[10px] font-black text-slate-400">{totalDice}</span>
-                      <Dice6 className="w-3 h-3 text-slate-500" />
-                    </div>
+                    <Chip
+                      icon={<Dice6 size={12} />}
+                      label={totalDice}
+                      size="small"
+                      sx={{
+                        fontSize: '10px',
+                        fontWeight: 900,
+                        bgcolor: 'background.paper',
+                        borderColor: 'divider',
+                        height: 20,
+                        '& .MuiChip-icon': { color: 'text.disabled' },
+                      }}
+                      variant="outlined"
+                    />
                   )}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
               {/* Money stack: 2 offset cards (or empty state) */}
-              <div className="min-h-[44px] flex items-center">
+              <Box sx={{ minHeight: 44, display: 'flex', alignItems: 'center' }}>
                 {stack ? (
-                  <div className="flex -space-x-2">
+                  <Box sx={{ display: 'flex', '& > * + *': { ml: -1 } }}>
                     {stack.cards.map((cardVal, i) => {
                       const ownerIdx = i === 0 ? stack.winnerIndex : stack.runnerUpIndex;
-                      // During play the stack is unrevealed-but-visible (plain); after
-                      // resolution owners get their color, unearned cards burn.
                       const resolvedOwner = resolved ? ownerIdx : null;
                       return (
                         <MoneyCard
@@ -242,163 +401,346 @@ export default function VegasBoard({
                         />
                       );
                     })}
-                  </div>
+                  </Box>
                 ) : (
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: 'text.disabled',
+                    }}
+                  >
                     No money this round
-                  </span>
+                  </Typography>
                 )}
-              </div>
+              </Box>
 
-              {/* Per-player dice stacks (keyed by player INDEX — server uses index keys) */}
-              <div className="flex flex-wrap gap-3 mt-auto">
+              {/* Per-player dice stacks */}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 'auto' }}>
                 {players.map((pId, pIdx) => {
                   const count = casino.dice[pIdx.toString()] ?? casino.dice[pId] ?? 0;
                   if (count === 0) return null;
                   const color = playerColor(pIdx);
                   const isYou = pId === currentPlayerId;
                   return (
-                    <div key={pId} className="flex flex-col items-center gap-1">
-                      <span
-                        className="rounded-full px-1.5 py-px text-[8px] font-black leading-tight"
-                        style={{ backgroundColor: `${color}26`, color }}
+                    <Box key={pId} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Chip
+                        label={isYou ? 'You' : names?.[pId] ?? `P${pIdx + 1}`}
+                        size="small"
+                        sx={{
+                          height: 16,
+                          fontSize: '8px',
+                          fontWeight: 900,
+                          bgcolor: `${color}26`,
+                          color: color,
+                          border: 'none',
+                          '& .MuiChip-label': { px: 1 },
+                        }}
+                      />
+                      <Box
+                        sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.25, maxWidth: 84 }}
                       >
-                        {isYou ? 'You' : names?.[pId] ?? `P${pIdx + 1}`}
-                      </span>
-                      <div className="flex -space-x-1.5 flex-wrap max-w-[84px] justify-center">
                         {Array.from({ length: count }).map((_, i) => (
-                          <div
+                          <Box
                             key={i}
-                            className="w-3.5 h-3.5 rounded-sm border border-white/20 shadow-sm"
-                            style={{ backgroundColor: color }}
+                            sx={{
+                              width: 14,
+                              height: 14,
+                              borderRadius: 0.5,
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              boxShadow: 1,
+                              bgcolor: color,
+                            }}
                           />
                         ))}
-                      </div>
-                      <span className="text-[10px] font-black" style={{ color }}>
+                      </Box>
+                      <Typography variant="caption" sx={{ fontSize: '10px', fontWeight: 900, color }}>
                         {count}
-                      </span>
-                    </div>
+                      </Typography>
+                    </Box>
                   );
                 })}
                 {totalDice === 0 && (
-                  <span className="text-[10px] text-slate-600 italic">— no dice yet</span>
+                  <Typography variant="caption" sx={{ fontSize: '10px', color: 'text.disabled', fontStyle: 'italic' }}>
+                    — no dice yet
+                  </Typography>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Paper>
           );
         })}
-      </div>
+      </Box>
 
       {/* Bottom panel: hand / roll OR round-end leaderboard + next round */}
       {phase === 'roundEnd' ? (
-        <div className="flex flex-col gap-4 p-4 sm:p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">Leaderboard</h3>
-          </div>
-          <div className="flex flex-col gap-1.5">
+        <Paper
+          elevation={0}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            p: { xs: 2, sm: 3 },
+            borderRadius: 4,
+            bgcolor: 'rgba(15, 23, 42, 0.5)',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Trophy size={20} color="#fbbf24" />
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'text.disabled' }}
+            >
+              Leaderboard
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {leaderboard.map(({ pIdx, cash, cards }, rank) => {
               const color = playerColor(pIdx);
               const isYou = players[pIdx] === currentPlayerId;
               return (
-                <div
+                <Paper
                   key={pIdx}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
-                    rank === 0 ? 'border-amber-400/40 bg-amber-500/10' : 'border-slate-700 bg-slate-900/60'
-                  }`}
+                  elevation={0}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    borderRadius: 3,
+                    border: '1px solid',
+                    px: 2,
+                    py: 1.5,
+                    bgcolor: rank === 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(15, 23, 42, 0.6)',
+                    borderColor: rank === 0 ? 'rgba(251, 191, 36, 0.4)' : 'divider',
+                  }}
                 >
-                  <span className={`w-5 text-center text-sm font-black ${rank === 0 ? 'text-amber-300' : 'text-slate-500'}`}>
+                  <Typography
+                    sx={{
+                      width: 20,
+                      textAlign: 'center',
+                      fontWeight: 900,
+                      color: rank === 0 ? 'amber.300' : 'text.disabled',
+                    }}
+                  >
                     {rank + 1}
-                  </span>
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
-                  <span className="text-sm font-bold text-slate-200">
+                  </Typography>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: color }} />
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
                     {isYou ? 'You' : names?.[players[pIdx]] ?? `Player ${pIdx + 1}`}
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-500">{cards} cards</span>
-                  <span className="ml-auto text-sm font-black text-emerald-400">${cash.toLocaleString()}</span>
-                </div>
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.disabled' }}>
+                    {cards} cards
+                  </Typography>
+                  <Typography variant="body2" sx={{ ml: 'auto', fontWeight: 900, color: 'success.light' }}>
+                    ${cash.toLocaleString()}
+                  </Typography>
+                </Paper>
               );
             })}
-          </div>
+          </Box>
           {!winnerId && onNextRound && (
-            <button
-              type="button"
+            <Button
+              fullWidth
               onClick={onNextRound}
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black shadow-lg shadow-emerald-500/20 hover:opacity-90 active:scale-[0.98] transition-all"
+              variant="contained"
+              size="large"
+              startIcon={<Dice6 size={20} />}
+              sx={{
+                py: 1.5,
+                fontWeight: 900,
+                borderRadius: 3,
+                background: 'linear-gradient(to right, #10b981, #14b8a6)',
+                boxShadow: '0 4px 14px 0 rgba(16, 185, 129, 0.2)',
+                '&:hover': {
+                  background: 'linear-gradient(to right, #059669, #0d9488)',
+                  opacity: 0.9,
+                },
+                textTransform: 'none',
+              }}
             >
-              <Dice6 className="w-5 h-5" />
               {isFinalRound ? 'Final Results' : `Start Round ${round + 1}`}
-            </button>
+            </Button>
           )}
           {!winnerId && !onNextRound && (
-            <p className="text-center text-xs text-slate-500 italic">Waiting for a player to start the next round…</p>
+            <Typography
+              variant="caption"
+              sx={{ textAlign: 'center', fontStyle: 'italic', color: 'text.disabled', display: 'block' }}
+            >
+              Waiting for a player to start the next round…
+            </Typography>
           )}
-        </div>
+        </Paper>
       ) : (
-        <div className="flex flex-col items-center gap-4 p-4 sm:p-6 rounded-2xl bg-slate-900/50 border border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500">Your Hand</h3>
+        <Paper
+          elevation={0}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            p: { xs: 2, sm: 3 },
+            borderRadius: 4,
+            bgcolor: 'rgba(15, 23, 42, 0.5)',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'text.disabled' }}
+            >
+              Your Hand
+            </Typography>
             {isMyTurn && hand.length > 0 && (
-              <span
-                className="animate-pulse text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"
-                style={{ backgroundColor: `${currentPlayerColor}20`, color: currentPlayerColor }}
-              >
-                Pick a value
-              </span>
+              <Chip
+                label="Pick a value"
+                size="small"
+                sx={{
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  bgcolor: `${currentPlayerColor}20`,
+                  color: currentPlayerColor,
+                  border: 'none',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                  '@keyframes pulse': {
+                    '0%, 100%': { opacity: 1 },
+                    '50%': { opacity: 0.5 },
+                  },
+                }}
+              />
             )}
-          </div>
+          </Box>
 
-          <div className="flex flex-wrap justify-center gap-4 min-h-[100px] items-center w-full">
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: 2,
+              minHeight: 100,
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
             {hand.length > 0 ? (
               Object.entries(handCounts)
                 .sort(([a], [b]) => Number(a) - Number(b))
                 .map(([valStr, count]) => {
                   const val = Number(valStr);
                   return (
-                    <button
+                    <Button
                       key={val}
                       onClick={() => handleValueClick(val)}
                       disabled={disabled || !isMyTurn}
-                      className="group flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-                      style={isMyTurn ? { borderColor: `${currentPlayerColor}40` } : {}}
+                      variant="outlined"
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1,
+                        p: 1.5,
+                        borderRadius: 3,
+                        bgcolor: 'rgba(30, 41, 59, 0.8)',
+                        borderColor: isMyTurn ? `${currentPlayerColor}40` : 'divider',
+                        '&:hover': {
+                          bgcolor: 'rgba(51, 65, 85, 0.8)',
+                          borderColor: isMyTurn ? currentPlayerColor : 'divider',
+                        },
+                        '&:disabled': { opacity: 0.5 },
+                        textTransform: 'none',
+                        minWidth: 'auto',
+                      }}
                     >
-                      <div className="flex -space-x-2">
+                      <Box sx={{ display: 'flex', '& > * + *': { ml: -1 } }}>
                         {Array.from({ length: Math.min(count, 5) }).map((_, i) => (
                           <Dice3D key={i} value={val} size={32} color={currentPlayerColor} />
                         ))}
                         {count > 5 && (
-                          <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-white z-10 border border-slate-600">
+                          <Box
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 2,
+                              bgcolor: 'rgb(51, 65, 85)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              color: 'white',
+                              zIndex: 10,
+                              border: '1px solid',
+                              borderColor: 'rgb(71, 85, 105)',
+                            }}
+                          >
                             +{count - 5}
-                          </div>
+                          </Box>
                         )}
-                      </div>
-                      <span
-                        className="text-xs font-bold text-slate-400 transition-colors"
-                        style={isMyTurn ? { color: `${currentPlayerColor}cc` } : {}}
+                      </Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: 'bold',
+                          color: isMyTurn ? `${currentPlayerColor}cc` : 'text.disabled',
+                          transition: 'color 0.2s',
+                        }}
                       >
                         Place {count} × {val}
-                      </span>
-                    </button>
+                      </Typography>
+                    </Button>
                   );
                 })
             ) : isMyTurn ? (
-              <button
+              <Button
                 onClick={handleRollClick}
                 disabled={disabled || rolling}
-                className="flex items-center gap-3 px-10 py-4 bg-gradient-to-br from-indigo-500 to-sky-600 text-white font-black rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+                variant="contained"
+                size="large"
+                startIcon={rolling ? <CircularProgress size={24} color="inherit" /> : <Dice6 size={24} />}
+                sx={{
+                  px: 5,
+                  py: 2,
+                  borderRadius: 4,
+                  fontWeight: 900,
+                  fontSize: '1.1rem',
+                  background: 'linear-gradient(to bottom right, #6366f1, #0ea5e9)',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)',
+                  },
+                  transition: 'all 0.2s',
+                  '&:disabled': { opacity: 0.5, filter: 'grayscale(1)' },
+                  textTransform: 'none',
+                }}
               >
-                {rolling ? <Loader2 className="w-6 h-6 animate-spin" /> : <Dice6 className="w-6 h-6" />}
                 ROLL YOUR DICE
-              </button>
+              </Button>
             ) : (
-              <div className="text-slate-600 font-medium italic flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+              <Box
+                sx={{
+                  color: 'text.disabled',
+                  fontWeight: 500,
+                  fontStyle: 'italic',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <CircularProgress size={16} color="inherit" />
                 Waiting for opponent...
-              </div>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Paper>
       )}
-    </div>
+    </Paper>
   );
 }

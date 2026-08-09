@@ -3,6 +3,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Stack,
+  Paper,
+  Chip,
+  LinearProgress,
+  Skeleton,
+  Alert,
+  Grid,
+  alpha,
+  useTheme,
+  IconButton,
+} from '@mui/material';
+import {
   CalendarDays,
   CheckCircle2,
   Crown,
@@ -27,47 +43,44 @@ const FALLBACK_DESCRIPTION =
 
 /* ------------------------------- helpers --------------------------------- */
 
-const STATUS_META: Record<
-  TournamentStatus,
-  { label: string; className: string; dot: string }
-> = {
-  registration: {
-    label: 'Registration Open',
-    className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40',
-    dot: 'bg-emerald-400',
-  },
-  in_progress: {
-    label: 'In Progress',
-    className: 'bg-amber-500/15 text-amber-400 border-amber-500/40',
-    dot: 'bg-amber-400',
-  },
-  completed: {
-    label: 'Completed',
-    className: 'bg-slate-500/15 text-slate-400 border-slate-500/40',
-    dot: 'bg-slate-400',
-  },
+const STATUS_COLORS: Record<TournamentStatus, { color: 'success' | 'warning' | 'default'; label: string }> = {
+  registration: { color: 'success', label: 'Registration Open' },
+  in_progress: { color: 'warning', label: 'In Progress' },
+  completed: { color: 'default', label: 'Completed' },
 };
 
-function GameIcon({ game, className }: { game: string; className?: string }) {
+function GameIcon({ game, size = 20 }: { game: string; size?: number }) {
   if (game === 'chess') {
     return (
-      <span className={`${className ?? ''} leading-none select-none`} aria-hidden>
+      <Box
+        component="span"
+        sx={{
+          fontSize: size * 1.2,
+          lineHeight: 1,
+          userSelect: 'none',
+        }}
+        aria-hidden
+      >
         ♞
-      </span>
+      </Box>
     );
   }
   return (
-    <svg
+    <Box
+      component="svg"
       viewBox="0 0 24 24"
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
+      sx={{
+        width: size,
+        height: size,
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2.2,
+        strokeLinecap: 'round',
+      }}
       aria-hidden
     >
       <path d="M3 8h18M3 16h18M8 3v18M16 3v18" />
-    </svg>
+    </Box>
   );
 }
 
@@ -95,6 +108,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 
 export default function TournamentsPage() {
   const { user } = useAuth();
+  const theme = useTheme();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +148,6 @@ export default function TournamentsPage() {
       const result = await joinTournament(t.id, user.id);
       setJoined((prev) => ({ ...prev, [t.id]: result }));
       if (result.joined) {
-        // Reflect the join locally so the player count updates instantly.
         setTournaments((prev) =>
           prev.map((x) =>
             x.id === t.id
@@ -153,197 +166,352 @@ export default function TournamentsPage() {
   const openCount = tournaments.filter((t) => t.status === 'registration').length;
 
   return (
-    <main className="min-h-screen bg-slate-900 text-white">
+    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Nav />
-      <div className="mx-auto w-full max-w-4xl px-6 py-10">
+      <Container maxWidth="md" sx={{ py: 6 }}>
         {/* Header */}
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2.5 text-3xl font-extrabold tracking-tight">
-              <Swords className="h-8 w-8 text-indigo-400" />
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 4,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <Swords size={32} style={{ color: theme.palette.primary.light }} />
               Tournaments
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {openCount > 0
                 ? `${openCount} tournament${openCount === 1 ? '' : 's'} open for registration right now.`
                 : 'Pick a tournament and claim your spot.'}
-            </p>
-          </div>
-          <button
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-colors"
+            startIcon={
+              <RefreshCw
+                size={16}
+                className={loading ? 'animate-spin' : ''}
+              />
+            }
+            sx={{
+              borderColor: 'divider',
+              color: 'text.secondary',
+              '&:hover': {
+                borderColor: 'text.primary',
+                color: 'text.primary',
+                bgcolor: alpha(theme.palette.text.primary, 0.05),
+              },
+            }}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
-        </header>
+          </Button>
+        </Box>
 
         {/* Filter tabs */}
-        <div className="mt-6 flex flex-wrap gap-2">
+        <Stack direction="row" spacing={1} useFlexGap sx={{ mb: 4, flexWrap: 'wrap' }}>
           {FILTERS.map((f) => (
-            <button
+            <Button
               key={f.key}
-              type="button"
+              size="small"
+              variant={filter === f.key ? 'contained' : 'outlined'}
               onClick={() => setFilter(f.key)}
-              aria-pressed={filter === f.key}
-              className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                filter === f.key
-                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-400/40'
-                  : 'border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
+              sx={{
+                borderRadius: 2,
+                px: 2,
+                fontWeight: 700,
+                ...(filter === f.key
+                  ? {
+                      bgcolor: alpha(theme.palette.primary.main, 0.2),
+                      color: 'primary.light',
+                      border: '1px solid',
+                      borderColor: alpha(theme.palette.primary.main, 0.4),
+                      '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.3) },
+                    }
+                  : {
+                      color: 'text.secondary',
+                      borderColor: 'divider',
+                      '&:hover': { borderColor: 'text.disabled', color: 'text.primary' },
+                    }),
+              }}
             >
               {f.label}
-            </button>
+            </Button>
           ))}
-        </div>
+        </Stack>
 
         {error && (
-          <div
-            role="alert"
-            className="mt-6 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300"
-          >
+          <Alert severity="error" variant="outlined" sx={{ mb: 4, borderRadius: 2 }}>
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Cards */}
-        <section className="mt-8">
+        <Box component="section">
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <Grid container spacing={2}>
               {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-56 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60"
-                />
+                <Grid key={i} size={{ xs: 12, sm: 6 }}>
+                  <Skeleton
+                    variant="rectangular"
+                    height={224}
+                    sx={{ borderRadius: 4, bgcolor: alpha(theme.palette.background.paper, 0.6) }}
+                  />
+                </Grid>
               ))}
-            </div>
+            </Grid>
           ) : visible.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-700 p-14 text-center">
-              <Trophy className="mx-auto h-10 w-10 text-slate-600" />
-              <p className="mt-3 font-medium text-slate-300">No tournaments here</p>
-              <p className="mt-1 text-sm text-slate-500">
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 8,
+                textAlign: 'center',
+                borderRadius: 4,
+                borderStyle: 'dashed',
+                bgcolor: 'transparent',
+              }}
+            >
+              <Trophy size={40} style={{ color: theme.palette.text.disabled, margin: '0 auto' }} />
+              <Typography sx={{ mt: 2, fontWeight: 600, color: 'text.secondary' }}>
+                No tournaments here
+              </Typography>
+              <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
                 Check back soon — new tournaments are added regularly.
-              </p>
-            </div>
+              </Typography>
+            </Paper>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <Grid container spacing={2.5}>
               {visible.map((t) => {
-                const status = STATUS_META[t.status];
+                const statusInfo = STATUS_COLORS[t.status];
                 const isJoined = Boolean(joined[t.id]?.joined);
                 const joinResult = joined[t.id];
                 const full = t.playersJoined >= t.maxPlayers;
-                const fill = Math.min(
-                  100,
-                  Math.round((t.playersJoined / t.maxPlayers) * 100),
-                );
+                const progress = Math.min(100, (t.playersJoined / t.maxPlayers) * 100);
+
                 return (
-                  <article
-                    key={t.id}
-                    className="flex flex-col rounded-2xl border border-slate-700/70 bg-slate-800/60 p-5 shadow-xl transition-colors hover:border-indigo-400/40"
-                  >
-                    {/* Top row: icon + status */}
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-500/10 text-xl text-indigo-300">
-                        <GameIcon game={t.gameType} className={t.gameType === 'chess' ? 'text-2xl' : 'w-6 h-6'} />
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${status.className}`}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                        {status.label}
-                      </span>
-                    </div>
-
-                    {/* Name + meta */}
-                    <h2 className="mt-3 text-lg font-extrabold tracking-tight">
-                      {t.name}
-                    </h2>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-400">
-                      {t.description || FALLBACK_DESCRIPTION}
-                    </p>
-
-                    <dl className="mt-4 space-y-1.5 text-sm text-slate-300">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4 text-slate-500" />
-                        <span>Starts {formatDate(t.startsAt)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-slate-500" />
-                        <span>
-                          {t.playersJoined}/{t.maxPlayers} players
-                        </span>
-                      </div>
-                      {t.prize && (
-                        <div className="flex items-center gap-2">
-                          <Crown className="h-4 w-4 text-amber-400" />
-                          <span className="font-medium text-amber-300">{t.prize}</span>
-                        </div>
-                      )}
-                    </dl>
-
-                    {/* Fill bar */}
-                    <div className="mt-4">
-                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-700/70">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-sky-400 transition-all"
-                          style={{ width: `${fill}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action */}
-                    <div className="mt-5 flex flex-1 items-end">
-                      {t.status === 'registration' && isJoined ? (
-                        <div className="w-full rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-center text-sm font-semibold text-emerald-400">
-                          <CheckCircle2 className="mr-1.5 inline h-4 w-4" />
-                          Joined
-                          {joinResult?.demo && (
-                            <span className="mt-0.5 block text-[11px] font-normal text-emerald-400/70">
-                              {joinResult.message}
-                            </span>
-                          )}
-                        </div>
-                      ) : t.status === 'registration' ? (
-                        !user ? (
-                          <Link
-                            href="/login"
-                            className="block w-full rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-2.5 text-center text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all hover:opacity-90 active:scale-[0.99]"
-                          >
-                            Sign in to join
-                          </Link>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => void handleJoin(t)}
-                            disabled={full || joining === t.id || isJoined}
-                            className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 px-4 py-2.5 text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {joining === t.id ? (
-                              <Loader2 className="mx-auto h-4 w-4 animate-spin" />
-                            ) : full ? (
-                              'Full'
-                            ) : (
-                              'Join'
-                            )}
-                          </button>
-                        )
-                      ) : (
-                        <Link
-                          href={`/tournaments/${t.id}`}
-                          className="block w-full rounded-xl border border-slate-600 bg-slate-900/60 px-4 py-2.5 text-center text-sm font-bold text-slate-300 transition-all hover:border-indigo-400/50 hover:text-white"
+                  <Grid key={t.id} size={{ xs: 12, sm: 6 }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderRadius: 4,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: alpha(theme.palette.background.paper, 0.6),
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: alpha(theme.palette.primary.main, 0.4),
+                          boxShadow: `0 8px 30px ${alpha(theme.palette.common.black, 0.3)}`,
+                        },
+                      }}
+                    >
+                      {/* Top row: icon + status */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 2.5,
+                            border: '1px solid',
+                            borderColor: alpha(theme.palette.primary.main, 0.3),
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'primary.light',
+                          }}
                         >
-                          {t.status === 'in_progress' ? 'View Bracket' : 'View Results'}
-                        </Link>
-                      )}
-                    </div>
-                  </article>
+                          <GameIcon game={t.gameType} size={t.gameType === 'chess' ? 28 : 24} />
+                        </Box>
+                        <Chip
+                          label={statusInfo.label}
+                          size="small"
+                          color={statusInfo.color}
+                          variant="outlined"
+                          icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'currentColor', ml: 1 }} />}
+                          sx={{
+                            height: 24,
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.025em',
+                            '& .MuiChip-icon': { ml: 0.5, mr: 0 },
+                          }}
+                        />
+                      </Box>
+
+                      {/* Name + description */}
+                      <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 1 }}>
+                        {t.name}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          mb: 2.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {t.description || FALLBACK_DESCRIPTION}
+                      </Typography>
+
+                      {/* Meta info */}
+                      <Stack spacing={1} sx={{ mb: 2.5 }}>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                          <CalendarDays size={16} style={{ color: theme.palette.text.disabled }} />
+                          <Typography variant="body2" color="text.secondary">
+                            Starts {formatDate(t.startsAt)}
+                          </Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                          <Users size={16} style={{ color: theme.palette.text.disabled }} />
+                          <Typography variant="body2" color="text.secondary">
+                            {t.playersJoined}/{t.maxPlayers} players
+                          </Typography>
+                        </Stack>
+                        {t.prize && (
+                          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                            <Crown size={16} style={{ color: '#fbbf24' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#fcd34d' }}>
+                              {t.prize}
+                            </Typography>
+                          </Stack>
+                        )}
+                      </Stack>
+
+                      {/* Progress bar */}
+                      <Box sx={{ mt: 'auto', mb: 3 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={progress}
+                          sx={{
+                            height: 6,
+                            borderRadius: 3,
+                            bgcolor: alpha(theme.palette.text.primary, 0.1),
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 3,
+                              background: 'linear-gradient(to right, #6366f1, #38bdf8)',
+                            },
+                          }}
+                        />
+                      </Box>
+
+                      {/* Actions */}
+                      <Box>
+                        {t.status === 'registration' && isJoined ? (
+                          <Box
+                            sx={{
+                              p: 1.25,
+                              textAlign: 'center',
+                              borderRadius: 3,
+                              border: '1px solid',
+                              borderColor: alpha(theme.palette.success.main, 0.4),
+                              bgcolor: alpha(theme.palette.success.main, 0.1),
+                              color: 'success.light',
+                              fontWeight: 700,
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'center' }}>
+                              <CheckCircle2 size={16} />
+                              <span>Joined</span>
+                            </Stack>
+                            {joinResult?.message && (
+                              <Typography variant="caption" sx={{ display: 'block', mt: 0.25, fontWeight: 400, opacity: 0.8 }}>
+                                {joinResult.message}
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : t.status === 'registration' ? (
+                          !user ? (
+                            <Button
+                              fullWidth
+                              component={Link}
+                              href="/login"
+                              variant="contained"
+                              sx={{
+                                py: 1.25,
+                                fontWeight: 800,
+                                background: 'linear-gradient(to right, #6366f1, #38bdf8)',
+                                boxShadow: `0 4px 14px 0 ${alpha('#6366f1', 0.4)}`,
+                              }}
+                            >
+                              Sign in to join
+                            </Button>
+                          ) : (
+                            <Button
+                              fullWidth
+                              disabled={full || joining === t.id}
+                              onClick={() => void handleJoin(t)}
+                              variant="contained"
+                              sx={{
+                                py: 1.25,
+                                fontWeight: 800,
+                                background: 'linear-gradient(to right, #6366f1, #38bdf8)',
+                                boxShadow: `0 4px 14px 0 ${alpha('#6366f1', 0.4)}`,
+                              }}
+                            >
+                              {joining === t.id ? (
+                                <Loader2 size={18} className="animate-spin" />
+                              ) : full ? (
+                                'Full'
+                              ) : (
+                                'Join'
+                              )}
+                            </Button>
+                          )
+                        ) : (
+                          <Button
+                            fullWidth
+                            component={Link}
+                            href={`/tournaments/${t.id}`}
+                            variant="outlined"
+                            sx={{
+                              py: 1.25,
+                              fontWeight: 800,
+                              borderColor: 'divider',
+                              color: 'text.secondary',
+                              '&:hover': {
+                                borderColor: alpha(theme.palette.primary.main, 0.5),
+                                color: 'text.primary',
+                                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                              },
+                            }}
+                          >
+                            {t.status === 'in_progress' ? 'View Bracket' : 'View Results'}
+                          </Button>
+                        )}
+                      </Box>
+                    </Paper>
+                  </Grid>
                 );
               })}
-            </div>
+            </Grid>
           )}
-        </section>
-      </div>
-    </main>
+        </Box>
+      </Container>
+    </Box>
   );
 }
