@@ -11,32 +11,12 @@ COPY packages/ packages/
 # npm ci on Linux then has to fetch @next/swc-linux-x64-gnu on the fly (optional
 # dep) — flaky on this VPS, and if it fails `next build` tries to download the
 # binary itself and hangs (BodyTimeoutError). Install the Linux binary
-# explicitly: try npm first, then download the tarball with node fetch + tar
-# (the image has no curl/wget) with 5 timed retries.
+# explicitly: try npm first, then scripts/fetch-swc.mjs (node fetch + tar with
+# 5 timed retries; the image has no curl/wget).
+COPY scripts/ scripts/
 RUN npm ci \
  && (npm install --no-save --package-lock=false --no-audit --no-fund @next/swc-linux-x64-gnu@14.2.33 \
-     || node -e '
-       const fs = require("fs");
-       const { execSync } = require("child_process");
-       const url = "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.33.tgz";
-       (async () => {
-         for (let i = 1; i <= 5; i++) {
-           try {
-             const r = await fetch(url, { signal: AbortSignal.timeout(120000), redirect: "follow" });
-             if (!r.ok) throw new Error("http " + r.status);
-             fs.mkdirSync("node_modules/@next/swc-linux-x64-gnu", { recursive: true });
-             fs.writeFileSync("/tmp/swc.tgz", Buffer.from(await r.arrayBuffer()));
-             execSync("tar xzf /tmp/swc.tgz -C node_modules/@next/swc-linux-x64-gnu --strip-components=1");
-             console.log("swc downloaded OK");
-             process.exit(0);
-           } catch (e) {
-             console.error("swc download attempt " + i + " failed: " + e.message);
-             if (i < 5) await new Promise((res) => setTimeout(res, 5000));
-           }
-         }
-         process.exit(1);
-       })();
-     ') \
+     || node scripts/fetch-swc.mjs) \
  && ls node_modules/@next/swc-linux-x64-gnu/*.node >/dev/null 2>&1 \
  || (echo "ERROR: linux swc binary missing" && exit 1)
 
