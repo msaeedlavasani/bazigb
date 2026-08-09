@@ -11,7 +11,7 @@
   "scripts": {
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:server": "npm run dev --workspace=apps/server",
-    "build": "npm run build --workspaces"
+    "build": "npm run build --workspace=@bazigb/engine && npm run build --workspace=@bazigb/game-tic-tac-toe && npm run build --workspace=@bazigb/game-chess && npm run build --workspace=@bazigb/game-backgammon && npm run build --workspace=@bazigb/game-vegas && npm run build --workspace=@bazigb/server && npm run build --workspace=@bazigb/web"
   },
   "keywords": [],
   "author": "",
