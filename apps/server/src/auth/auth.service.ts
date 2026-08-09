@@ -175,7 +175,8 @@ export class AuthService {
       isNewUser = true;
     }
 
-    return { ...this.buildAuthResponse(user), isNewUser };
+    const auth = await this.buildAuthResponse(user);
+    return { ...auth, isNewUser };
   }
 
   private async buildAuthResponse(user: {
