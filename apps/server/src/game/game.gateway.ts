@@ -10,6 +10,7 @@ import {
 import { randomBytes } from 'crypto';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
 import { BaziGBEngine, Game, GameState } from '@bazigb/engine';
 import { TicTacToe } from '@bazigb/game-tic-tac-toe';
 import { ChessGame } from '@bazigb/game-chess';
@@ -45,6 +46,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * account (profile stats / ELO) instead of anonymous socket ids.
    */
   private readonly socketUsers = new Map<string, string>();
+  private readonly socketUsernames = new Map<string, string>();
 
   /**
    * Seat-reclaim protection. When a seated socket drops mid-game, its seat in
@@ -102,6 +104,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly roomService: RoomService,
     private readonly historyService: HistoryService,
     private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
   ) {}
 
   handleConnection(client: Socket) {
@@ -121,10 +124,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (payload?.sub) {
         this.socketUsers.set(client.id, payload.sub);
         console.log(`Socket ${client.id} bound to user ${payload.sub}`);
+
+        const user = await this.prisma.user.findUnique({
+          where: { id: payload.sub },
+          select: { username: true },
+        });
+        if (user?.username) {
+          this.socketUsernames.set(client.id, user.username);
+        }
       }
     } catch {
       // Invalid/expired token — the socket just stays anonymous.
     }
+  }
+
+  /** Resolve socket ids to real usernames (or null). */
+  private namesForPlayers(players: string[]): (string | null)[] {
+    return players.map((id) => this.socketUsernames.get(id) ?? null);
   }
 
   /**
@@ -135,11 +151,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     message: string,
     userId?: string,
     type = 'info',
+    username?: string,
   ) {
     this.server.to(roomCode).emit('systemMessage', {
       type,
       message,
       userId,
+      username,
       timestamp: new Date().toISOString(),
     });
   }
@@ -241,17 +259,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       // Social: announce the arrival and keep spectators in sync on seats/status.
+      const name = this.socketUsernames.get(client.id);
       this.emitSystemMessage(
         roomCode,
         isSpectator
-          ? `User ${client.id} is now spectating`
-          : `User ${client.id} joined the game`,
+          ? `${name ?? `User ${client.id}`} is now spectating`
+          : `${name ?? `User ${client.id}`} joined the game`,
         client.id,
         isSpectator ? 'spectate' : 'join',
+        name,
       );
       this.server.to(roomCode).emit('roomUpdate', {
         code: roomCode,
         players: room.players,
+        names: this.namesForPlayers(room.players),
         status: room.status,
       });
 
@@ -287,8 +308,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
-    const userId = this.socketUsers.get(client.id) ?? null;
+    const userId = this.socketUsers.get(client.id);
+    const username = this.socketUsernames.get(client.id);
     this.socketUsers.delete(client.id);
+    this.socketUsernames.delete(client.id);
 
     let rooms: RoomWithParsedData[] = [];
     try {
@@ -302,7 +325,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Remember who held this seat so only they can reclaim it on reconnect
       // (the same user id or their seat ticket — see handleJoinRoom branch 4).
       if (room.status === 'playing') {
-        this.vacatedUsers.set(`${room.code}:${client.id}`, { value: userId, at: Date.now() });
+        this.vacatedUsers.set(`${room.code}:${client.id}`, { value: userId ?? null, at: Date.now() });
       }
       try {
         const updated = await this.roomService.removePlayer(room.code, client.id);
@@ -310,13 +333,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.server.to(room.code).emit('roomUpdate', {
             code: room.code,
             players: updated.players,
+            names: this.namesForPlayers(updated.players),
             status: updated.status,
           });
           this.emitSystemMessage(
             room.code,
-            `User ${client.id} left the game`,
+            `${username ?? `User ${client.id}`} left the game`,
             client.id,
             'leave',
+            username,
           );
         }
       } catch {

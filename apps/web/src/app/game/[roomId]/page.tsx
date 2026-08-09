@@ -3,7 +3,7 @@
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Copy, Eye, Loader2, Play, RotateCcw, Users, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, Copy, Eye, Loader2, Play, RotateCcw, Share2, Users, Wifi, WifiOff } from 'lucide-react';
 import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
 import Board from '../../components/Board';
@@ -60,6 +60,7 @@ export default function GamePage() {
   const [winner, setWinner] = useState<string | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const [connStatus, setConnStatus] = useState<ConnStatus>('connecting');
 
@@ -179,7 +180,12 @@ export default function GamePage() {
       if (cancelled) return;
       setError(err?.message || 'An unknown error occurred');
     };
-    const onRoomUpdate = (update: { code?: string; players?: string[]; status?: Room['status'] }) => {
+    const onRoomUpdate = (update: {
+      code?: string;
+      players?: string[];
+      status?: Room['status'];
+      names?: (string | null)[];
+    }) => {
       if (cancelled || update.code !== roomCode) return;
       setRoom((prev) =>
         prev
@@ -190,6 +196,15 @@ export default function GamePage() {
             }
           : prev,
       );
+
+      if (Array.isArray(update.players) && Array.isArray(update.names)) {
+        const nextNames: Record<string, string> = {};
+        update.players.forEach((id, i) => {
+          const name = update.names![i];
+          if (name) nextNames[id] = name;
+        });
+        setPlayerNames(nextNames);
+      }
     };
 
     // Store the seat ticket issued by the server when we were seated — it lets
@@ -293,6 +308,20 @@ export default function GamePage() {
     } catch {
       // ignore
     }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/game/${roomCode}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: 'BaziGB — join my game!', text: 'Join my BaziGB game room', url: shareUrl });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return; // user cancelled — do nothing
+        // otherwise fall through to clipboard fallback
+      }
+    }
+    await handleCopy();
   };
 
   // Derive the game type from the room when known; fall back to inspecting the
@@ -448,11 +477,11 @@ export default function GamePage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={handleCopy}
+                onClick={handleShare}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 font-semibold hover:bg-indigo-500/30 transition-colors"
               >
-                {copied ? <Loader2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? 'Code copied!' : 'Copy room code'}
+                {copied ? <Loader2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                {copied ? 'Code copied!' : 'Share room'}
               </button>
               {/* Vegas: the room owner explicitly starts the game once enough
                   players have joined (2–5). */}
@@ -534,6 +563,7 @@ export default function GamePage() {
                   casinos={gameState.G.casinos}
                   hand={vegasHand}
                   players={gameState.ctx.players}
+                  names={playerNames}
                   currentPlayerId={mySocketId ?? ''}
                   onPlace={handleVegasPlace}
                   onRoll={handleRollDice}
@@ -637,7 +667,12 @@ export default function GamePage() {
         )}
       </div>
 
-      <ChatSidebar roomCode={roomCode} playerIds={ctxPlayers} myId={mySocketId} />
+      <ChatSidebar
+        roomCode={roomCode}
+        playerIds={ctxPlayers}
+        myId={mySocketId}
+        names={playerNames}
+      />
     </main>
   );
 }

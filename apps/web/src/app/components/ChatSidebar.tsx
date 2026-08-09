@@ -29,6 +29,8 @@ interface ChatSidebarProps {
   playerIds: string[];
   /** Current socket id, used to label the local user as "You". */
   myId?: string | null;
+  /** socketId -> real username map. */
+  names?: Record<string, string>;
 }
 
 const MAX_ENTRIES = 100;
@@ -45,7 +47,7 @@ function formatTime(iso: string): string {
  * players and spectators. Sending is optimistic (instant) and de-duplicated
  * against the server echo by sender + text.
  */
-export default function ChatSidebar({ roomCode, playerIds, myId }: ChatSidebarProps) {
+export default function ChatSidebar({ roomCode, playerIds, myId, names }: ChatSidebarProps) {
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState('');
@@ -154,11 +156,12 @@ export default function ChatSidebar({ roomCode, playerIds, myId }: ChatSidebarPr
   const senderLabel = useCallback(
     (senderId: string): string => {
       if (senderId && senderId === myId) return 'You';
+      if (names?.[senderId]) return names[senderId];
       const idx = playerIds.indexOf(senderId);
       if (idx >= 0) return `Player ${idx + 1}`;
       return 'Spectator';
     },
-    [myId, playerIds],
+    [myId, playerIds, names],
   );
 
   const connected = socket.connected;

@@ -46,6 +46,7 @@ interface VegasBoardProps {
   playerCash: Record<string, number>;
   playerCards: Record<string, number>;
   winnerId: string | null;
+  names?: Record<string, string>;
 }
 
 /** One money card of a casino stack. */
@@ -102,6 +103,7 @@ export default function VegasBoard({
   playerCash,
   playerCards,
   winnerId,
+  names,
 }: VegasBoardProps) {
   // Group hand dice by value.
   const handCounts: Record<number, number> = {};
@@ -168,7 +170,7 @@ export default function VegasBoard({
                 className="flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900/70 px-2.5 py-1 text-xs"
               >
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                <span className="font-bold text-slate-300">{isYou ? 'You' : `P${pIdx + 1}`}</span>
+                <span className="font-bold text-slate-300">{isYou ? 'You' : names?.[players[pIdx]] ?? `P${pIdx + 1}`}</span>
                 <span className="font-black text-emerald-400">${cash.toLocaleString()}</span>
                 {cards > 0 && <span className="text-[9px] font-semibold text-slate-500">{cards} cards</span>}
               </div>
@@ -261,7 +263,7 @@ export default function VegasBoard({
                         className="rounded-full px-1.5 py-px text-[8px] font-black leading-tight"
                         style={{ backgroundColor: `${color}26`, color }}
                       >
-                        {isYou ? 'You' : `P${pIdx + 1}`}
+                        {isYou ? 'You' : names?.[pId] ?? `P${pIdx + 1}`}
                       </span>
                       <div className="flex -space-x-1.5 flex-wrap max-w-[84px] justify-center">
                         {Array.from({ length: count }).map((_, i) => (
@@ -310,7 +312,7 @@ export default function VegasBoard({
                   </span>
                   <span className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
                   <span className="text-sm font-bold text-slate-200">
-                    {isYou ? 'You' : `Player ${pIdx + 1}`}
+                    {isYou ? 'You' : names?.[players[pIdx]] ?? `Player ${pIdx + 1}`}
                   </span>
                   <span className="text-[10px] font-semibold text-slate-500">{cards} cards</span>
                   <span className="ml-auto text-sm font-black text-emerald-400">${cash.toLocaleString()}</span>
