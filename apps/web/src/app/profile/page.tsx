@@ -4,12 +4,23 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Box,
-  TextField,
-  Button,
   Alert,
+  Box,
+  Button,
+  Chip,
   CircularProgress,
+  IconButton,
+  Paper,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
   Typography,
+  alpha,
 } from '@mui/material';
 import {
   Gamepad2,
@@ -20,6 +31,7 @@ import {
   LogOut,
   ChevronLeft,
   Edit2,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
@@ -94,21 +106,21 @@ function getResult(match: HistoryMatch, currentUserId: string): MatchResult {
 
 const RESULT_BADGE: Record<
   MatchResult,
-  { label: string; className: string }
+  { label: string; color: 'success' | 'error' | 'warning' }
 > = {
-  win: {
-    label: 'Win',
-    className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40',
-  },
-  loss: {
-    label: 'Loss',
-    className: 'bg-rose-500/10 text-rose-400 border-rose-500/40',
-  },
-  draw: {
-    label: 'Draw',
-    className: 'bg-amber-500/10 text-amber-400 border-amber-500/40',
-  },
+  win: { label: 'Win', color: 'success' },
+  loss: { label: 'Loss', color: 'error' },
+  draw: { label: 'Draw', color: 'warning' },
 };
+
+// Shared gradient used by the primary CTAs on this page.
+const GRADIENT_BTN = {
+  background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+  '&:hover': { background: 'linear-gradient(to right, #4f46e5, #0284c7)' },
+  fontWeight: 700,
+  borderRadius: 3,
+  textTransform: 'none',
+} as const;
 
 /* ------------------------------- UI bits -------------------------------- */
 
@@ -116,27 +128,65 @@ function StatCard({
   label,
   value,
   icon,
-  accent,
+  color,
 }: {
   label: string;
   value: string | number;
   icon: React.ReactNode;
-  accent: string;
+  color: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-slate-800/60 border border-slate-700/70 p-5">
-      <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${accent}`}
+    <Paper
+      elevation={0}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        borderRadius: 4,
+        bgcolor: alpha('#1e293b', 0.6),
+        border: '1px solid',
+        borderColor: alpha('#334155', 0.7),
+        p: 2.5,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 3,
+          border: `1px solid ${alpha(color, 0.3)}`,
+          bgcolor: alpha(color, 0.1),
+          color,
+        }}
       >
         {icon}
-      </div>
-      <div className="min-w-0">
-        <div className="text-2xl font-extrabold leading-tight text-white">{value}</div>
-        <div className="truncate text-xs font-medium uppercase tracking-wider text-slate-400">
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, lineHeight: 1.25 }}>
+          {value}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: 'text.secondary',
+          }}
+        >
           {label}
-        </div>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+    </Paper>
   );
 }
 
@@ -144,13 +194,13 @@ function SkeletonRows() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
-        <tr key={i} className="border-t border-slate-800/80">
+        <TableRow key={i} sx={{ borderTop: '1px solid', borderColor: alpha('#334155', 0.8) }}>
           {Array.from({ length: 4 }).map((__, j) => (
-            <td key={j} className="px-4 py-4">
-              <div className="h-4 w-24 max-w-full animate-pulse rounded bg-slate-800" />
-            </td>
+            <TableCell key={j} sx={{ px: 2, py: 2, borderBottom: 'none' }}>
+              <Skeleton variant="text" width="60%" sx={{ maxWidth: 96, bgcolor: alpha('#1e293b', 0.9) }} />
+            </TableCell>
           ))}
-        </tr>
+        </TableRow>
       ))}
     </>
   );
@@ -242,31 +292,66 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 animate-pulse">Loading your profile...</p>
-        </div>
-      </main>
+      <Box
+        component="main"
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 6,
+          bgcolor: 'background.default',
+          color: 'text.primary',
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={48} thickness={4} sx={{ color: '#818cf8' }} />
+          <Typography sx={{ color: 'text.secondary' }}>Loading your profile...</Typography>
+        </Box>
+      </Box>
     );
   }
 
   if (!user) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
-        <div className="w-full max-w-md rounded-2xl bg-slate-800/60 border border-slate-700 p-8 text-center shadow-xl">
-          <h1 className="text-xl font-bold">Please sign in</h1>
-          <p className="mt-2 text-sm text-slate-400">
+      <Box
+        component="main"
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 6,
+          bgcolor: 'background.default',
+          color: 'text.primary',
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            width: '100%',
+            maxWidth: 448,
+            borderRadius: 4,
+            bgcolor: alpha('#1e293b', 0.6),
+            border: '1px solid',
+            borderColor: '#334155',
+            p: 4,
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Please sign in
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
             Sign in to view your stats and match history.
-          </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-block rounded-lg bg-gradient-to-r from-indigo-500 to-sky-500 px-6 py-2.5 font-semibold text-white hover:from-indigo-400 hover:to-sky-400 transition-colors"
-          >
+          </Typography>
+          <Button component={Link} href="/login" variant="contained" size="large" fullWidth sx={{ mt: 3, ...GRADIENT_BTN }}>
             Go to Login
-          </Link>
-        </div>
-      </main>
+          </Button>
+        </Paper>
+      </Box>
     );
   }
 
@@ -278,33 +363,64 @@ export default function ProfilePage() {
   const hasMatches = matches.length > 0;
 
   return (
-    <main className="min-h-screen bg-slate-900 text-white">
-      <div className="mx-auto w-full max-w-4xl px-6 py-10">
+    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+      <Box sx={{ mx: 'auto', width: '100%', maxWidth: 896, px: { xs: 2, sm: 6 }, py: 10 }}>
         {/* Header */}
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <Link
+        <Box component="header" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Button
+            component={Link}
             href="/"
-            className="inline-flex items-center gap-1 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+            startIcon={<ChevronLeft size={16} />}
+            sx={{ color: 'text.secondary', textTransform: 'none', fontWeight: 500, '&:hover': { color: 'text.primary' } }}
           >
-            <ChevronLeft className="h-4 w-4" />
             Back to game
-          </Link>
-          <button
+          </Button>
+          <Button
+            variant="outlined"
             onClick={logout}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+            startIcon={<LogOut size={16} />}
+            sx={{
+              borderColor: '#334155',
+              color: 'text.secondary',
+              textTransform: 'none',
+              '&:hover': { bgcolor: alpha('#1e293b', 0.8), color: 'text.primary' },
+            }}
           >
-            <LogOut className="h-4 w-4" />
             Sign out
-          </button>
-        </header>
+          </Button>
+        </Box>
 
         {/* Identity card */}
-        <section className="mt-8 rounded-2xl bg-slate-800/60 border border-slate-700/70 p-6 shadow-xl">
-          <div className="flex flex-wrap items-center gap-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-500 text-2xl font-extrabold uppercase">
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 8,
+            borderRadius: 4,
+            bgcolor: alpha('#1e293b', 0.6),
+            border: '1px solid',
+            borderColor: alpha('#334155', 0.7),
+            p: 6,
+          }}
+        >
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                width: 64,
+                height: 64,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 4,
+                background: 'linear-gradient(to bottom right, #6366f1, #0ea5e9)',
+                fontSize: '1.5rem',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                color: 'white',
+              }}
+            >
               {user.username.charAt(0) || '?'}
-            </div>
-            <div className="min-w-0 flex-1">
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
               {isEditing ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 300 }}>
                   <TextField
@@ -349,170 +465,205 @@ export default function ProfilePage() {
                 </Box>
               ) : (
                 <>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-extrabold tracking-tight">{user.username}</h1>
-                    <button
-                      onClick={handleStartEdit}
-                      className="p-1 text-slate-400 hover:text-white transition-colors"
-                      title="Edit username"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.025em' }}>
+                      {user.username}
+                    </Typography>
+                    <IconButton size="small" onClick={handleStartEdit} title="Edit username" sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
+                      <Edit2 size={16} />
+                    </IconButton>
                     {saveSuccess && (
-                      <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 'bold' }}>
-                        Saved!
-                      </Typography>
+                      <Chip
+                        size="small"
+                        icon={<Check size={12} />}
+                        label="Saved!"
+                        sx={{
+                          color: '#10b981',
+                          fontWeight: 700,
+                          bgcolor: alpha('#10b981', 0.12),
+                          border: 'none',
+                          '& .MuiChip-icon': { color: 'inherit' },
+                        }}
+                      />
                     )}
-                  </div>
-                  <p className="truncate text-sm text-slate-400">{user.email}</p>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user.email}
+                  </Typography>
                 </>
               )}
-            </div>
-            <p className="ml-auto hidden text-xs font-mono text-slate-500 sm:block">
+            </Box>
+            <Typography variant="caption" sx={{ display: { xs: 'none', sm: 'block' }, ml: 'auto', fontFamily: 'monospace', color: 'text.disabled' }}>
               ID: {truncateId(user.id, 16)}
-            </p>
-          </div>
-        </section>
+            </Typography>
+          </Box>
+        </Paper>
 
         {/* Stats */}
-        <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
-            label="Games Played"
-            value={stats ? stats.gamesPlayed : '—'}
-            icon={<Gamepad2 className="h-5 w-5 text-indigo-400" />}
-            accent="border-indigo-400/30 bg-indigo-500/10"
-          />
-          <StatCard
-            label="Wins"
-            value={stats ? stats.wins : '—'}
-            icon={<Trophy className="h-5 w-5 text-emerald-400" />}
-            accent="border-emerald-400/30 bg-emerald-500/10"
-          />
-          <StatCard
-            label="Losses"
-            value={stats ? stats.losses : '—'}
-            icon={<Swords className="h-5 w-5 text-rose-400" />}
-            accent="border-rose-400/30 bg-rose-500/10"
-          />
-          <StatCard
-            label="Win Rate"
-            value={winRate}
-            icon={<TrendingUp className="h-5 w-5 text-sky-400" />}
-            accent="border-sky-400/30 bg-sky-500/10"
-          />
-        </section>
+        <Box sx={{ mt: 8, display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', lg: 'repeat(4, 1fr)' }, gap: 2 }}>
+          <StatCard label="Games Played" value={stats ? stats.gamesPlayed : '—'} icon={<Gamepad2 size={20} />} color="#818cf8" />
+          <StatCard label="Wins" value={stats ? stats.wins : '—'} icon={<Trophy size={20} />} color="#34d399" />
+          <StatCard label="Losses" value={stats ? stats.losses : '—'} icon={<Swords size={20} />} color="#fb7185" />
+          <StatCard label="Win Rate" value={winRate} icon={<TrendingUp size={20} />} color="#38bdf8" />
+        </Box>
 
         {/* Match history */}
-        <section className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold tracking-tight">
+        <Box component="section" sx={{ mt: 10 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.025em' }}>
               Match History
               {stats && (
-                <span className="ml-2 text-sm font-medium text-slate-500">
+                <Typography component="span" variant="body2" sx={{ ml: 1, fontWeight: 500, color: 'text.secondary' }}>
                   ({stats.gamesPlayed} {stats.gamesPlayed === 1 ? 'game' : 'games'})
-                </span>
+                </Typography>
               )}
-            </h2>
-            <button
+            </Typography>
+            <Button
+              size="small"
               onClick={() => void loadHistory()}
               disabled={loadingHistory}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-colors"
+              startIcon={<RefreshCw size={16} className={loadingHistory ? 'animate-spin' : ''} />}
+              sx={{
+                border: '1px solid',
+                borderColor: '#334155',
+                color: 'text.secondary',
+                textTransform: 'none',
+                '&:hover': { bgcolor: alpha('#1e293b', 0.8), color: 'text.primary' },
+              }}
             >
-              <RefreshCw className={`h-4 w-4 ${loadingHistory ? 'animate-spin' : ''}`} />
               Refresh
-            </button>
-          </div>
+            </Button>
+          </Box>
 
           {error && (
-            <div
-              role="alert"
-              className="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300"
-            >
+            <Alert severity="error" variant="outlined" sx={{ mt: 2, borderRadius: 2 }}>
               {error}
-            </div>
+            </Alert>
           )}
 
           {loadingHistory && !error ? (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/50">
-              <table className="w-full text-left text-sm">
-                <tbody>
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{ mt: 2, borderRadius: 4, border: '1px solid', borderColor: alpha('#334155', 0.7), bgcolor: alpha('#0f172a', 0.5), overflowX: 'auto' }}
+            >
+              <Table>
+                <TableBody>
                   <SkeletonRows />
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
           ) : hasMatches ? (
-            <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-700/70 bg-slate-900/50 shadow-xl">
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    <th className="px-4 py-3">Game Type</th>
-                    <th className="px-4 py-3">Opponent</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3 text-right">Result</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{ mt: 2, borderRadius: 4, border: '1px solid', borderColor: alpha('#334155', 0.7), bgcolor: alpha('#0f172a', 0.5), overflowX: 'auto' }}
+            >
+              <Table sx={{ minWidth: 560 }}>
+                <TableHead>
+                  <TableRow sx={{ borderBottom: '1px solid', borderColor: alpha('#334155', 0.7) }}>
+                    <TableCell sx={{ px: 2, py: 1.5, fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary', borderBottom: 'none' }}>
+                      Game Type
+                    </TableCell>
+                    <TableCell sx={{ px: 2, py: 1.5, fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary', borderBottom: 'none' }}>
+                      Opponent
+                    </TableCell>
+                    <TableCell sx={{ px: 2, py: 1.5, fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary', borderBottom: 'none' }}>
+                      Date
+                    </TableCell>
+                    <TableCell align="right" sx={{ px: 2, py: 1.5, fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary', borderBottom: 'none' }}>
+                      Result
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
                   {matches.map((match, index) => {
                     const players = parsePlayers(match.players);
-                    const opponent =
-                      players.find((id) => id !== user.id) ?? 'unknown';
+                    const opponent = players.find((id) => id !== user.id) ?? 'unknown';
                     const result = getResult(match, user.id);
                     const badge = RESULT_BADGE[result];
                     return (
-                      <tr
+                      <TableRow
                         key={match.id}
-                        className={
-                          index % 2 === 0
-                            ? 'bg-slate-800/30 transition-colors hover:bg-slate-800/60'
-                            : 'bg-transparent transition-colors hover:bg-slate-800/60'
-                        }
+                        sx={{
+                          bgcolor: index % 2 === 0 ? alpha('#1e293b', 0.3) : 'transparent',
+                          '&:hover': { bgcolor: alpha('#1e293b', 0.6) },
+                        }}
                       >
-                        <td className="px-4 py-3.5 font-medium text-slate-200">
+                        <TableCell sx={{ px: 2, py: 1.5, fontWeight: 500, color: 'text.primary', borderBottom: 'none' }}>
                           {formatGameName(match.gameName)}
-                        </td>
-                        <td
-                          className="px-4 py-3.5 font-mono text-xs text-slate-300"
+                        </TableCell>
+                        <TableCell
+                          sx={{ px: 2, py: 1.5, fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary', borderBottom: 'none' }}
                           title={opponent}
                         >
-                          {opponent === 'unknown'
-                            ? 'Unknown'
-                            : truncateId(opponent)}
-                        </td>
-                        <td className="px-4 py-3.5 text-slate-400">
+                          {opponent === 'unknown' ? 'Unknown' : truncateId(opponent)}
+                        </TableCell>
+                        <TableCell sx={{ px: 2, py: 1.5, color: 'text.secondary', borderBottom: 'none' }}>
                           {formatDate(match.createdAt)}
-                        </td>
-                        <td className="px-4 py-3.5 text-right">
-                          <span
-                            className={`inline-block min-w-[3.5rem] rounded-full border px-2.5 py-0.5 text-center text-xs font-bold ${badge.className}`}
-                          >
-                            {badge.label}
-                          </span>
-                        </td>
-                      </tr>
+                        </TableCell>
+                        <TableCell align="right" sx={{ px: 2, py: 1.5, borderBottom: 'none' }}>
+                          <Chip
+                            label={badge.label}
+                            size="small"
+                            sx={{
+                              minWidth: 56,
+                              fontWeight: 700,
+                              bgcolor: alpha(
+                                badge.color === 'success' ? '#10b981' : badge.color === 'error' ? '#f43f5e' : '#f59e0b',
+                                0.1,
+                              ),
+                              color:
+                                badge.color === 'success'
+                                  ? '#34d399'
+                                  : badge.color === 'error'
+                                    ? '#fb7185'
+                                    : '#fbbf24',
+                              border: '1px solid',
+                              borderColor: alpha(
+                                badge.color === 'success' ? '#10b981' : badge.color === 'error' ? '#f43f5e' : '#f59e0b',
+                                0.4,
+                              ),
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
           ) : (
             !error && (
-              <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-14 text-center">
-                <Gamepad2 className="h-10 w-10 text-slate-600" />
-                <p className="mt-3 font-medium text-slate-300">No matches yet</p>
-                <p className="mt-1 text-sm text-slate-500">
+              <Box
+                sx={{
+                  mt: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 4,
+                  border: '1px dashed',
+                  borderColor: '#334155',
+                  bgcolor: alpha('#0f172a', 0.4),
+                  px: 6,
+                  py: 14,
+                  textAlign: 'center',
+                }}
+              >
+                <Gamepad2 size={40} strokeWidth={1.5} color="#475569" />
+                <Typography sx={{ mt: 3, fontWeight: 500 }}>No matches yet</Typography>
+                <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
                   Play a game and your results will show up here.
-                </p>
-                <Link
-                  href="/"
-                  className="mt-5 rounded-lg bg-gradient-to-r from-indigo-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white hover:from-indigo-400 hover:to-sky-400 transition-colors"
-                >
+                </Typography>
+                <Button component={Link} href="/" variant="contained" sx={{ mt: 5, ...GRADIENT_BTN }}>
                   Play a Game
-                </Link>
-              </div>
+                </Button>
+              </Box>
             )
           )}
-        </section>
-      </div>
-    </main>
+        </Box>
+      </Box>
+    </Box>
   );
 }
