@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -14,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../common/admin.guard';
 import { Roles } from '../common/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminUpdateUserDto, DeactivateUserDto } from './dto/admin-user.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -132,6 +134,7 @@ export class AdminController {
           wins: true,
           losses: true,
           rating: true,
+          deactivated: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -140,5 +143,116 @@ export class AdminController {
     ]);
 
     return { items, total };
+  }
+
+  @Patch('users/:id/reset-stats')
+  @Roles('ADMIN')
+  async resetUserStats(@Param('id') id: string) {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new BadRequestException('کاربر یافت نشد');
+    }
+    await this.prisma.user.update({
+      where: { id },
+      data: { wins: 0, losses: 0, rating: 1200 },
+    });
+    return { ok: true, id };
+  }
+
+  @Patch('users/:id/deactivate')
+  @Roles('ADMIN')
+  async deactivateUser(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() body: DeactivateUserDto,
+  ) {
+    if (id === (req as any).user.id) {
+      throw new BadRequestException('نمیتوانید حساب خودتان را غیرفعال کنید');
+    }
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new BadRequestException('کاربر یافت نشد');
+    }
+    await this.prisma.user.update({
+      where: { id },
+      data: { deactivated: body.deactivated },
+    });
+    return { ok: true, id, deactivated: body.deactivated };
+  }
+
+  @Delete('users/:id')
+  @Roles('ADMIN')
+  async deleteUser(@Req() req: Request, @Param('id') id: string) {
+    if (id === (req as any).user.id) {
+      throw new BadRequestException('نمیتوانید حساب خودتان را حذف کنید');
+    }
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new BadRequestException('کاربر یافت نشد');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany({ where: { userId: id } });
+      await tx.tournamentPlayer.deleteMany({ where: { userId: id } });
+      await tx.tournamentMatch.updateMany({ where: { playerAId: id }, data: { playerAId: null } });
+      await tx.tournamentMatch.updateMany({ where: { playerBId: id }, data: { playerBId: null } });
+      await tx.tournamentMatch.updateMany({ where: { winnerId: id }, data: { winnerId: null } });
+      await tx.tournament.updateMany({ where: { winnerId: id }, data: { winnerId: null } });
+      await tx.gameHistory.updateMany({ where: { winnerId: id }, data: { winnerId: null } });
+      await tx.user.delete({ where: { id } });
+    });
+
+    return { ok: true, id };
+  }
+
+  @Patch('users/:id')
+  @Roles('ADMIN')
+  async updateUser(@Param('id') id: string, @Body() body: AdminUpdateUserDto) {
+    const { username, email, phone } = body;
+    if (!username && !email && !phone) {
+      throw new BadRequestException('حداقل یک فیلد برای ویرایش لازم است');
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      throw new BadRequestException('کاربر یافت نشد');
+    }
+
+    if (username) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          username: { equals: username, mode: 'insensitive' },
+          id: { not: id },
+        },
+      });
+      if (existing) throw new BadRequestException('این نام کاربری قبلا انتخاب شده است');
+    }
+
+    if (email) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          email: { equals: email, mode: 'insensitive' },
+          id: { not: id },
+        },
+      });
+      if (existing) throw new BadRequestException('این ایمیل قبلا انتخاب شده است');
+    }
+
+    if (phone) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          phone: { equals: phone },
+          id: { not: id },
+        },
+      });
+      if (existing) throw new BadRequestException('این شماره موبایل قبلا انتخاب شده است');
+    }
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { username, email, phone },
+    });
+
+    return { ok: true, id };
   }
 }

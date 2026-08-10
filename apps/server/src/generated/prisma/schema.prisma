@@ -25,16 +25,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String?  @unique // null for phone-only (OTP) accounts
-  password  String? // null for phone-only (OTP) accounts
-  username  String   @unique
-  phone     String?  @unique // Iranian mobile (09xxxxxxxxx) — OTP login/signup identifier
-  role      String   @default("USER")
-  wins      Int      @default(0)
-  losses    Int      @default(0)
-  rating    Int      @default(1200) // ELO rating, seeded at 1200
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  email       String?  @unique // null for phone-only (OTP) accounts
+  password    String? // null for phone-only (OTP) accounts
+  username    String   @unique
+  phone       String?  @unique // Iranian mobile (09xxxxxxxxx) — OTP login/signup identifier
+  role        String   @default("USER")
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  rating      Int      @default(1200) // ELO rating, seeded at 1200
+  deactivated Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   gameHistoryWins GameHistory[]      @relation("GameWinner")
   tournamentsWon  Tournament[]       @relation("TournamentWinner")

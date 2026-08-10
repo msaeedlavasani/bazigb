@@ -87,6 +87,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.deactivated) {
+      throw new UnauthorizedException('حساب شما غیرفعال شده است');
+    }
+
     const passwordMatches = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid credentials');
@@ -183,6 +187,8 @@ export class AuthService {
         data: { phone, username },
       });
       isNewUser = true;
+    } else if (user.deactivated) {
+      throw new UnauthorizedException('حساب شما غیرفعال شده است');
     }
 
     // Account exists / was just created -> consume the OTP code now.
@@ -249,6 +255,7 @@ export class AuthService {
     phone: string | null;
     username: string;
     role: string;
+    deactivated: boolean;
     createdAt: Date;
     password: string | null;
   }) {

@@ -1751,6 +1751,7 @@ export namespace Prisma {
     wins: number | null
     losses: number | null
     rating: number | null
+    deactivated: boolean | null
     createdAt: Date | null
   }
 
@@ -1764,6 +1765,7 @@ export namespace Prisma {
     wins: number | null
     losses: number | null
     rating: number | null
+    deactivated: boolean | null
     createdAt: Date | null
   }
 
@@ -1777,6 +1779,7 @@ export namespace Prisma {
     wins: number
     losses: number
     rating: number
+    deactivated: number
     createdAt: number
     _all: number
   }
@@ -1804,6 +1807,7 @@ export namespace Prisma {
     wins?: true
     losses?: true
     rating?: true
+    deactivated?: true
     createdAt?: true
   }
 
@@ -1817,6 +1821,7 @@ export namespace Prisma {
     wins?: true
     losses?: true
     rating?: true
+    deactivated?: true
     createdAt?: true
   }
 
@@ -1830,6 +1835,7 @@ export namespace Prisma {
     wins?: true
     losses?: true
     rating?: true
+    deactivated?: true
     createdAt?: true
     _all?: true
   }
@@ -1930,6 +1936,7 @@ export namespace Prisma {
     wins: number
     losses: number
     rating: number
+    deactivated: boolean
     createdAt: Date
     _count: UserCountAggregateOutputType | null
     _avg: UserAvgAggregateOutputType | null
@@ -1962,6 +1969,7 @@ export namespace Prisma {
     wins?: boolean
     losses?: boolean
     rating?: boolean
+    deactivated?: boolean
     createdAt?: boolean
     gameHistoryWins?: boolean | User$gameHistoryWinsArgs<ExtArgs>
     tournamentsWon?: boolean | User$tournamentsWonArgs<ExtArgs>
@@ -1983,6 +1991,7 @@ export namespace Prisma {
     wins?: boolean
     losses?: boolean
     rating?: boolean
+    deactivated?: boolean
     createdAt?: boolean
   }, ExtArgs["result"]["user"]>
 
@@ -1996,6 +2005,7 @@ export namespace Prisma {
     wins?: boolean
     losses?: boolean
     rating?: boolean
+    deactivated?: boolean
     createdAt?: boolean
   }
 
@@ -2032,6 +2042,7 @@ export namespace Prisma {
       wins: number
       losses: number
       rating: number
+      deactivated: boolean
       createdAt: Date
     }, ExtArgs["result"]["user"]>
     composites: {}
@@ -2442,6 +2453,7 @@ export namespace Prisma {
     readonly wins: FieldRef<"User", 'Int'>
     readonly losses: FieldRef<"User", 'Int'>
     readonly rating: FieldRef<"User", 'Int'>
+    readonly deactivated: FieldRef<"User", 'Boolean'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
   }
     
@@ -10850,6 +10862,7 @@ export namespace Prisma {
     wins: 'wins',
     losses: 'losses',
     rating: 'rating',
+    deactivated: 'deactivated',
     createdAt: 'createdAt'
   };
 
@@ -11019,6 +11032,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -11029,13 +11049,6 @@ export namespace Prisma {
    * Reference to a field of type 'DateTime[]'
    */
   export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -11069,6 +11082,7 @@ export namespace Prisma {
     wins?: IntFilter<"User"> | number
     losses?: IntFilter<"User"> | number
     rating?: IntFilter<"User"> | number
+    deactivated?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     gameHistoryWins?: GameHistoryListRelationFilter
     tournamentsWon?: TournamentListRelationFilter
@@ -11089,6 +11103,7 @@ export namespace Prisma {
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
+    deactivated?: SortOrder
     createdAt?: SortOrder
     gameHistoryWins?: GameHistoryOrderByRelationAggregateInput
     tournamentsWon?: TournamentOrderByRelationAggregateInput
@@ -11112,6 +11127,7 @@ export namespace Prisma {
     wins?: IntFilter<"User"> | number
     losses?: IntFilter<"User"> | number
     rating?: IntFilter<"User"> | number
+    deactivated?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     gameHistoryWins?: GameHistoryListRelationFilter
     tournamentsWon?: TournamentListRelationFilter
@@ -11132,6 +11148,7 @@ export namespace Prisma {
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
+    deactivated?: SortOrder
     createdAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _avg?: UserAvgOrderByAggregateInput
@@ -11153,6 +11170,7 @@ export namespace Prisma {
     wins?: IntWithAggregatesFilter<"User"> | number
     losses?: IntWithAggregatesFilter<"User"> | number
     rating?: IntWithAggregatesFilter<"User"> | number
+    deactivated?: BoolWithAggregatesFilter<"User"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
 
@@ -11722,6 +11740,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
@@ -11742,6 +11761,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
@@ -11762,6 +11782,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
@@ -11782,6 +11803,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput
@@ -11802,6 +11824,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
   }
 
@@ -11815,6 +11838,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -11828,6 +11852,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -12444,6 +12469,11 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -12520,6 +12550,7 @@ export namespace Prisma {
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
+    deactivated?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -12539,6 +12570,7 @@ export namespace Prisma {
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
+    deactivated?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -12552,6 +12584,7 @@ export namespace Prisma {
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
+    deactivated?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -12611,6 +12644,14 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -12680,11 +12721,6 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type UserRelationFilter = {
     is?: UserWhereInput
     isNot?: UserWhereInput
@@ -12718,14 +12754,6 @@ export namespace Prisma {
     body?: SortOrder
     read?: SortOrder
     createdAt?: SortOrder
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type RoomCountOrderByAggregateInput = {
@@ -13092,6 +13120,10 @@ export namespace Prisma {
     divide?: number
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -13296,10 +13328,6 @@ export namespace Prisma {
     create?: XOR<UserCreateWithoutNotificationsInput, UserUncheckedCreateWithoutNotificationsInput>
     connectOrCreate?: UserCreateOrConnectWithoutNotificationsInput
     connect?: UserWhereUniqueInput
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type UserUpdateOneRequiredWithoutNotificationsNestedInput = {
@@ -13673,6 +13701,11 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -13756,6 +13789,14 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -13768,19 +13809,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
@@ -14222,6 +14250,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
@@ -14241,6 +14270,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
@@ -14276,6 +14306,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
@@ -14295,6 +14326,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput
@@ -14358,6 +14390,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
     tournamentSlots?: TournamentPlayerCreateNestedManyWithoutUserInput
@@ -14377,6 +14410,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
     tournamentSlots?: TournamentPlayerUncheckedCreateNestedManyWithoutUserInput
@@ -14443,6 +14477,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
     tournamentSlots?: TournamentPlayerUpdateManyWithoutUserNestedInput
@@ -14462,6 +14497,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentSlots?: TournamentPlayerUncheckedUpdateManyWithoutUserNestedInput
@@ -14518,6 +14554,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentSlots?: TournamentPlayerCreateNestedManyWithoutUserInput
@@ -14537,6 +14574,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentSlots?: TournamentPlayerUncheckedCreateNestedManyWithoutUserInput
@@ -14632,6 +14670,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentSlots?: TournamentPlayerUpdateManyWithoutUserNestedInput
@@ -14651,6 +14690,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentSlots?: TournamentPlayerUncheckedUpdateManyWithoutUserNestedInput
@@ -14733,6 +14773,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
@@ -14752,6 +14793,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
@@ -14824,6 +14866,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
@@ -14843,6 +14886,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput
@@ -14893,6 +14937,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
@@ -14912,6 +14957,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
@@ -14936,6 +14982,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
@@ -14955,6 +15002,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
@@ -14979,6 +15027,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentCreateNestedManyWithoutWinnerInput
@@ -14998,6 +15047,7 @@ export namespace Prisma {
     wins?: number
     losses?: number
     rating?: number
+    deactivated?: boolean
     createdAt?: Date | string
     gameHistoryWins?: GameHistoryUncheckedCreateNestedManyWithoutWinnerInput
     tournamentsWon?: TournamentUncheckedCreateNestedManyWithoutWinnerInput
@@ -15137,6 +15187,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
@@ -15156,6 +15207,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput
@@ -15186,6 +15238,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
@@ -15205,6 +15258,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput
@@ -15235,6 +15289,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUpdateManyWithoutWinnerNestedInput
@@ -15254,6 +15309,7 @@ export namespace Prisma {
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
+    deactivated?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     gameHistoryWins?: GameHistoryUncheckedUpdateManyWithoutWinnerNestedInput
     tournamentsWon?: TournamentUncheckedUpdateManyWithoutWinnerNestedInput

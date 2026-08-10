@@ -18,6 +18,15 @@ import { Backgammon } from '@bazigb/game-backgammon';
 import { Vegas } from '@bazigb/game-vegas';
 import { RoomService, getMaxPlayers, getMinPlayers, RoomWithParsedData } from '../rooms/room.service';
 import { HistoryService } from '../history/history.service';
+import {
+  chatSchema,
+  gameActionSchema,
+  joinRoomSchema,
+  makeMoveSchema,
+  nextRoundSchema,
+  rollDiceSchema,
+  undoSchema,
+} from '../socket-validation';
 
 /** Registry of playable games keyed by the room's `gameType`. */
 const GAMES: Record<string, Game> = {
@@ -244,14 +253,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
       if (!payload?.sub) return false;
-      this.socketUsers.set(client.id, payload.sub);
-      console.log(`Socket ${client.id} bound to user ${payload.sub}`);
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { username: true },
+        select: { username: true, deactivated: true },
       });
-      if (user?.username) {
+
+      if (!user) return false;
+      if (user.deactivated) {
+        console.warn(`Socket ${client.id} belongs to deactivated user ${payload.sub} — binding blocked`);
+        return false;
+      }
+
+      this.socketUsers.set(client.id, payload.sub);
+      console.log(`Socket ${client.id} bound to user ${payload.sub}`);
+
+      if (user.username) {
         this.socketUsernames.set(client.id, user.username);
       }
       return true;
@@ -296,14 +313,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     // Accept both the legacy plain-string form and { roomCode, gameType, token, seatKey }.
-    @MessageBody() payload: string | { roomCode: string; gameType?: string; token?: string; seatKey?: string },
+    @MessageBody() payload: any,
   ) {
-    const roomCode = typeof payload === 'string' ? payload : payload?.roomCode;
-    const gameType = typeof payload === 'string' ? undefined : payload?.gameType;
-    const seatKey = typeof payload === 'string' ? undefined : payload?.seatKey;
+    const validated = joinRoomSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const data = validated.data;
+
+    const roomCode = typeof data === 'string' ? data : data.roomCode;
+    const gameType = typeof data === 'string' ? undefined : data.gameType;
+    const seatKey = typeof data === 'string' ? undefined : data.seatKey;
+    const token = typeof data === 'string' ? undefined : data.token;
     if (!roomCode) return;
 
-    await this.bindUser(client, typeof payload === 'string' ? undefined : payload?.token);
+    await this.bindUser(client, token);
 
     try {
       let room = await this.roomService.getRoom(roomCode);
@@ -437,9 +462,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('undo')
   async handleUndo(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string },
+    @MessageBody() payload: any,
   ) {
-    const { room } = data;
+    const validated = undoSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const { room } = validated.data;
     const roomRecord = await this.roomService.getRoom(room);
     if (
       !roomRecord ||
@@ -633,9 +663,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('nextRound')
   async handleNextRound(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string },
+    @MessageBody() payload: any,
   ) {
-    const { room: roomCode } = data;
+    const validated = nextRoundSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const { room: roomCode } = validated.data;
     const roomRecord = await this.roomService.getRoom(roomCode);
     if (
       !roomRecord ||
@@ -668,11 +703,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('chatMessage')
   async handleChatMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string; message: string },
+    @MessageBody() payload: any,
   ) {
-    const room = data?.room;
-    const message = typeof data?.message === 'string' ? data.message.trim() : '';
-    if (!room || !message) return;
+    const validated = chatSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const { room, message } = validated.data;
+    const msg = message.trim();
+    if (!msg) return;
 
     const roomRecord = await this.roomService.getRoom(room);
     if (!roomRecord) {
@@ -698,9 +738,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('rollDice')
   async handleRollDice(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string; count?: number },
+    @MessageBody() payload: any,
   ) {
-    const { room, count } = data;
+    const validated = rollDiceSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const { room, count } = validated.data;
     const roomRecord = await this.roomService.getRoom(room);
     if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
 
@@ -736,9 +781,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('makeMove')
   async handleMakeMove(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string; moveName: string; args: any[] },
+    @MessageBody() payload: any,
   ) {
-    const { room, moveName, args } = data;
+    const validated = makeMoveSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const { room, moveName, args } = validated.data;
     const roomRecord = await this.roomService.getRoom(room);
     if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
 
@@ -793,9 +843,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('gameAction')
   async handleGameAction(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { room: string; moveName: string; args: any[]; endTurn?: boolean },
+    @MessageBody() payload: any,
   ) {
-    const { room, moveName, args, endTurn } = data;
+    const validated = gameActionSchema.safeParse(payload);
+    if (!validated.success) {
+      client.emit('error', { message: 'درخواست نامعتبر است' });
+      return;
+    }
+    const { room, moveName, args, endTurn } = validated.data;
     const roomRecord = await this.roomService.getRoom(room);
     if (!roomRecord || !roomRecord.currentState || roomRecord.status !== 'playing') return;
 

@@ -124,4 +124,5 @@ export const api = {
       method: 'PATCH',
       body: data === undefined ? undefined : JSON.stringify(data),
     }),
+  delete: <T>(path: string): Promise<T> => request<T>(path, { method: 'DELETE' }),
 };

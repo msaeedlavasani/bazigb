@@ -132,6 +132,7 @@ exports.Prisma.UserScalarFieldEnum = {
   wins: 'wins',
   losses: 'losses',
   rating: 'rating',
+  deactivated: 'deactivated',
   createdAt: 'createdAt'
 };
 

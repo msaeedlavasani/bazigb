@@ -34,6 +34,7 @@ model User {
   wins      Int      @default(0)
   losses    Int      @default(0)
   rating    Int      @default(1200) // ELO rating, seeded at 1200
+  deactivated Boolean @default(false)
   createdAt DateTime @default(now())
 
   gameHistoryWins GameHistory[]    @relation("GameWinner")

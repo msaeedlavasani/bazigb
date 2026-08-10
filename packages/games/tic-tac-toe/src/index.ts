@@ -5,7 +5,12 @@ export interface TicTacToeState {
 }
 
 const clickCell: Move<TicTacToeState> = (G: TicTacToeState, ctx: GameContext, id: number) => {
-  if (id < 0 || id > 8 || G.cells[id] !== null) return G;
+  if (id < 0 || id > 8) {
+    throw new Error('Invalid cell ID');
+  }
+  if (G.cells[id] !== null) {
+    throw new Error('Cell is already occupied');
+  }
   const cells = [...G.cells];
   cells[id] = ctx.currentPlayer;
   return { ...G, cells };

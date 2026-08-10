@@ -15,6 +15,7 @@ export interface AdminUser {
   wins: number;
   losses: number;
   rating: number;
+  deactivated: boolean;
   createdAt: string;
 }
 
@@ -46,4 +47,27 @@ export async function getAdminUsers(params?: {
 /** Change a user's role (ADMIN only). */
 export async function setUserRole(id: string, role: 'USER' | 'ADMIN'): Promise<void> {
   await api.patch(`/admin/users/${id}/role`, { role });
+}
+
+/** Reset user stats (ADMIN only). */
+export async function resetUserStats(id: string): Promise<void> {
+  await api.patch(`/admin/users/${id}/reset-stats`);
+}
+
+/** Deactivate or activate a user (ADMIN only). */
+export async function deactivateUser(id: string, deactivated: boolean): Promise<void> {
+  await api.patch(`/admin/users/${id}/deactivate`, { deactivated });
+}
+
+/** Delete a user (ADMIN only). */
+export async function deleteUser(id: string): Promise<void> {
+  await api.delete(`/admin/users/${id}`);
+}
+
+/** Update user basic info (ADMIN only). */
+export async function updateAdminUser(
+  id: string,
+  data: { username?: string; email?: string; phone?: string }
+): Promise<{ ok: boolean; user: AdminUser }> {
+  return api.patch(`/admin/users/${id}`, data);
 }

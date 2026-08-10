@@ -27,16 +27,39 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  Chip,
 } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
-import { getAdminStats, getAdminUsers, setUserRole, AdminStats, AdminUser } from '@/lib/admin';
+import {
+  getAdminStats,
+  getAdminUsers,
+  setUserRole,
+  resetUserStats,
+  deactivateUser,
+  deleteUser,
+  updateAdminUser,
+  AdminStats,
+  AdminUser,
+} from '@/lib/admin';
 import {
   fetchSiteSettings,
   saveFooterSettings,
   FooterContent,
   FOOTER_DEFAULTS,
 } from '@/lib/site-settings';
-import { Users, PlayCircle, Trophy, ArrowLeft, Copyright, Shield, ShieldCheck } from 'lucide-react';
+import {
+  Users,
+  PlayCircle,
+  Trophy,
+  ArrowLeft,
+  Copyright,
+  Shield,
+  ShieldCheck,
+  Pencil,
+  RotateCcw,
+  Ban,
+  Trash2,
+} from 'lucide-react';
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -76,6 +99,27 @@ export default function AdminPage() {
   const [roleTarget, setRoleTarget] = useState<AdminUser | null>(null);
   const [roleSaving, setRoleSaving] = useState(false);
 
+  // New states for user management
+  const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [editForm, setEditForm] = useState({ username: '', email: '', phone: '' });
+  const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<AdminUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [deleteConfirmUsername, setDeleteConfirmUsername] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editTarget) {
+      setEditForm({
+        username: editTarget.username,
+        email: editTarget.email || '',
+        phone: editTarget.phone || '',
+      });
+      setErrorMsg(null);
+    }
+  }, [editTarget]);
+
   async function handleConfirmRoleChange() {
     if (!roleTarget) return;
     setRoleSaving(true);
@@ -87,6 +131,64 @@ export default function AdminPage() {
       console.error(err);
     } finally {
       setRoleSaving(false);
+    }
+  }
+
+  async function handleEditUser() {
+    if (!editTarget) return;
+    setActionLoading(true);
+    setErrorMsg(null);
+    try {
+      await updateAdminUser(editTarget.id, editForm);
+      setEditTarget(null);
+      await loadData();
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'خطا در ویرایش کاربر');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleResetStats() {
+    if (!resetTarget) return;
+    setActionLoading(true);
+    try {
+      await resetUserStats(resetTarget.id);
+      setResetTarget(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleToggleDeactivate() {
+    if (!deactivateTarget) return;
+    setActionLoading(true);
+    try {
+      await deactivateUser(deactivateTarget.id, !deactivateTarget.deactivated);
+      setDeactivateTarget(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!deleteTarget || deleteConfirmUsername !== deleteTarget.username) return;
+    setActionLoading(true);
+    try {
+      await deleteUser(deleteTarget.id);
+      setDeleteTarget(null);
+      setDeleteConfirmUsername('');
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -380,28 +482,53 @@ export default function AdminPage() {
                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>نام کاربری</TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>ایمیل / موبایل</TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>نقش</TableCell>
-                    <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>برد / باخت</TableCell>
-                    <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>رتبه</TableCell>
-                    <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>تاریخ عضویت</TableCell>
-                  </TableRow>
+                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>برد / باخت</TableCell>
+                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>رتبه</TableCell>
+                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'right' }}>تاریخ عضویت</TableCell>
+                     <TableCell sx={{ color: 'text.secondary', fontWeight: 700, textAlign: 'center' }}>عملیات</TableCell>
+                   </TableRow>
+
                 </TableHead>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                         <CircularProgress size={24} />
                       </TableCell>
                     </TableRow>
                   ) : users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                         <Typography sx={{ color: 'text.disabled' }}>کاربری یافت نشد</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
                     users.map((u) => (
-                      <TableRow key={u.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                        <TableCell sx={{ color: 'white', fontWeight: 600, textAlign: 'right' }}>{u.username}</TableCell>
+                      <TableRow
+                        key={u.id}
+                        sx={{
+                          '&:last-child td, &:last-child th': { border: 0 },
+                          opacity: u.deactivated ? 0.6 : 1,
+                        }}
+                      >
+                        <TableCell sx={{ color: 'white', fontWeight: 600, textAlign: 'right' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {u.username}
+                            {u.deactivated && (
+                              <Chip
+                                label="غیرفعال"
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.65rem',
+                                  bgcolor: alpha('#f43f5e', 0.2),
+                                  color: '#fb7185',
+                                  fontWeight: 700,
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
                         <TableCell sx={{ color: 'text.secondary', textAlign: 'right' }}>
                           {u.email || u.phone || '-'}
                         </TableCell>
@@ -410,7 +537,11 @@ export default function AdminPage() {
                             <Box
                               component="span"
                               sx={{
-                                px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
+                                px: 1,
+                                py: 0.5,
+                                borderRadius: 1,
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
                                 bgcolor: u.role === 'ADMIN' ? alpha('#f43f5e', 0.1) : alpha('#B25D16', 0.1),
                                 color: u.role === 'ADMIN' ? '#fb7185' : '#F5A306',
                               }}
@@ -429,10 +560,55 @@ export default function AdminPage() {
                             )}
                           </Box>
                         </TableCell>
-                        <TableCell sx={{ color: 'white', textAlign: 'right' }}>{u.wins} / {u.losses}</TableCell>
-                        <TableCell sx={{ color: '#fbbf24', fontWeight: 700, textAlign: 'right' }}>{u.rating}</TableCell>
+                        <TableCell sx={{ color: 'white', textAlign: 'right' }}>
+                          {u.wins} / {u.losses}
+                        </TableCell>
+                        <TableCell sx={{ color: '#fbbf24', fontWeight: 700, textAlign: 'right' }}>
+                          {u.rating}
+                        </TableCell>
                         <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem', textAlign: 'right' }}>
                           {new Date(u.createdAt).toLocaleDateString('fa-IR')}
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
+                            <IconButton
+                              size="small"
+                              title="ویرایش"
+                              onClick={() => setEditTarget(u)}
+                              sx={{ color: 'text.secondary', '&:hover': { color: '#F5A306' } }}
+                            >
+                              <Pencil size={16} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              title="ریست آمار"
+                              onClick={() => setResetTarget(u)}
+                              sx={{ color: 'text.secondary', '&:hover': { color: '#fbbf24' } }}
+                            >
+                              <RotateCcw size={16} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              title={u.deactivated ? 'فعالسازی' : 'غیرفعالسازی'}
+                              onClick={() => setDeactivateTarget(u)}
+                              sx={{
+                                color: 'text.secondary',
+                                '&:hover': { color: u.deactivated ? '#34d399' : '#f43f5e' },
+                              }}
+                            >
+                              {u.deactivated ? <ShieldCheck size={16} /> : <Ban size={16} />}
+                            </IconButton>
+                            {u.id !== user?.id && (
+                              <IconButton
+                                size="small"
+                                title="حذف"
+                                onClick={() => setDeleteTarget(u)}
+                                sx={{ color: 'text.secondary', '&:hover': { color: '#f43f5e' } }}
+                              >
+                                <Trash2 size={16} />
+                              </IconButton>
+                            )}
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))
@@ -510,6 +686,239 @@ export default function AdminPage() {
               sx={{ bgcolor: '#B25D16', '&:hover': { bgcolor: '#8F470F' } }}
             >
               تأیید تغییر
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit User Dialog */}
+        <Dialog
+          open={!!editTarget}
+          onClose={() => !actionLoading && setEditTarget(null)}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: '#0B1622',
+                border: '1px solid',
+                borderColor: alpha('#2C3A45', 0.8),
+                borderRadius: 4,
+                color: 'white',
+                minWidth: 400,
+              },
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>ویرایش کاربر</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+              <TextField
+                label="نام کاربری"
+                fullWidth
+                size="small"
+                value={editForm.username}
+                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#030A15', color: 'white' },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
+                }}
+              />
+              <TextField
+                label="ایمیل"
+                fullWidth
+                size="small"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#030A15', color: 'white' },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
+                }}
+              />
+              <TextField
+                label="موبایل"
+                fullWidth
+                size="small"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#030A15', color: 'white' },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
+                }}
+              />
+              {errorMsg && (
+                <Alert severity="error" variant="outlined" sx={{ borderRadius: 2 }}>
+                  {errorMsg}
+                </Alert>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button
+              onClick={() => setEditTarget(null)}
+              disabled={actionLoading}
+              variant="outlined"
+              sx={{ borderColor: alpha('#2C3A45', 0.8), color: 'text.secondary' }}
+            >
+              انصراف
+            </Button>
+            <Button
+              onClick={handleEditUser}
+              disabled={actionLoading}
+              variant="contained"
+              sx={{ bgcolor: '#B25D16', '&:hover': { bgcolor: '#8F470F' } }}
+            >
+              ذخیره تغییرات
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Reset Stats Confirmation */}
+        <Dialog
+          open={!!resetTarget}
+          onClose={() => !actionLoading && setResetTarget(null)}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: '#0B1622',
+                border: '1px solid',
+                borderColor: alpha('#2C3A45', 0.8),
+                borderRadius: 4,
+                color: 'white',
+              },
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>ریست آمار؟</DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ color: 'text.secondary' }}>
+              آیا مطمئن هستید که آمار برد/باخت/رتبه کاربر «{resetTarget?.username}» صفر شود؟ این عمل غیرقابل بازگشت است.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button
+              onClick={() => setResetTarget(null)}
+              disabled={actionLoading}
+              variant="outlined"
+              sx={{ borderColor: alpha('#2C3A45', 0.8), color: 'text.secondary' }}
+            >
+              انصراف
+            </Button>
+            <Button
+              onClick={handleResetStats}
+              disabled={actionLoading}
+              variant="contained"
+              sx={{ bgcolor: '#fbbf24', color: '#030A15', '&:hover': { bgcolor: '#d97706' } }}
+            >
+              تأیید ریست
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Deactivate/Activate Confirmation */}
+        <Dialog
+          open={!!deactivateTarget}
+          onClose={() => !actionLoading && setDeactivateTarget(null)}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: '#0B1622',
+                border: '1px solid',
+                borderColor: alpha('#2C3A45', 0.8),
+                borderRadius: 4,
+                color: 'white',
+              },
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            {deactivateTarget?.deactivated ? 'فعالسازی کاربر؟' : 'غیرفعالسازی کاربر؟'}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ color: 'text.secondary' }}>
+              {deactivateTarget?.deactivated
+                ? `آیا مایل به فعالسازی مجدد کاربر «${deactivateTarget?.username}» هستید؟`
+                : `آیا مطمئن هستید که می‌خواهید کاربر «${deactivateTarget?.username}» را غیرفعال کنید؟ او دیگر قادر به ورود نخواهد بود.`}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button
+              onClick={() => setDeactivateTarget(null)}
+              disabled={actionLoading}
+              variant="outlined"
+              sx={{ borderColor: alpha('#2C3A45', 0.8), color: 'text.secondary' }}
+            >
+              انصراف
+            </Button>
+            <Button
+              onClick={handleToggleDeactivate}
+              disabled={actionLoading}
+              variant="contained"
+              sx={{
+                bgcolor: deactivateTarget?.deactivated ? '#34d399' : '#f43f5e',
+                '&:hover': { bgcolor: deactivateTarget?.deactivated ? '#059669' : '#e11d48' },
+              }}
+            >
+              تأیید
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete User Confirmation */}
+        <Dialog
+          open={!!deleteTarget}
+          onClose={() => {
+            if (!actionLoading) {
+              setDeleteTarget(null);
+              setDeleteConfirmUsername('');
+            }
+          }}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: '#0B1622',
+                border: '1px solid',
+                borderColor: alpha('#2C3A45', 0.8),
+                borderRadius: 4,
+                color: 'white',
+              },
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>حذف قطعی کاربر؟</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <DialogContentText sx={{ color: '#fb7185', fontWeight: 600 }}>
+                این عمل غیرقابل بازگشت است و تمام داده‌های کاربر برای همیشه پاک خواهد شد.
+              </DialogContentText>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                برای تأیید، نام کاربری «<strong>{deleteTarget?.username}</strong>» را وارد کنید:
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                value={deleteConfirmUsername}
+                onChange={(e) => setDeleteConfirmUsername(e.target.value)}
+                placeholder={deleteTarget?.username}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 3, bgcolor: '#030A15', color: 'white' },
+                }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button
+              onClick={() => setDeleteTarget(null)}
+              disabled={actionLoading}
+              variant="outlined"
+              sx={{ borderColor: alpha('#2C3A45', 0.8), color: 'text.secondary' }}
+            >
+              انصراف
+            </Button>
+            <Button
+              onClick={handleDeleteUser}
+              disabled={actionLoading || deleteConfirmUsername !== deleteTarget?.username}
+              variant="contained"
+              sx={{ bgcolor: '#f43f5e', '&:hover': { bgcolor: '#e11d48' } }}
+            >
+              حذف نهایی کاربر
             </Button>
           </DialogActions>
         </Dialog>
