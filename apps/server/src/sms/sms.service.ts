@@ -48,7 +48,9 @@ export class SmsService {
         body: JSON.stringify({
           mobile: phone,
           templateId: this.templateId,
-          parameters: [{ name: 'Code', value: code }],
+          // Parameter name must match the template placeholder (without the
+          // surrounding #). Template 997360 ("OTP") uses #OTP#.
+          parameters: [{ name: 'OTP', value: code }],
         }),
       });
       const body = (await res.json().catch(() => null)) as {

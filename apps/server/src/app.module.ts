@@ -13,6 +13,7 @@ import { LeaderboardService } from './leaderboard/leaderboard.service';
 import { LeaderboardController } from './leaderboard/leaderboard.controller';
 import { TournamentService } from './tournaments/tournament.service';
 import { TournamentsController } from './tournaments/tournament.controller';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TournamentsController } from './tournaments/tournament.controller';
     }]),
     PrismaModule,
     AuthModule,
+    AdminModule,
   ],
   controllers: [
     HistoryController,

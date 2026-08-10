@@ -16,11 +16,18 @@ export interface AuthUser {
   wins: number;
   losses: number;
   createdAt: string;
+  role?: string;
 }
 
 interface AuthResponse {
   accessToken: string;
   user: AuthUser;
+}
+
+export interface OtpResponse {
+  accessToken?: string;
+  user?: AuthUser;
+  isNewUser: boolean;
 }
 
 export interface AuthContextValue {
@@ -31,6 +38,7 @@ export interface AuthContextValue {
   /** True while the persisted session is being restored on first mount. */
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  loginWithOtp: (phone: string, code: string, username?: string) => Promise<OtpResponse>;
   register: (email: string, username: string, password: string) => Promise<AuthUser>;
   updateUser: (patch: { username: string }) => Promise<AuthUser>;
   logout: () => void;
@@ -85,6 +93,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res.user;
   }, []);
 
+  const loginWithOtp = useCallback(
+    async (phone: string, code: string, username?: string) => {
+      const res = await api.post<OtpResponse>('/auth/otp/verify', {
+        phone,
+        code,
+        username,
+      });
+      // Persist the session ONLY when the account actually exists. When the
+      // server returns isNewUser (first verify of a brand-new phone) the user
+      // must finish the signup (enter a username) before any token is stored.
+      if (!res.isNewUser && res.accessToken && res.user) {
+        storeToken(res.accessToken);
+        setTokenState(res.accessToken);
+        setUser(res.user);
+      }
+      return res;
+    },
+    [],
+  );
+
   const register = useCallback(
     async (email: string, username: string, password: string) => {
       const res = await api.post<AuthResponse>('/auth/register', {
@@ -113,8 +141,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, token, isLoading, login, register, updateUser, logout }),
-    [user, token, isLoading, login, register, updateUser, logout],
+    () => ({
+      user,
+      token,
+      isLoading,
+      login,
+      loginWithOtp,
+      register,
+      updateUser,
+      logout,
+    }),
+    [user, token, isLoading, login, loginWithOtp, register, updateUser, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

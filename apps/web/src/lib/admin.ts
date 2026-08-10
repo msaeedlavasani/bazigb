@@ -1,0 +1,44 @@
+import { api } from './api';
+
+export interface AdminStats {
+  users: { total: number; admins: number };
+  rooms: { total: number; waiting: number; playing: number; finished: number };
+  games: { total: number; byType: Record<string, number> };
+}
+
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  username: string;
+  phone: string | null;
+  role: string;
+  wins: number;
+  losses: number;
+  rating: number;
+  createdAt: string;
+}
+
+export interface AdminUsersResponse {
+  items: AdminUser[];
+  total: number;
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  return api.get<AdminStats>('/admin/stats');
+}
+
+export async function getAdminUsers(params?: {
+  q?: string;
+  role?: string;
+  take?: number;
+  skip?: number;
+}): Promise<AdminUsersResponse> {
+  const query = new URLSearchParams();
+  if (params?.q) query.set('q', params.q);
+  if (params?.role) query.set('role', params.role);
+  if (params?.take) query.set('take', params.take.toString());
+  if (params?.skip) query.set('skip', params.skip.toString());
+
+  const queryString = query.toString();
+  return api.get<AdminUsersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+}

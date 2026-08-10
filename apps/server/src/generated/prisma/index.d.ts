@@ -1661,6 +1661,7 @@ export namespace Prisma {
     password: string | null
     username: string | null
     phone: string | null
+    role: string | null
     wins: number | null
     losses: number | null
     rating: number | null
@@ -1673,6 +1674,7 @@ export namespace Prisma {
     password: string | null
     username: string | null
     phone: string | null
+    role: string | null
     wins: number | null
     losses: number | null
     rating: number | null
@@ -1685,6 +1687,7 @@ export namespace Prisma {
     password: number
     username: number
     phone: number
+    role: number
     wins: number
     losses: number
     rating: number
@@ -1711,6 +1714,7 @@ export namespace Prisma {
     password?: true
     username?: true
     phone?: true
+    role?: true
     wins?: true
     losses?: true
     rating?: true
@@ -1723,6 +1727,7 @@ export namespace Prisma {
     password?: true
     username?: true
     phone?: true
+    role?: true
     wins?: true
     losses?: true
     rating?: true
@@ -1735,6 +1740,7 @@ export namespace Prisma {
     password?: true
     username?: true
     phone?: true
+    role?: true
     wins?: true
     losses?: true
     rating?: true
@@ -1834,6 +1840,7 @@ export namespace Prisma {
     password: string | null
     username: string
     phone: string | null
+    role: string
     wins: number
     losses: number
     rating: number
@@ -1865,6 +1872,7 @@ export namespace Prisma {
     password?: boolean
     username?: boolean
     phone?: boolean
+    role?: boolean
     wins?: boolean
     losses?: boolean
     rating?: boolean
@@ -1885,6 +1893,7 @@ export namespace Prisma {
     password?: boolean
     username?: boolean
     phone?: boolean
+    role?: boolean
     wins?: boolean
     losses?: boolean
     rating?: boolean
@@ -1897,6 +1906,7 @@ export namespace Prisma {
     password?: boolean
     username?: boolean
     phone?: boolean
+    role?: boolean
     wins?: boolean
     losses?: boolean
     rating?: boolean
@@ -1932,6 +1942,7 @@ export namespace Prisma {
       password: string | null
       username: string
       phone: string | null
+      role: string
       wins: number
       losses: number
       rating: number
@@ -2341,6 +2352,7 @@ export namespace Prisma {
     readonly password: FieldRef<"User", 'String'>
     readonly username: FieldRef<"User", 'String'>
     readonly phone: FieldRef<"User", 'String'>
+    readonly role: FieldRef<"User", 'String'>
     readonly wins: FieldRef<"User", 'Int'>
     readonly losses: FieldRef<"User", 'Int'>
     readonly rating: FieldRef<"User", 'Int'>
@@ -9894,6 +9906,7 @@ export namespace Prisma {
     password: 'password',
     username: 'username',
     phone: 'phone',
+    role: 'role',
     wins: 'wins',
     losses: 'losses',
     rating: 'rating',
@@ -10103,6 +10116,7 @@ export namespace Prisma {
     password?: StringNullableFilter<"User"> | string | null
     username?: StringFilter<"User"> | string
     phone?: StringNullableFilter<"User"> | string | null
+    role?: StringFilter<"User"> | string
     wins?: IntFilter<"User"> | number
     losses?: IntFilter<"User"> | number
     rating?: IntFilter<"User"> | number
@@ -10122,6 +10136,7 @@ export namespace Prisma {
     password?: SortOrderInput | SortOrder
     username?: SortOrder
     phone?: SortOrderInput | SortOrder
+    role?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
@@ -10144,6 +10159,7 @@ export namespace Prisma {
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
     password?: StringNullableFilter<"User"> | string | null
+    role?: StringFilter<"User"> | string
     wins?: IntFilter<"User"> | number
     losses?: IntFilter<"User"> | number
     rating?: IntFilter<"User"> | number
@@ -10163,6 +10179,7 @@ export namespace Prisma {
     password?: SortOrderInput | SortOrder
     username?: SortOrder
     phone?: SortOrderInput | SortOrder
+    role?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
@@ -10183,6 +10200,7 @@ export namespace Prisma {
     password?: StringNullableWithAggregatesFilter<"User"> | string | null
     username?: StringWithAggregatesFilter<"User"> | string
     phone?: StringNullableWithAggregatesFilter<"User"> | string | null
+    role?: StringWithAggregatesFilter<"User"> | string
     wins?: IntWithAggregatesFilter<"User"> | number
     losses?: IntWithAggregatesFilter<"User"> | number
     rating?: IntWithAggregatesFilter<"User"> | number
@@ -10709,6 +10727,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -10728,6 +10747,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -10747,6 +10767,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -10766,6 +10787,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -10785,6 +10807,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -10797,6 +10820,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -10809,6 +10833,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -11458,6 +11483,7 @@ export namespace Prisma {
     password?: SortOrder
     username?: SortOrder
     phone?: SortOrder
+    role?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
@@ -11476,6 +11502,7 @@ export namespace Prisma {
     password?: SortOrder
     username?: SortOrder
     phone?: SortOrder
+    role?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
@@ -11488,6 +11515,7 @@ export namespace Prisma {
     password?: SortOrder
     username?: SortOrder
     phone?: SortOrder
+    role?: SortOrder
     wins?: SortOrder
     losses?: SortOrder
     rating?: SortOrder
@@ -13139,6 +13167,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13157,6 +13186,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13191,6 +13221,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13209,6 +13240,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13271,6 +13303,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13289,6 +13322,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13354,6 +13388,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13372,6 +13407,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13427,6 +13463,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13445,6 +13482,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13539,6 +13577,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13557,6 +13596,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13638,6 +13678,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13656,6 +13697,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13727,6 +13769,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13745,6 +13788,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -13794,6 +13838,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13812,6 +13857,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13835,6 +13881,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13853,6 +13900,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13876,6 +13924,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -13894,6 +13943,7 @@ export namespace Prisma {
     password?: string | null
     username: string
     phone?: string | null
+    role?: string
     wins?: number
     losses?: number
     rating?: number
@@ -14032,6 +14082,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -14050,6 +14101,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -14079,6 +14131,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -14097,6 +14150,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -14126,6 +14180,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number
@@ -14144,6 +14199,7 @@ export namespace Prisma {
     password?: NullableStringFieldUpdateOperationsInput | string | null
     username?: StringFieldUpdateOperationsInput | string
     phone?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
     wins?: IntFieldUpdateOperationsInput | number
     losses?: IntFieldUpdateOperationsInput | number
     rating?: IntFieldUpdateOperationsInput | number

@@ -209,6 +209,7 @@ export class AuthService {
     email: string | null;
     phone: string | null;
     username: string;
+    role: string;
     createdAt: Date;
     password: string | null;
   }) {
@@ -216,6 +217,7 @@ export class AuthService {
       sub: user.id,
       email: user.email ?? undefined,
       phone: user.phone ?? undefined,
+      role: user.role,
     });
 
     const { password: _password, ...safeUser } = user;

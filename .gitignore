@@ -13,3 +13,6 @@ dist/
 # Local databases
 *.db
 *.db-journal
+
+# Server local env (contains real SMS/DB secrets)
+apps/server/.env

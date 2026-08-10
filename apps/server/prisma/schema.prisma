@@ -30,6 +30,7 @@ model User {
   password  String?  // null for phone-only (OTP) accounts
   username  String   @unique
   phone     String?  @unique // Iranian mobile (09xxxxxxxxx) — OTP login/signup identifier
+  role      String   @default("USER")
   wins      Int      @default(0)
   losses    Int      @default(0)
   rating    Int      @default(1200) // ELO rating, seeded at 1200
