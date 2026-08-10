@@ -154,7 +154,11 @@ export class AuthService {
       });
       throw new UnauthorizedException('کد نادرست است');
     }
-    await this.prisma.otpCode.delete({ where: { id: record.id } });
+
+    // NOTE: the OTP record is NOT deleted here — for a brand-new phone the
+    // first verify returns { isNewUser: true } so the client can collect the
+    // username; the follow-up verify (same phone + code + username) must still
+    // succeed. The record is deleted only after the account exists.
 
     let user = await this.prisma.user.findUnique({ where: { phone } });
     let isNewUser = false;
@@ -162,9 +166,13 @@ export class AuthService {
     if (!user) {
       const username = dto.username?.trim() ?? '';
       if (!USERNAME_REGEX.test(username)) {
-        throw new BadRequestException(
-          'برای ساخت حساب جدید، یوزرنیم لاتین (۳ تا ۲۰ کاراکتر: حروف، عدد، _) وارد کنید',
-        );
+        // New phone + no (valid) username yet: do NOT error out — tell the
+        // client this is a signup so it can show the username form. The code
+        // has already been validated & consumed above, so a follow-up verify
+        // with the same phone+code would fail — instead the client re-sends
+        // the code or we keep the code valid by NOT deleting it here. We keep
+        // it simple: respond isNewUser and let the client re-verify.
+        return { isNewUser: true };
       }
       const taken = await this.prisma.user.findUnique({ where: { username } });
       if (taken) {
@@ -175,6 +183,9 @@ export class AuthService {
       });
       isNewUser = true;
     }
+
+    // Account exists / was just created -> consume the OTP code now.
+    await this.prisma.otpCode.delete({ where: { id: record.id } });
 
     const auth = await this.buildAuthResponse(user);
     return { ...auth, isNewUser };

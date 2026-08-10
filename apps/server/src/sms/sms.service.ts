@@ -56,10 +56,15 @@ export class SmsService {
       const body = (await res.json().catch(() => null)) as {
         status?: number;
         message?: string;
+        data?: { messageId?: number };
       } | null;
 
       if (res.ok && body?.status === 1) {
-        this.logger.log(`OTP sent to ${phone} (messageId from sms.ir)`);
+        // Log the REAL messageId so delivery can be tracked on the sms.ir
+        // panel / via GET /v1/send/{messageId}.
+        this.logger.log(
+          `OTP sent to ${phone} (messageId ${body?.data?.messageId ?? 'unknown'})`,
+        );
         return;
       }
       // sms.ir status codes: 13 = account inactive, 10 = invalid key, 20 = rate limit…
