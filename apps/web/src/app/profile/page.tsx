@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   Edit2,
   Check,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
@@ -113,13 +114,26 @@ const RESULT_BADGE: Record<
   draw: { label: 'Draw', color: 'warning' },
 };
 
-// Shared gradient used by the primary CTAs on this page.
+// Solid brand color used by the primary CTAs on this page.
 const GRADIENT_BTN = {
-  background: 'linear-gradient(to right, #F5A306, #B25D16)',
-  '&:hover': { background: 'linear-gradient(to right, #B25D16, #8F470F)' },
+  background: '#F5A306',
+  '&:hover': { background: '#B25D16' },
   fontWeight: 700,
   borderRadius: 3,
   textTransform: 'none',
+} as const;
+
+// Shared dark-theme TextField style for the password form.
+const passwordFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 3,
+    color: 'white',
+    bgcolor: alpha('#030A15', 0.6),
+    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+    '&.Mui-focused fieldset': { borderColor: '#B25D16' },
+  },
+  '& .MuiInputLabel-root': { color: 'text.secondary' },
 } as const;
 
 /* ------------------------------- UI bits -------------------------------- */
@@ -224,6 +238,14 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Change password state
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [savingPw, setSavingPw] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState(false);
+
   const loadHistory = useCallback(async () => {
     if (!user) return;
     setLoadingHistory(true);
@@ -280,6 +302,41 @@ export default function ProfilePage() {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPwError(null);
+    setPwSuccess(false);
+
+    if (user?.hasPassword && !pwCurrent) {
+      setPwError('رمز فعلی الزامی است');
+      return;
+    }
+    if (pwNew.length < 8) {
+      setPwError('رمز جدید باید حداقل ۸ کاراکتر باشد');
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwError('تکرار رمز جدید مطابقت ندارد');
+      return;
+    }
+
+    setSavingPw(true);
+    try {
+      await api.patch('/auth/change-password', {
+        currentPassword: pwCurrent || undefined,
+        newPassword: pwNew,
+      });
+      setPwSuccess(true);
+      setPwCurrent('');
+      setPwNew('');
+      setPwConfirm('');
+      setTimeout(() => setPwSuccess(false), 3000);
+    } catch (err: any) {
+      setPwError(err?.message || 'خطا در تغییر رمز');
+    } finally {
+      setSavingPw(false);
     }
   };
 
@@ -409,7 +466,7 @@ export default function ProfilePage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 4,
-                background: 'linear-gradient(to bottom right, #F5A306, #B25D16)',
+                background: '#F5A306',
                 fontSize: '1.5rem',
                 fontWeight: 800,
                 textTransform: 'uppercase',
@@ -504,6 +561,79 @@ export default function ProfilePage() {
           <StatCard label="Losses" value={stats ? stats.losses : '—'} icon={<Swords size={20} />} color="#fb7185" />
           <StatCard label="Win Rate" value={winRate} icon={<TrendingUp size={20} />} color="#B25D16" />
         </Box>
+
+        {/* Change password */}
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 8,
+            borderRadius: 4,
+            bgcolor: alpha('#0B1622', 0.6),
+            border: '1px solid',
+            borderColor: alpha('#2C3A45', 0.8),
+            p: 6,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
+            <Lock size={20} color="#F5A306" />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              تغییر رمز
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 360 }}>
+            {user?.hasPassword && (
+              <TextField
+                type="password"
+                size="small"
+                label="رمز فعلی"
+                value={pwCurrent}
+                onChange={(e) => setPwCurrent(e.target.value)}
+                autoComplete="current-password"
+                error={!!pwError && !pwCurrent}
+                sx={passwordFieldSx}
+              />
+            )}
+            <TextField
+              type="password"
+              size="small"
+              label="رمز جدید (حداقل ۸ کاراکتر)"
+              value={pwNew}
+              onChange={(e) => setPwNew(e.target.value)}
+              autoComplete="new-password"
+              sx={passwordFieldSx}
+            />
+            <TextField
+              type="password"
+              size="small"
+              label="تکرار رمز جدید"
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              autoComplete="new-password"
+              sx={passwordFieldSx}
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button
+                variant="contained"
+                onClick={handleChangePassword}
+                disabled={savingPw}
+                startIcon={savingPw ? <CircularProgress size={16} color="inherit" /> : null}
+                sx={{ bgcolor: '#B25D16', '&:hover': { bgcolor: '#8F470F' } }}
+              >
+                تغییر رمز
+              </Button>
+              {pwSuccess && (
+                <Typography sx={{ color: '#34d399', fontWeight: 600, fontSize: '0.875rem' }}>
+                  رمز تغییر کرد ✓
+                </Typography>
+              )}
+            </Box>
+            {pwError && (
+              <Alert severity="error" variant="outlined" sx={{ borderRadius: 2 }}>
+                {pwError}
+              </Alert>
+            )}
+          </Box>
+        </Paper>
 
         {/* Match history */}
         <Box component="section" sx={{ mt: 10 }}>

@@ -72,6 +72,108 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Snapshot stack for undo functionality (per room). */
   private readonly undoStacks = new Map<string, { state: GameState; actorId: string }[]>();
 
+  /** Per-turn countdown (see scheduleTurnTimer / expireTurn). */
+  private static readonly TURN_MS = 120_000; // 2 minutes per turn
+  private static readonly TURN_WARN_MS = 10_000; // warn 10s before expiry
+  private readonly turnTimers = new Map<string, NodeJS.Timeout>();
+  private readonly turnWarnTimers = new Map<string, NodeJS.Timeout>();
+
+  private clearTurnTimers(roomCode: string) {
+    const t = this.turnTimers.get(roomCode);
+    if (t) clearTimeout(t);
+    this.turnTimers.delete(roomCode);
+    const w = this.turnWarnTimers.get(roomCode);
+    if (w) clearTimeout(w);
+    this.turnWarnTimers.delete(roomCode);
+  }
+
+  /**
+   * (Re)start the per-turn countdown after any state-changing action.
+   * Announces `turnStarted { player, endsAt }` so the web UI can render a
+   * countdown; emits `turnWarning` shortly before expiry and `turnTimeout`
+   * on expiry (see expireTurn).
+   */
+  private scheduleTurnTimer(roomCode: string, state: GameState | null) {
+    this.clearTurnTimers(roomCode);
+    if (!state || !state.ctx?.currentPlayer) return;
+
+    const endsAt = Date.now() + GameGateway.TURN_MS;
+    this.server.to(roomCode).emit('turnStarted', {
+      room: roomCode,
+      player: state.ctx.currentPlayer,
+      endsAt,
+    });
+
+    this.turnWarnTimers.set(
+      roomCode,
+      setTimeout(() => {
+        this.server.to(roomCode).emit('turnWarning', {
+          room: roomCode,
+          player: state.ctx.currentPlayer,
+        });
+      }, GameGateway.TURN_MS - GameGateway.TURN_WARN_MS),
+    );
+
+    this.turnTimers.set(
+      roomCode,
+      setTimeout(() => {
+        void this.expireTurn(roomCode, state);
+      }, GameGateway.TURN_MS),
+    );
+  }
+
+  /**
+   * A turn expired without any action. Emits `turnTimeout`; for games with a
+   * safe end-turn action (backgammon, vegas) the turn advances automatically
+   * so the room never stalls. Chess / tic-tac-toe get the warning only — an
+   * auto-move there would be destructive.
+   */
+  private async expireTurn(roomCode: string, state: GameState) {
+    this.turnTimers.delete(roomCode);
+
+    const room = await this.roomService.getRoom(roomCode);
+    if (!room || room.status !== 'playing' || !room.currentState) return;
+    // The room moved on since this timer was scheduled — a newer timer is
+    // already running; do not double-fire.
+    if (JSON.stringify(room.currentState) !== JSON.stringify(state)) return;
+
+    const player = state.ctx.currentPlayer;
+    this.server.to(roomCode).emit('turnTimeout', { room: roomCode, player });
+
+    const autoEnd = room.gameType === 'backgammon' || room.gameType === 'vegas';
+    if (!autoEnd) return;
+
+    try {
+      const game = resolveGame(room.gameType);
+      let nextState = BaziGBEngine.applyAction(game, room.currentState, 'endTurn', player, true);
+      if (room.gameType === 'vegas') nextState = this.skipVegasNoDicePlayers(nextState);
+
+      const result = game.endIf?.(nextState.G, nextState.ctx);
+      if (result) {
+        this.clearTurnTimers(roomCode);
+        this.undoStacks.delete(roomCode);
+        this.server.to(roomCode).emit('gameOver', { state: nextState, winner: result });
+        const winner = result === 'draw' ? null : result;
+        await this.roomService.finishRoom(roomCode, winner, nextState);
+        const resolvedPlayers = this.resolveUserIds(room.players);
+        const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
+        await this.historyService.recordGameResult({
+          roomCode,
+          gameName: game.name,
+          winnerId: resolvedWinner,
+          players: resolvedPlayers,
+          finalState: nextState,
+        });
+      } else {
+        await this.roomService.saveState(roomCode, nextState);
+        this.server.to(roomCode).emit('gameState', nextState);
+        this.scheduleTurnTimer(roomCode, nextState);
+      }
+    } catch (error: any) {
+      console.warn(`Auto end-turn failed in ${roomCode}: ${error?.message}`);
+    }
+  }
+
   private static readonly SEAT_CLAIM_TTL = 10 * 60 * 1000; // 10 minutes
 
   private cloneState(state: GameState): GameState {
@@ -116,6 +218,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
+
+    // Authenticate at the handshake when a JWT is supplied (the web client
+    // sends it via the socket.io `auth` callback — see apps/web/src/lib/socket.ts).
+    // An invalid/expired token is ignored (the socket stays anonymous) instead
+    // of hard-rejecting the connection: a hard reject would lock out users
+    // whose token simply expired. Identity is bound before any joinRoom.
+    const token = (client.handshake.auth as { token?: string } | undefined)?.token;
+    if (token) {
+      void this.tryBindWithToken(client, token);
+    }
   }
 
   /** Resolve socket ids to authenticated user ids (falls back to the id itself). */
@@ -123,26 +235,37 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return socketIds.map((id) => this.socketUsers.get(id) ?? id);
   }
 
+  /**
+   * Verify the JWT and bind the socket to the user (socketUsers + the cached
+   * username). Returns true when bound. Invalid/expired tokens return false —
+   * the socket stays anonymous (no crash, no lockout).
+   */
+  private async tryBindWithToken(client: Socket, token: string): Promise<boolean> {
+    try {
+      const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
+      if (!payload?.sub) return false;
+      this.socketUsers.set(client.id, payload.sub);
+      console.log(`Socket ${client.id} bound to user ${payload.sub}`);
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { username: true },
+      });
+      if (user?.username) {
+        this.socketUsernames.set(client.id, user.username);
+      }
+      return true;
+    } catch {
+      // Invalid/expired token — the socket just stays anonymous.
+      console.warn(`Socket ${client.id} sent an invalid JWT — keeping anonymous`);
+      return false;
+    }
+  }
+
   /** Try to authenticate the client with the JWT attached to the join payload. */
   private async bindUser(client: Socket, token?: string) {
     if (!token) return;
-    try {
-      const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
-      if (payload?.sub) {
-        this.socketUsers.set(client.id, payload.sub);
-        console.log(`Socket ${client.id} bound to user ${payload.sub}`);
-
-        const user = await this.prisma.user.findUnique({
-          where: { id: payload.sub },
-          select: { username: true },
-        });
-        if (user?.username) {
-          this.socketUsernames.set(client.id, user.username);
-        }
-      }
-    } catch {
-      // Invalid/expired token — the socket just stays anonymous.
-    }
+    await this.tryBindWithToken(client, token);
   }
 
   /** Resolve socket ids to real usernames (or null). */
@@ -231,6 +354,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             },
           };
           await this.roomService.saveState(roomCode, nextState);
+          this.scheduleTurnTimer(roomCode, nextState);
           room =
             (await this.roomService.swapPlayer(roomCode, stale, client.id)) ??
             (await this.roomService.getRoom(roomCode));
@@ -298,6 +422,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await this.roomService.startGame(roomCode, initialState);
         this.undoStacks.delete(roomCode);
         this.server.to(roomCode).emit('gameState', initialState);
+        this.scheduleTurnTimer(roomCode, initialState);
         this.emitSystemMessage(roomCode, 'The game has started', undefined, 'gameStart');
         console.log(`Game started in room ${roomCode}`);
       } else if (room.currentState) {
@@ -348,6 +473,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.roomService.saveState(room, entry.state);
     this.server.to(room).emit('gameState', entry.state);
+    this.scheduleTurnTimer(room, entry.state);
     console.log(`Undo performed in room ${room} by ${client.id}`);
   }
 
@@ -431,6 +557,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.roomService.startGame(roomCode, initialState);
     this.undoStacks.delete(roomCode);
     this.server.to(roomCode).emit('gameState', initialState);
+    this.scheduleTurnTimer(roomCode, initialState);
     this.emitSystemMessage(
       roomCode,
       `The game has started with ${roomRecord.players.length} players`,
@@ -465,6 +592,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.roomService.startGame(roomCode, initialState);
     this.undoStacks.delete(roomCode);
     this.server.to(roomCode).emit('gameState', initialState);
+    this.scheduleTurnTimer(roomCode, initialState);
     this.emitSystemMessage(roomCode, 'A new game has started', undefined, 'gameStart');
     console.log(`Rematch started in room ${roomCode} by ${client.id}`);
   }
@@ -530,6 +658,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       await this.roomService.saveState(roomCode, nextState);
       this.undoStacks.delete(roomCode);
       this.server.to(roomCode).emit('gameState', nextState);
+      this.scheduleTurnTimer(roomCode, nextState);
       console.log(`Vegas room ${roomCode}: next round started by ${client.id}`);
     } catch (error: any) {
       client.emit('error', error?.message || 'Could not start the next round');
@@ -601,6 +730,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.roomService.saveState(room, nextState);
     this.server.to(room).emit('gameState', nextState);
+    this.scheduleTurnTimer(room, nextState);
   }
 
   @SubscribeMessage('makeMove')
@@ -625,6 +755,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check for a winner or a draw.
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
+        this.clearTurnTimers(room);
         this.undoStacks.delete(room);
         console.log(`Game over in room ${room}. Winner: ${result}`);
         this.server.to(room).emit('gameOver', { state: nextState, winner: result });
@@ -652,6 +783,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       } else {
         await this.roomService.saveState(room, nextState);
         this.server.to(room).emit('gameState', nextState);
+        this.scheduleTurnTimer(room, nextState);
       }
     } catch (error: any) {
       client.emit('error', error.message || 'An unknown error occurred');
@@ -695,6 +827,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
+        this.clearTurnTimers(room);
         this.undoStacks.delete(room);
         this.server.to(room).emit('gameOver', { state: nextState, winner: result });
         const winner = result === 'draw' ? null : result;
@@ -722,6 +855,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // placement rotates the turn.
         await this.roomService.saveState(room, nextState);
         this.server.to(room).emit('gameState', nextState);
+        this.scheduleTurnTimer(room, nextState);
       }
     } catch (error: any) {
       if (isUndoable) {

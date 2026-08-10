@@ -16,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { OtpRequestDto } from './dto/otp-request.dto';
 import { OtpVerifyDto } from './dto/otp-verify.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 const SALT_ROUNDS = 10;
 
@@ -191,6 +192,33 @@ export class AuthService {
     return { ...auth, isNewUser };
   }
 
+  /**
+   * Change the account password. Accounts that already have a password
+   * (email/register users) must supply the correct current password; phone-OTP
+   * accounts without a password can set one directly.
+   */
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('کاربر یافت نشد');
+    }
+
+    if (user.password) {
+      const matches = await bcrypt.compare(dto.currentPassword ?? '', user.password);
+      if (!matches) {
+        throw new UnauthorizedException('رمز فعلی اشتباه است');
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { ok: true };
+  }
+
   async updateMe(userId: string, dto: UpdateMeDto) {
     if (!USERNAME_REGEX.test(dto.username)) {
       throw new BadRequestException(
@@ -232,6 +260,6 @@ export class AuthService {
     });
 
     const { password: _password, ...safeUser } = user;
-    return { accessToken, user: safeUser };
+    return { accessToken, user: { ...safeUser, hasPassword: !!user.password } };
   }
 }

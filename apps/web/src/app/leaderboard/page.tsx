@@ -27,24 +27,24 @@ import { useAuth } from '@/hooks/useAuth';
 
 const RANK_META: Record<
   number,
-  { ring: string; badge: string; gradient: string; label: string }
+  { ring: string; badge: string; color: string; label: string }
 > = {
   1: {
     ring: '#fbbf2499', // ring-amber-400/60
-    badge: 'linear-gradient(to bottom right, #fcd34d, #eab308)',
-    gradient: 'linear-gradient(to bottom right, #fbbf24cc, #eab308cc)',
+    badge: '#EAB308',
+    color: '#EAB308',
     label: 'Gold',
   },
   2: {
     ring: '#BEBBAC99', // ring-slate-300/60
-    badge: 'linear-gradient(to bottom right, #BEBBAC, #BEBBAC)',
-    gradient: 'linear-gradient(to bottom right, #BEBBACcc, #BEBBACcc)',
+    badge: '#BEBBAC',
+    color: '#BEBBAC',
     label: 'Silver',
   },
   3: {
     ring: '#d9770699', // ring-amber-600/60
-    badge: 'linear-gradient(to bottom right, #f59e0b, #c2410c)',
-    gradient: 'linear-gradient(to bottom right, #d97706cc, #c2410ccc)',
+    badge: '#D97706',
+    color: '#D97706',
     label: 'Bronze',
   },
 };
@@ -57,12 +57,12 @@ const MEDAL_ICON: Record<number, React.ReactNode> = {
 
 function WinRateBar({ value }: { value: number }) {
   return (
-    <Box sx={{ width: 80, height: 6, borderRadius: 10, bgcolor: 'rgba(44, 58, 69, 0.7)', overflow: 'hidden' }}>
+    <Box sx={{ width: { xs: 52, sm: 80 }, height: 6, borderRadius: 10, bgcolor: 'rgba(44, 58, 69, 0.7)', overflow: 'hidden' }}>
       <Box
         sx={{
           height: '100%',
           borderRadius: 10,
-          background: 'linear-gradient(to right, #F5A306, #B25D16)',
+          background: '#F5A306',
           width: `${Math.min(100, Math.max(0, value))}%`,
         }}
       />
@@ -270,7 +270,7 @@ export default function LeaderboardPage() {
                       width: isFirst ? 56 : 48,
                       height: isFirst ? 56 : 48,
                       borderRadius: '50%',
-                      background: meta.gradient,
+                      background: meta.color,
                       boxShadow: `0 0 0 2px ${meta.ring}`,
                       mb: 2,
                     }}
@@ -280,7 +280,15 @@ export default function LeaderboardPage() {
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography
                       variant="body1"
-                      sx={{ fontWeight: 800, fontSize: isFirst ? '1.1rem' : '0.9rem' }}
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: isFirst ? '1.1rem' : '0.9rem',
+                        maxWidth: { xs: 96, sm: 140 },
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={entry.username}
                     >
                       {entry.username}
                     </Typography>
@@ -371,8 +379,8 @@ export default function LeaderboardPage() {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: { xs: 1.5, sm: 2 },
-                      p: 2,
+                      gap: { xs: 1, sm: 2 },
+                      p: { xs: 1.5, sm: 2 },
                       borderRadius: 4,
                       border: '1px solid',
                       borderColor: isMe ? alpha(theme.palette.primary.main, 0.5) : 'divider',
@@ -384,7 +392,7 @@ export default function LeaderboardPage() {
                     }}
                   >
                     {/* Rank badge */}
-                    <Box sx={{ width: 40, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                    <Box sx={{ width: { xs: 30, sm: 40 }, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
                       {meta ? (
                         <Box
                           sx={{
@@ -416,7 +424,7 @@ export default function LeaderboardPage() {
                         height: 40,
                         fontWeight: 800,
                         fontSize: '0.875rem',
-                        background: meta ? meta.gradient : 'linear-gradient(to bottom right, #F5A306, #B25D16)',
+                        background: meta ? meta.color : '#F5A306',
                       }}
                     >
                       {entry.username.charAt(0).toUpperCase() || '?'}

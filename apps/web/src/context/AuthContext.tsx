@@ -17,6 +17,7 @@ export interface AuthUser {
   losses: number;
   createdAt: string;
   role?: string;
+  hasPassword?: boolean;
 }
 
 interface AuthResponse {

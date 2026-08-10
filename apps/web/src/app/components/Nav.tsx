@@ -92,9 +92,7 @@ export default function Nav() {
                 fontSize: { xs: '1rem', sm: '1.25rem' },
                 fontWeight: 900,
                 letterSpacing: '-0.025em',
-                background: `linear-gradient(to right, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                color: theme.palette.primary.light,
                 '&:hover': {
                   WebkitTextFillColor: theme.palette.common.white,
                 },
@@ -119,6 +117,7 @@ export default function Nav() {
                   sx={{
                     px: { xs: 1, sm: 1.5 },
                     py: 1,
+                    minHeight: { xs: 40, sm: 36 },
                     fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     fontWeight: 500,
                     color: active ? 'primary.light' : 'text.secondary',
@@ -159,6 +158,7 @@ export default function Nav() {
                   color: 'text.primary',
                 },
                 px: { xs: 1, sm: 1.5 },
+                minHeight: { xs: 40, sm: 36 },
                 borderRadius: 2,
               }}
             >
@@ -182,6 +182,7 @@ export default function Nav() {
                   color: 'text.primary',
                 },
                 px: { xs: 1, sm: 1.5 },
+                minHeight: { xs: 40, sm: 36 },
                 borderRadius: 2,
               }}
             >

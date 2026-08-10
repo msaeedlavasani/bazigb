@@ -88,7 +88,7 @@ export default function ChessBoard({ fen, onMove, disabled = false, orientation 
       sx={{
         width: '100%',
         borderRadius: 4,
-        background: 'linear-gradient(to bottom right, rgba(180, 83, 9, 0.5), rgba(120, 53, 15, 0.3), rgba(30, 41, 59, 0.4))',
+        background: '#6B4423',
         p: { xs: 1, sm: 1.5 },
         border: '1px solid rgba(245, 158, 11, 0.2)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',

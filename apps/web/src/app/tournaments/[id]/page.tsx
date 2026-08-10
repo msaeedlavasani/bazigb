@@ -413,7 +413,7 @@ export default function TournamentDetailPage({
             component={Link}
             href="/tournaments"
             variant="contained"
-            sx={{ background: 'linear-gradient(to right, #F5A306, #B25D16)' }}
+            sx={{ background: '#F5A306' }}
           >
             Back to Tournaments
           </Button>
@@ -435,7 +435,7 @@ export default function TournamentDetailPage({
             component={Link}
             href="/tournaments"
             variant="contained"
-            sx={{ background: 'linear-gradient(to right, #F5A306, #B25D16)' }}
+            sx={{ background: '#F5A306' }}
           >
             Back to Tournaments
           </Button>
@@ -557,7 +557,7 @@ export default function TournamentDetailPage({
                     py: 1.5,
                     fontWeight: 800,
                     borderRadius: 3,
-                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                    background: '#F5A306',
                     boxShadow: `0 8px 20px ${alpha('#B25D16', 0.4)}`,
                   }}
                 >
@@ -573,7 +573,7 @@ export default function TournamentDetailPage({
                     py: 1.5,
                     fontWeight: 800,
                     borderRadius: 3,
-                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                    background: '#F5A306',
                     boxShadow: `0 8px 20px ${alpha('#B25D16', 0.4)}`,
                   }}
                 >
@@ -614,7 +614,7 @@ export default function TournamentDetailPage({
               borderRadius: 4,
               border: '1px solid',
               borderColor: alpha('#fbbf24', 0.3),
-              background: `linear-gradient(to right, ${alpha('#f59e0b', 0.1)}, ${alpha('#fcd34d', 0.05)})`,
+              background: alpha('#F59E0B', 0.1),
             }}
           >
             <Box

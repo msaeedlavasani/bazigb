@@ -379,7 +379,7 @@ export default function BackgammonBoard({
             sx={{
               px: 4,
               py: 1.5,
-              background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+              background: '#EA580C',
               color: 'white',
               fontWeight: 900,
               borderRadius: 3,
@@ -387,7 +387,7 @@ export default function BackgammonBoard({
               transition: 'all 0.2s',
               '&:hover': {
                 transform: 'scale(1.05)',
-                background: 'linear-gradient(135deg, #fbbf24 0%, #f97316 100%)',
+                background: '#F97316',
               },
               '&:active': {
                 transform: 'scale(0.95)',

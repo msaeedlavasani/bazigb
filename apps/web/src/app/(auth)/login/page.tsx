@@ -184,7 +184,7 @@ export default function LoginPage() {
           '& .MuiTabs-indicator': {
             height: 3,
             borderRadius: '3px 3px 0 0',
-            background: 'linear-gradient(to right, #F5A306, #B25D16)',
+            background: '#F5A306',
           },
           '& .MuiTab-root': {
             textTransform: 'none',
@@ -291,9 +291,9 @@ export default function LoginPage() {
                 fontWeight: 600,
                 textTransform: 'none',
                 borderRadius: 2,
-                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                background: '#F5A306',
                 '&:hover': {
-                  background: 'linear-gradient(to right, #B25D16, #8F470F)',
+                  background: '#B25D16',
                 },
               }}
             >
@@ -341,7 +341,7 @@ export default function LoginPage() {
                   py: 1.5,
                   fontWeight: 600,
                   borderRadius: 2,
-                  background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                  background: '#F5A306',
                 }}
               >
                 {submitting ? <CircularProgress size={24} color="inherit" /> : 'دریافت کد تایید'}
@@ -424,7 +424,7 @@ export default function LoginPage() {
                     py: 1.5,
                     fontWeight: 600,
                     borderRadius: 2,
-                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                    background: '#F5A306',
                   }}
                 >
                   {submitting ? <CircularProgress size={24} color="inherit" /> : isNewUser ? 'ثبت‌نام و ورود' : 'ورود'}

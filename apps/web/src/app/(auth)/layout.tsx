@@ -42,9 +42,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               fontSize: '2.25rem',
               fontWeight: 800,
               letterSpacing: '-0.025em',
-              background: 'linear-gradient(to right, #F5A306, #B25D16)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#F5A306',
               textDecoration: 'none',
             }}
           >

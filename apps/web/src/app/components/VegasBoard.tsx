@@ -553,10 +553,10 @@ export default function VegasBoard({
                 py: 1.5,
                 fontWeight: 900,
                 borderRadius: 3,
-                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                background: '#F5A306',
                 boxShadow: '0 4px 14px 0 rgba(16, 185, 129, 0.2)',
                 '&:hover': {
-                  background: 'linear-gradient(to right, #B25D16, #8F470F)',
+                  background: '#B25D16',
                   opacity: 0.9,
                 },
                 textTransform: 'none',
@@ -708,7 +708,7 @@ export default function VegasBoard({
                   borderRadius: 4,
                   fontWeight: 900,
                   fontSize: '1.1rem',
-                  background: 'linear-gradient(to bottom right, #F5A306, #B25D16)',
+                  background: '#F5A306',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                   '&:hover': {
                     transform: 'scale(1.05)',

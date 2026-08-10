@@ -410,7 +410,7 @@ export default function TournamentsPage() {
                             bgcolor: alpha(theme.palette.text.primary, 0.1),
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 3,
-                              background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                              background: '#F5A306',
                             },
                           }}
                         />
@@ -452,7 +452,7 @@ export default function TournamentsPage() {
                               sx={{
                                 py: 1.25,
                                 fontWeight: 800,
-                                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                                background: '#F5A306',
                                 boxShadow: `0 4px 14px 0 ${alpha('#B25D16', 0.4)}`,
                               }}
                             >
@@ -467,7 +467,7 @@ export default function TournamentsPage() {
                               sx={{
                                 py: 1.25,
                                 fontWeight: 800,
-                                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                                background: '#F5A306',
                                 boxShadow: `0 4px 14px 0 ${alpha('#B25D16', 0.4)}`,
                               }}
                             >

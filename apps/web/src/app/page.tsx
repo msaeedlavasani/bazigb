@@ -77,9 +77,7 @@ export default function Home() {
                   fontSize: { xs: '3.5rem', sm: '4.5rem' },
                   fontWeight: 900,
                   letterSpacing: '-0.05em',
-                  background: 'linear-gradient(to right, #F5A306, #B25D16, #114B5E)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: '#F5A306',
                 }}
               >
                 BaziGB
@@ -111,14 +109,14 @@ export default function Home() {
               sx={{
                 py: 2.5,
                 borderRadius: 4,
-                background: 'linear-gradient(to right, #F5A306, #B25D16, #8F470F)',
+                background: '#F5A306',
                 fontSize: '1.25rem',
                 fontWeight: 900,
                 boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',
                 transition: 'all 0.2s',
                 '&:hover': {
                   transform: 'scale(1.02)',
-                  background: 'linear-gradient(to right, #B25D16, #8F470F, #0B3A4A)',
+                  background: '#B25D16',
                 },
                 '&:active': {
                   transform: 'scale(0.98)',

@@ -66,9 +66,7 @@ export default function Footer() {
                   fontSize: '1.35rem',
                   fontWeight: 900,
                   letterSpacing: '-0.025em',
-                  background: 'linear-gradient(to right, #F5A306, #B25D16)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: '#F5A306',
                   textDecoration: 'none',
                 }}
               >
@@ -90,6 +88,10 @@ export default function Footer() {
                   href={link.href}
                   variant="body2"
                   sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    minHeight: 40,
+                    px: 0.5,
                     color: 'text.secondary',
                     textDecoration: 'none',
                     '&:hover': { color: 'primary.light' },

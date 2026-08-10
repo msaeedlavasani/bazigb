@@ -26,6 +26,7 @@ import {
   Play,
   RotateCcw,
   Share2,
+  Timer,
   Undo2,
   Users,
   Wifi,
@@ -113,12 +114,27 @@ export default function GamePage() {
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const [connStatus, setConnStatus] = useState<ConnStatus>('connecting');
+  const [turnEndsAt, setTurnEndsAt] = useState<number | null>(null);
+  const [turnWarned, setTurnWarned] = useState(false);
+  const [turnExpired, setTurnExpired] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   // Shared computed variables (declared early so callbacks can use them)
   const mySocketId = socket.id ?? null;
   const ctxPlayers = gameState?.ctx.players ?? [];
   const isPlayer = !!mySocketId && (ctxPlayers.includes(mySocketId) || (room?.players?.includes(mySocketId) ?? false));
   const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
+
+  // Turn countdown: server announces `turnStarted { player, endsAt }` on every
+  // turn change; we tick once per second while a deadline is active.
+  useEffect(() => {
+    if (turnEndsAt === null) return;
+    const interval = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [turnEndsAt]);
+
+  const turnRemainingSec =
+    turnEndsAt !== null && isMyTurn ? Math.max(0, Math.ceil((turnEndsAt - nowMs) / 1000)) : null;
   const winnerId: string | null = winner ?? (gameState?.G?.winner ?? null) ?? room?.winnerId ?? null;
 
   const boardKeyRef = useRef<string | null>(null);
@@ -268,6 +284,26 @@ export default function GamePage() {
       }
     };
 
+    // Turn timer: server announces the turn deadline (`turnStarted`), warns
+    // 10s before expiry and fires `turnTimeout` (auto end-turn on backgammon
+    // / vegas). Only count down while it is our turn.
+    const onTurnStarted = (data: { room?: string; player?: string; endsAt?: number }) => {
+      if (cancelled || data?.room !== roomCode) return;
+      setTurnEndsAt(typeof data.endsAt === 'number' ? data.endsAt : null);
+      setTurnWarned(false);
+      setTurnExpired(false);
+    };
+    const onTurnWarning = (data: { room?: string }) => {
+      if (cancelled || data?.room !== roomCode) return;
+      setTurnWarned(true);
+    };
+    const onTurnTimeout = (data: { room?: string }) => {
+      if (cancelled || data?.room !== roomCode) return;
+      setTurnExpired(true);
+      setTurnEndsAt(null);
+      setTimeout(() => setTurnExpired(false), 5000);
+    };
+
     socket.on('gameState', onGameState);
     socket.on('gameOver', onGameOver);
     socket.on('error', onError);
@@ -276,6 +312,9 @@ export default function GamePage() {
     socket.on('disconnect', onDisconnect);
     socket.on('roomUpdate', onRoomUpdate);
     socket.on('seatKey', onSeatKey);
+    socket.on('turnStarted', onTurnStarted);
+    socket.on('turnWarning', onTurnWarning);
+    socket.on('turnTimeout', onTurnTimeout);
 
     if (socket.connected) onConnect();
 
@@ -290,6 +329,9 @@ export default function GamePage() {
       socket.off('disconnect', onDisconnect);
       socket.off('roomUpdate', onRoomUpdate);
       socket.off('seatKey', onSeatKey);
+      socket.off('turnStarted', onTurnStarted);
+      socket.off('turnWarning', onTurnWarning);
+      socket.off('turnTimeout', onTurnTimeout);
     };
   }, [roomCode]);
 
@@ -507,6 +549,30 @@ export default function GamePage() {
           </Button>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {(turnRemainingSec !== null || turnExpired) && gameState && (
+              <Chip
+                icon={<Timer size={14} />}
+                label={turnExpired ? 'نوبت منقضی شد' : `${turnRemainingSec}s`}
+                size="small"
+                variant="outlined"
+                sx={{
+                  bgcolor: turnExpired || turnWarned
+                    ? alpha(theme.palette.warning.main, 0.15)
+                    : alpha(theme.palette.success.main, 0.1),
+                  color: turnExpired
+                    ? theme.palette.error.light
+                    : turnWarned
+                      ? theme.palette.warning.light
+                      : theme.palette.success.light,
+                  borderColor: turnExpired
+                    ? alpha(theme.palette.error.main, 0.4)
+                    : turnWarned
+                      ? alpha(theme.palette.warning.main, 0.4)
+                      : alpha(theme.palette.success.main, 0.3),
+                  fontWeight: 700,
+                }}
+              />
+            )}
             <Chip
               icon={<connChip.Icon size={14} />}
               label={connChip.label}
@@ -639,9 +705,7 @@ export default function GamePage() {
                 variant="h4"
                 sx={{
                   fontWeight: 900,
-                  background: `linear-gradient(to right, , )`,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: 'primary.light',
                   mb: 1,
                 }}
               >
@@ -699,7 +763,7 @@ export default function GamePage() {
                   startIcon={<Play size={16} />}
                   sx={{
                     borderRadius: 3,
-                    background: `linear-gradient(to right, ${theme.palette.success.main}, ${theme.palette.success.dark})`,
+                    background: theme.palette.success.main,
                     color: 'white',
                     px: 3,
                     py: 1,

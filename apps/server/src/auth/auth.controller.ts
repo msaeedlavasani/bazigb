@@ -7,6 +7,7 @@ import { LoginDto } from './dto/login.dto';
 import { OtpRequestDto } from './dto/otp-request.dto';
 import { OtpVerifyDto } from './dto/otp-verify.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -47,5 +48,12 @@ export class AuthController {
   @Patch('me')
   updateMe(@Req() req: Request, @Body() dto: UpdateMeDto) {
     return this.authService.updateMe((req as any).user.id, dto);
+  }
+
+  /** Change the account password (current password required when one exists). */
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword((req as any).user.id, dto);
   }
 }

@@ -27,6 +27,15 @@ export const socket: Socket = io(SOCKET_URL || undefined, {
   reconnectionDelayMax: 5000,
   randomizationFactor: 0.5,
   timeout: 10000,
+  // Attach the stored JWT to every connection attempt so the server can bind
+  // the socket to the real user identity at the handshake (not just at join).
+  // The callback form re-reads localStorage on each (re)connect, so logins
+  // and logouts are picked up without recreating the socket.
+  auth: (cb) => {
+    const token =
+      typeof window !== 'undefined' ? window.localStorage.getItem('bazigb_token') : null;
+    cb({ token: token ?? undefined });
+  },
 });
 
 /** Connect the socket (no-op when it is already connected). */

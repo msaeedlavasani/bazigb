@@ -1,9 +1,9 @@
 import { api } from './api';
 
 export interface AdminStats {
-  users: { total: number; admins: number };
+  users: { total: number; admins: number; newThisWeek: number };
   rooms: { total: number; waiting: number; playing: number; finished: number };
-  games: { total: number; byType: Record<string, number> };
+  games: { total: number; today: number; thisWeek: number; byType: Record<string, number> };
 }
 
 export interface AdminUser {
@@ -41,4 +41,9 @@ export async function getAdminUsers(params?: {
 
   const queryString = query.toString();
   return api.get<AdminUsersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+}
+
+/** Change a user's role (ADMIN only). */
+export async function setUserRole(id: string, role: 'USER' | 'ADMIN'): Promise<void> {
+  await api.patch(`/admin/users/${id}/role`, { role });
 }

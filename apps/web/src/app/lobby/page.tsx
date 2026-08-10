@@ -176,7 +176,7 @@ export default function LobbyPage() {
               sx={{
                 fontWeight: 800,
                 letterSpacing: 'tight',
-                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                background: '#F5A306',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -280,7 +280,7 @@ export default function LobbyPage() {
                     mt: 0.5,
                     py: 1.5,
                     borderRadius: 3,
-                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                    background: '#F5A306',
                     fontWeight: 700,
                     fontSize: '1.125rem',
                     boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',

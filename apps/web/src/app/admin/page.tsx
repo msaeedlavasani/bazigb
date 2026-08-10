@@ -21,16 +21,22 @@ import {
   ToggleButtonGroup,
   alpha,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
 } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
-import { getAdminStats, getAdminUsers, AdminStats, AdminUser } from '@/lib/admin';
+import { getAdminStats, getAdminUsers, setUserRole, AdminStats, AdminUser } from '@/lib/admin';
 import {
   fetchSiteSettings,
   saveFooterSettings,
   FooterContent,
   FOOTER_DEFAULTS,
 } from '@/lib/site-settings';
-import { Users, PlayCircle, Trophy, ArrowLeft, Copyright } from 'lucide-react';
+import { Users, PlayCircle, Trophy, ArrowLeft, Copyright, Shield, ShieldCheck } from 'lucide-react';
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -66,6 +72,23 @@ export default function AdminPage() {
       return () => clearTimeout(timer);
     }
   }, [user, search, roleFilter, page]);
+
+  const [roleTarget, setRoleTarget] = useState<AdminUser | null>(null);
+  const [roleSaving, setRoleSaving] = useState(false);
+
+  async function handleConfirmRoleChange() {
+    if (!roleTarget) return;
+    setRoleSaving(true);
+    try {
+      await setUserRole(roleTarget.id, roleTarget.role === 'ADMIN' ? 'USER' : 'ADMIN');
+      setRoleTarget(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRoleSaving(false);
+    }
+  }
 
   // Load current footer content once for the editor.
   useEffect(() => {
@@ -175,7 +198,7 @@ export default function AdminPage() {
 
           {/* Stats */}
           <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <Users color="#F5A306" size={24} />
@@ -185,7 +208,7 @@ export default function AdminPage() {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>{stats?.users.admins || 0} مدیر</Typography>
               </Paper>
             </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <PlayCircle color="#10b981" size={24} />
@@ -195,7 +218,7 @@ export default function AdminPage() {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>{stats?.rooms.waiting || 0} در انتظار</Typography>
               </Paper>
             </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
               <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <Trophy color="#f59e0b" size={24} />
@@ -203,6 +226,36 @@ export default function AdminPage() {
                 </Box>
                 <Typography variant="h3" sx={{ fontWeight: 800 }}>{stats?.games.total || 0}</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>در تمامی سبک‌ها</Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                  <Users color="#114B5E" size={24} />
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>کاربران جدید (هفته)</Typography>
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800 }}>{stats?.users.newThisWeek || 0}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>۷ روز اخیر</Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                  <Trophy color="#34d399" size={24} />
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>بازی‌های امروز</Typography>
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800 }}>{stats?.games.today || 0}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>امروز</Typography>
+              </Paper>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                  <PlayCircle color="#f59e0b" size={24} />
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>بازی‌های این هفته</Typography>
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 800 }}>{stats?.games.thisWeek || 0}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>۷ روز اخیر</Typography>
               </Paper>
             </Grid>
           </Grid>
@@ -353,15 +406,27 @@ export default function AdminPage() {
                           {u.email || u.phone || '-'}
                         </TableCell>
                         <TableCell sx={{ textAlign: 'right' }}>
-                          <Box
-                            component="span"
-                            sx={{
-                              px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
-                              bgcolor: u.role === 'ADMIN' ? alpha('#f43f5e', 0.1) : alpha('#B25D16', 0.1),
-                              color: u.role === 'ADMIN' ? '#fb7185' : '#F5A306',
-                            }}
-                          >
-                            {u.role === 'ADMIN' ? 'مدیر' : 'کاربر'}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                              component="span"
+                              sx={{
+                                px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
+                                bgcolor: u.role === 'ADMIN' ? alpha('#f43f5e', 0.1) : alpha('#B25D16', 0.1),
+                                color: u.role === 'ADMIN' ? '#fb7185' : '#F5A306',
+                              }}
+                            >
+                              {u.role === 'ADMIN' ? 'مدیر' : 'کاربر'}
+                            </Box>
+                            {u.id !== user?.id && (
+                              <IconButton
+                                size="small"
+                                title={u.role === 'ADMIN' ? 'تبدیل به کاربر' : 'تبدیل به مدیر'}
+                                onClick={() => setRoleTarget(u)}
+                                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.light' } }}
+                              >
+                                {u.role === 'ADMIN' ? <Shield size={16} /> : <ShieldCheck size={16} />}
+                              </IconButton>
+                            )}
                           </Box>
                         </TableCell>
                         <TableCell sx={{ color: 'white', textAlign: 'right' }}>{u.wins} / {u.losses}</TableCell>
@@ -400,6 +465,54 @@ export default function AdminPage() {
             </Box>
           </Paper>
         </Box>
+
+        {/* Role change confirmation */}
+        <Dialog
+          open={!!roleTarget}
+          onClose={() => {
+            if (!roleSaving) setRoleTarget(null);
+          }}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: '#0B1622',
+                border: '1px solid',
+                borderColor: alpha('#2C3A45', 0.8),
+                borderRadius: 4,
+                color: 'white',
+              },
+            },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            {roleTarget?.role === 'ADMIN' ? 'تبدیل به کاربر؟' : 'تبدیل به مدیر؟'}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ color: 'text.secondary' }}>
+              نقش کاربر «{roleTarget?.username}» از «{roleTarget?.role === 'ADMIN' ? 'مدیر' : 'کاربر'}» به «
+              {roleTarget?.role === 'ADMIN' ? 'کاربر' : 'مدیر'}» تغییر کند؟
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ p: 2, pt: 0 }}>
+            <Button
+              onClick={() => setRoleTarget(null)}
+              disabled={roleSaving}
+              variant="outlined"
+              sx={{ borderColor: alpha('#2C3A45', 0.8), color: 'text.secondary' }}
+            >
+              انصراف
+            </Button>
+            <Button
+              onClick={handleConfirmRoleChange}
+              disabled={roleSaving}
+              variant="contained"
+              startIcon={roleSaving ? <CircularProgress size={16} color="inherit" /> : null}
+              sx={{ bgcolor: '#B25D16', '&:hover': { bgcolor: '#8F470F' } }}
+            >
+              تأیید تغییر
+            </Button>
+          </DialogActions>
+        </Dialog>
     </Box>
   );
 }
