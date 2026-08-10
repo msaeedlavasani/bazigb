@@ -12,7 +12,9 @@ COPY packages/ packages/
 # dep) — flaky on this VPS, and if it fails `next build` tries to download the
 # binary itself and hangs (BodyTimeoutError). Install the Linux binary by
 # downloading its tarball directly (scripts/fetch-swc.mjs — node fetch + tar
-# with 5 timed retries; the image has no curl/wget).
+# with 5 timed retries; the image has no curl/wget). The swc version in the
+# script must match `next`'s optionalDependencies (14.2.33), NOT the `next`
+# version (14.2.35) — the platform swc packages stop at 14.2.33.
 #
 # IMPORTANT: do NOT use `npm install` for the swc binary. On npm 11+ a plain
 # `npm install --no-save` re-resolves the whole dependency tree and PRUNES the

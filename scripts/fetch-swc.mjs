@@ -1,11 +1,18 @@
 // Downloads @next/swc-linux-x64-gnu into node_modules when npm could not
 // install it (the committed lockfile only pins the macOS binary, and the VPS
 // npm registry is flaky). Used by the Dockerfile.web deps stage.
+//
+// NOTE: the swc binary version is NOT the same as the `next` version. Both
+// next@14.2.33 and next@14.2.35 depend on @next/swc-*@14.2.33 (their
+// optionalDependencies). Hardcoding a swc version equal to the next version
+// (e.g. ...-14.2.35.tgz) 404s on the registry — the platform packages stop at
+// 14.2.33. Keep this aligned with `next`'s optionalDependencies, not with
+// the `next` version itself.
 import { mkdirSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 const url =
-  'https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.35.tgz';
+  'https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.33.tgz';
 const dest = 'node_modules/@next/swc-linux-x64-gnu';
 
 for (let i = 1; i <= 5; i++) {
