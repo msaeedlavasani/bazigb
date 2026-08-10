@@ -31,6 +31,8 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: "3001"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      SMSIR_API_KEY: ${SMSIR_API_KEY:-}
+      SMSIR_TEMPLATE_ID: ${SMSIR_TEMPLATE_ID:-}
     depends_on:
       db:
         condition: service_healthy
