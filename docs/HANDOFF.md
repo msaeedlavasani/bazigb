@@ -27,6 +27,13 @@
 - **فیکس OTP در پروداکشن (مهم):** `SMSIR_API_KEY`/`SMSIR_TEMPLATE_ID` باید در بخش `environment` سرویس server در `docker-compose.yml` هم تعریف شوند — فقط در `.env` کافی نیست. بدون آن، کانتینر کلید را نمی‌گیرد و `SmsService` در **dev-mode** می‌افتد (کد فقط در لاگ نوشته می‌شود: `[OTP dev-mode] verification code for ...` — پیامک ارسال نمی‌شود). اگر OTP کار نکرد، اول لاگ سرور را برای این الگو چک کنید.
 - **روش دیپلوی فعلی:** (۱) تغییرات را در لوکال کامیت/پوش کنید؛ (۲) rsync به سرور: `rsync -az --delete --exclude={.git,node_modules,.next,dev.db,.env,dist} ./ root@193.151.153.204:/opt/bazigb/`؛ (۳) روی سرور: `docker compose build server web && docker compose up -d --force-recreate server web` (سرور هنگام بالا آمدن مایگریشن‌ها را اعمال می‌کند).
 
+## تکمیل MUI (انجام شد — ۲۰ مرداد)
+
+- [x] **بازبینی کامل کامیت `e052459a` (Batch 14 MUI، ۱۱ فایل):** بیلد web سبز، صفر خطای کنسول در تمام صفحات پروداکشن (تست بصری با مرورگر: home، lobby، leaderboard، tournaments، صفحه خطای اتاق، اتاق بازی، موبایل)، کیفیت کد بالا (بوردها، چت، بازی، لیدربورد همگی MUI).
+- [x] **تکمیل تبدیل MUI:** `apps/web/src/app/profile/page.tsx` (قبلاً عمدتاً Tailwind خام بود — حالا کامل MUI: کارت هویت، ۴ کارت آمار، جدول تاریخچه با بج‌های رنگی، اسکلتون، حالت‌های loading/not-signed-in) و `apps/web/src/app/(auth)/layout.tsx` (سرصفحه گرادیانی BaziGB + زیرعنوان، هم‌رنگ با تم). ایمپورت‌های بلااستفاده صفحه اصلی (`Container`, `useTheme`) حذف شد.
+- [x] **فیکس بلاکر دیپلوی وب (مهم — بار بعدی حتماً یادتان باشد):** `scripts/fetch-swc.mjs` تاربال `@next/swc-linux-x64-gnu-14.2.35.tgz` را دانلود می‌کرد که **در رجیستری وجود ندارد** (بسته‌های swc پلتفرمی فقط تا **14.2.33** منتشر شده‌اند؛ next@14.2.35 هم خودش به swc@14.2.33 وابسته است). نتیجه: `docker compose build web` با `http 404` شکست می‌خورد. فیکس: URL به `...-14.2.33.tgz` تغییر کرد. **قانون:** نسخه swc در اسکریپت باید با `optionalDependencies` پکیج `next` هم‌تراز باشد، نه با نسخه خود `next`.
+- [x] **دیپلوی شد:** rsync + `docker compose build web` + `up -d --force-recreate web`. وریفای زنده: `/profile` (کارت هویت + آمار + تاریخچه)، `/login`، `/register` (لایه auth جدید) — همگی ۰ خطای کنسول. کامیت‌ها: `6f7df83a` (تکمیل MUI)، `541aa226` (فیکس swc).
+
 ## بچ ۱۲ — Design System MUI + تجربه کاربری (تکمیل شد — ۱۹ مرداد)
 
 - [x] **MUI Design System (تسک ۲۹):** `@mui/material@9.3.1` + Emotion + icons نصب شد (سازگار با React 18.3 — بدون نیاز به ارتقای React/Next). `ThemeRegistry` (تم تیره، پرایمری ایندیگو `#6366f1`) در layout اضافه شد؛ Nav و فرم‌های ورود/ثبت‌نام به MUI منتقل شدند (همان منطق/هوک‌ها). مهاجرت بقیه صفحه‌ها (لابی/پروفایل/تورنمنت/بردها) تدریجی در بچ‌های بعد.
