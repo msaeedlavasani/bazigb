@@ -44,4 +44,5 @@
 - [ ] **ریسپانسیو:** بررسی و اصلاح تمام صفحات در 360/768/1440.
 - [ ] **پالت رنگی برند:** Autumn Ember `#B25D16`، Dark Teal `#114B5E`، Orange `#F5A306`، Ash Grey `#BEBBAC`، Ink Black `#030A15` — حذف رنگ‌های بیربط؛ error/warning از دیفالت MUI.
 - [ ] **یکدست‌سازی نام برند:** BaziG3 → BaziGB (۵ مورد).
+- [ ] **لوگوی رسمی:** استفاده از لوگوی ترنسپرنت (BaziGB-Logo-Transparent) در هدر، hero، auth و فوتر.
 
