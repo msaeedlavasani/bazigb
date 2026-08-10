@@ -18,6 +18,13 @@
 - **ادمین اصلی:** `boxavier` / `msaeedlavasani@gmail.com` (ایمیل از `saeedlavasani@gmail.com` اصلاح شد) — role=ADMIN. رمز موقت `Boxavier@1405!` (قابل تغییر بعداً؛ سیستم تغییر رمز هنوز ساخته نشده).
 - **ری‌استارت سرور ۳۰۰۱:** `bash scripts/restart-server.sh` (اسکریپت کمکی — سرور را می‌کشد و دوباره با کد جدید بالا می‌آورد؛ لاگ در `/tmp/bazigb_server_3001.log`).
 
+## دیپلوی پروداکشن (بچ ۱۴ — انجام شد، ۱۹ مرداد)
+
+- **سرور پروداکشن:** `193.151.153.204` (root) — دامنه `https://bazigb.ir` (Caddy). پروژه در `/opt/bazigb` (clone قدیمی؛ کلید SSH سرور به GitHub وصل نیست — دیپلوی با **rsync مستقیم از ماشین لوکال** انجام می‌شود).
+- **دیپلوی‌شده:** مایگریشن `20260810000000_add_user_role` اعمال شد؛ AdminModule فعال (آمار: ۲۹ کاربر، ۸۶ اتاق، ۴۷ بازی)؛ OTP با کلید Production کار می‌کند (`{"sent":true}` از `https://bazigb.ir/api/auth/otp/request`).
+- **فیکس مهم Dockerfile.web:** نصب `@next/swc-linux-x64-gnu` با `npm install --no-save` در npm 11 پکیج‌های nested ورک‌اسپیس (مثل `@mui/material` در `apps/web/node_modules`) را prune می‌کرد و بیلد با خطای `unstable_createUseMediaQuery is not a function` می‌شکست. **راه‌حل:** `node scripts/fetch-swc.mjs` (دانلود مستقیم tarball) به‌جای npm install + هم‌ترازی نسخه swc با next (14.2.35). اگر دیپلوی بعدی بیلد وب شکست، اول همین را چک کنید.
+- **روش دیپلوی فعلی:** (۱) تغییرات را در لوکال کامیت/پوش کنید؛ (۲) rsync به سرور: `rsync -az --delete --exclude={.git,node_modules,.next,dev.db,.env,dist} ./ root@193.151.153.204:/opt/bazigb/`؛ (۳) روی سرور: `docker compose build server web && docker compose up -d --force-recreate server web` (سرور هنگام بالا آمدن مایگریشن‌ها را اعمال می‌کند).
+
 ## بچ ۱۲ — Design System MUI + تجربه کاربری (تکمیل شد — ۱۹ مرداد)
 
 - [x] **MUI Design System (تسک ۲۹):** `@mui/material@9.3.1` + Emotion + icons نصب شد (سازگار با React 18.3 — بدون نیاز به ارتقای React/Next). `ThemeRegistry` (تم تیره، پرایمری ایندیگو `#6366f1`) در layout اضافه شد؛ Nav و فرم‌های ورود/ثبت‌نام به MUI منتقل شدند (همان منطق/هوک‌ها). مهاجرت بقیه صفحه‌ها (لابی/پروفایل/تورنمنت/بردها) تدریجی در بچ‌های بعد.
