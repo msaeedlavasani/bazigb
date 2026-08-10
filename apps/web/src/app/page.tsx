@@ -57,13 +57,13 @@ export default function Home() {
               sx={{
                 position: 'relative',
                 mx: 'auto',
-                filter: 'drop-shadow(0 0 15px rgba(99, 102, 241, 0.5))',
+                filter: 'drop-shadow(0 0 15px rgba(245, 163, 6, 0.45))',
                 width: 128,
                 height: 128,
               }}
             >
               <Image
-                src="/brand/logo-512.webp"
+                src="/brand/logo-icon.png"
                 alt="BaziGB Logo"
                 fill
                 className="object-contain"

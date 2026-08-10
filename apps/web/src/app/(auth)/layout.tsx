@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Box, Typography } from '@mui/material';
 
 /**
@@ -23,12 +24,21 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     >
       <Box sx={{ width: '100%', maxWidth: 448 }}>
         <Box component="header" sx={{ textAlign: 'center', mb: 8 }}>
+          <Image
+            src="/brand/logo-icon.png"
+            alt="BaziGB Logo"
+            width={92}
+            height={92}
+            priority
+            style={{ margin: '0 auto', objectFit: 'contain' }}
+          />
           <Typography
             component={Link}
             href="/"
             variant="h1"
             sx={{
-              display: 'inline-block',
+              display: 'block',
+              mt: 1.5,
               fontSize: '2.25rem',
               fontWeight: 800,
               letterSpacing: '-0.025em',

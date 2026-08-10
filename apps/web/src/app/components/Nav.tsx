@@ -80,10 +80,10 @@ export default function Nav() {
               }}
             >
               <Image
-                src="/brand/logo-256.webp"
+                src="/brand/logo-icon.png"
                 alt="BaziGB Logo"
                 fill
-                className="object-cover transition-transform hover:scale-110"
+                className="object-contain transition-transform hover:scale-110"
               />
             </Box>
             <Typography

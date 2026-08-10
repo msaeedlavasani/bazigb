@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Box, Container, Divider, Typography, alpha } from '@mui/material';
 import {
   fetchSiteSettings,
@@ -50,21 +51,30 @@ export default function Footer() {
         >
           {/* Brand */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography
-              component={Link}
-              href="/"
-              sx={{
-                fontSize: '1.35rem',
-                fontWeight: 900,
-                letterSpacing: '-0.025em',
-                background: 'linear-gradient(to right, #F5A306, #B25D16)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textDecoration: 'none',
-              }}
-            >
-              BaziGB
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Image
+                src="/brand/logo-icon.png"
+                alt="BaziGB Logo"
+                width={34}
+                height={34}
+                style={{ objectFit: 'contain' }}
+              />
+              <Typography
+                component={Link}
+                href="/"
+                sx={{
+                  fontSize: '1.35rem',
+                  fontWeight: 900,
+                  letterSpacing: '-0.025em',
+                  background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textDecoration: 'none',
+                }}
+              >
+                BaziGB
+              </Typography>
+            </Box>
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {footer.tagline}
             </Typography>

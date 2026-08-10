@@ -8,8 +8,8 @@ export const metadata = {
   title: 'BaziGB — بازی جیبی',
   description: 'همه‌ی بازی‌ها، توی جیبت. پلتفرم آنلاین بازی‌های رومیزی و استراتژیک.',
   icons: {
-    icon: '/brand/logo-256.webp',
-    apple: '/brand/logo-256.webp',
+    icon: '/brand/logo-icon.png',
+    apple: '/brand/logo-icon.png',
   },
 };
 
