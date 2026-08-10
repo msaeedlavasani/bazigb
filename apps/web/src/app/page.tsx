@@ -2,24 +2,20 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import Nav from './components/Nav';
 import { Box, Typography, Button, alpha } from '@mui/material';
 
 export default function Home() {
   return (
-    <>
-      <Nav />
-      <Box
-        component="main"
-        sx={{
-          position: 'relative',
-          minHeight: '100vh',
+    <Box
+      sx={{
+        position: 'relative',
+        flex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           p: 3,
-          bgcolor: '#0f172a',
+          bgcolor: '#030A15',
           color: 'white',
           overflow: 'hidden',
         }}
@@ -68,7 +64,7 @@ export default function Home() {
             >
               <Image
                 src="/brand/logo-512.webp"
-                alt="BaziG3 Logo"
+                alt="BaziGB Logo"
                 fill
                 className="object-contain"
                 priority
@@ -81,19 +77,19 @@ export default function Home() {
                   fontSize: { xs: '3.5rem', sm: '4.5rem' },
                   fontWeight: 900,
                   letterSpacing: '-0.05em',
-                  background: 'linear-gradient(to right, #a5b4fc, #7dd3fc, #6ee7b7)',
+                  background: 'linear-gradient(to right, #F5A306, #B25D16, #114B5E)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                BaziG3
+                BaziGB
               </Typography>
               <Typography
                 sx={{
                   fontSize: '1.25rem',
                   fontWeight: 700,
                   letterSpacing: '0.1em',
-                  color: alpha('#6366f1', 0.9),
+                  color: alpha('#B25D16', 0.9),
                   textTransform: 'uppercase',
                 }}
               >
@@ -115,14 +111,14 @@ export default function Home() {
               sx={{
                 py: 2.5,
                 borderRadius: 4,
-                background: 'linear-gradient(to right, #6366f1, #4f46e5, #0284c7)',
+                background: 'linear-gradient(to right, #F5A306, #B25D16, #8F470F)',
                 fontSize: '1.25rem',
                 fontWeight: 900,
                 boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',
                 transition: 'all 0.2s',
                 '&:hover': {
                   transform: 'scale(1.02)',
-                  background: 'linear-gradient(to right, #4f46e5, #4338ca, #0369a1)',
+                  background: 'linear-gradient(to right, #B25D16, #8F470F, #0B3A4A)',
                 },
                 '&:active': {
                   transform: 'scale(0.98)',
@@ -140,12 +136,12 @@ export default function Home() {
                   py: 2,
                   borderRadius: 4,
                   borderColor: 'divider',
-                  bgcolor: alpha('#1e293b', 0.4),
+                  bgcolor: alpha('#0B1622', 0.4),
                   backdropFilter: 'blur(4px)',
                   color: 'text.secondary',
                   fontWeight: 700,
                   '&:hover': {
-                    bgcolor: alpha('#1e293b', 0.8),
+                    bgcolor: alpha('#0B1622', 0.8),
                     color: 'white',
                     borderColor: 'text.disabled',
                   },
@@ -161,12 +157,12 @@ export default function Home() {
                   py: 2,
                   borderRadius: 4,
                   borderColor: 'divider',
-                  bgcolor: alpha('#1e293b', 0.4),
+                  bgcolor: alpha('#0B1622', 0.4),
                   backdropFilter: 'blur(4px)',
                   color: 'text.secondary',
                   fontWeight: 700,
                   '&:hover': {
-                    bgcolor: alpha('#1e293b', 0.8),
+                    bgcolor: alpha('#0B1622', 0.8),
                     color: 'white',
                     borderColor: 'text.disabled',
                   },
@@ -177,7 +173,6 @@ export default function Home() {
             </Box>
           </Box>
         </Box>
-      </Box>
-    </>
+    </Box>
   );
 }

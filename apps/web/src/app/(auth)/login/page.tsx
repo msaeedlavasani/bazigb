@@ -184,7 +184,7 @@ export default function LoginPage() {
           '& .MuiTabs-indicator': {
             height: 3,
             borderRadius: '3px 3px 0 0',
-            background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+            background: 'linear-gradient(to right, #F5A306, #B25D16)',
           },
           '& .MuiTab-root': {
             textTransform: 'none',
@@ -215,7 +215,7 @@ export default function LoginPage() {
         sx={{
           p: 3,
           borderRadius: 4,
-          bgcolor: 'rgba(30, 41, 59, 0.6)',
+          bgcolor: 'rgba(11, 22, 34, 0.6)',
           border: '1px solid',
           borderColor: 'divider',
           display: 'flex',
@@ -245,7 +245,7 @@ export default function LoginPage() {
                 slotProps={{
                   input: {
                     sx: {
-                      bgcolor: 'rgba(15, 23, 42, 0.6)',
+                      bgcolor: 'rgba(3, 10, 21, 0.6)',
                       borderRadius: 2,
                     },
                   },
@@ -272,7 +272,7 @@ export default function LoginPage() {
                 slotProps={{
                   input: {
                     sx: {
-                      bgcolor: 'rgba(15, 23, 42, 0.6)',
+                      bgcolor: 'rgba(3, 10, 21, 0.6)',
                       borderRadius: 2,
                     },
                   },
@@ -291,9 +291,9 @@ export default function LoginPage() {
                 fontWeight: 600,
                 textTransform: 'none',
                 borderRadius: 2,
-                background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+                background: 'linear-gradient(to right, #F5A306, #B25D16)',
                 '&:hover': {
-                  background: 'linear-gradient(to right, #4f46e5, #0284c7)',
+                  background: 'linear-gradient(to right, #B25D16, #8F470F)',
                 },
               }}
             >
@@ -321,7 +321,7 @@ export default function LoginPage() {
                 slotProps={{
                   input: {
                     sx: {
-                      bgcolor: 'rgba(15, 23, 42, 0.6)',
+                      bgcolor: 'rgba(3, 10, 21, 0.6)',
                       borderRadius: 2,
                       direction: 'ltr',
                     },
@@ -341,7 +341,7 @@ export default function LoginPage() {
                   py: 1.5,
                   fontWeight: 600,
                   borderRadius: 2,
-                  background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+                  background: 'linear-gradient(to right, #F5A306, #B25D16)',
                 }}
               >
                 {submitting ? <CircularProgress size={24} color="inherit" /> : 'دریافت کد تایید'}
@@ -375,7 +375,7 @@ export default function LoginPage() {
                     slotProps={{
                       input: {
                         sx: {
-                          bgcolor: 'rgba(15, 23, 42, 0.6)',
+                          bgcolor: 'rgba(3, 10, 21, 0.6)',
                           borderRadius: 2,
                           textAlign: 'center',
                           letterSpacing: 4,
@@ -404,7 +404,7 @@ export default function LoginPage() {
                       slotProps={{
                         input: {
                           sx: {
-                            bgcolor: 'rgba(15, 23, 42, 0.6)',
+                            bgcolor: 'rgba(3, 10, 21, 0.6)',
                             borderRadius: 2,
                             direction: 'ltr',
                           },
@@ -424,7 +424,7 @@ export default function LoginPage() {
                     py: 1.5,
                     fontWeight: 600,
                     borderRadius: 2,
-                    background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
                   }}
                 >
                   {submitting ? <CircularProgress size={24} color="inherit" /> : isNewUser ? 'ثبت‌نام و ورود' : 'ورود'}

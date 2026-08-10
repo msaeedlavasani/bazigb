@@ -463,9 +463,8 @@ export default function GamePage() {
 
   return (
     <Box
-      component="main"
       sx={{
-        minHeight: '100vh',
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -640,7 +639,7 @@ export default function GamePage() {
                 variant="h4"
                 sx={{
                   fontWeight: 900,
-                  background: `linear-gradient(to right, ${theme.palette.primary.light}, #7dd3fc)`,
+                  background: `linear-gradient(to right, , )`,
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   mb: 1,

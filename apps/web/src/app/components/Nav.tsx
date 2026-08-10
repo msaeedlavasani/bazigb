@@ -81,7 +81,7 @@ export default function Nav() {
             >
               <Image
                 src="/brand/logo-256.webp"
-                alt="BaziG3 Logo"
+                alt="BaziGB Logo"
                 fill
                 className="object-cover transition-transform hover:scale-110"
               />
@@ -92,7 +92,7 @@ export default function Nav() {
                 fontSize: { xs: '1rem', sm: '1.25rem' },
                 fontWeight: 900,
                 letterSpacing: '-0.025em',
-                background: `linear-gradient(to right, ${theme.palette.primary.light}, #7dd3fc)`,
+                background: `linear-gradient(to right, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 '&:hover': {
@@ -101,7 +101,7 @@ export default function Nav() {
                 transition: 'all 0.2s',
               }}
             >
-              BaziG3
+              BaziGB
             </Typography>
           </Link>
 

@@ -29,7 +29,6 @@ import {
   Tooltip,
 } from '@mui/material';
 import { createRoom, fetchRooms, Room } from '../../lib/rooms';
-import Nav from '../components/Nav';
 
 const REFRESH_INTERVAL_MS = 5000;
 
@@ -159,20 +158,17 @@ export default function LobbyPage() {
     });
 
   return (
-    <>
-      <Nav />
-      <Box
-        component="main"
-        sx={{
-          display: 'flex',
-          minHeight: '100vh',
-          flexDirection: 'column',
-          alignItems: 'center',
-          p: 3,
-          bgcolor: '#0f172a',
-          color: 'white',
-        }}
-      >
+    <Box
+      sx={{
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: 'center',
+        p: 3,
+        bgcolor: '#030A15',
+        color: 'white',
+      }}
+    >
         <Box sx={{ w: '100%', maxWidth: 'sm', width: '100%', display: 'flex', flexDirection: 'column', gap: 4, py: 4 }}>
           <Box component="header" sx={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Typography
@@ -180,7 +176,7 @@ export default function LobbyPage() {
               sx={{
                 fontWeight: 800,
                 letterSpacing: 'tight',
-                background: 'linear-gradient(to right, #818cf8, #38bdf8)',
+                background: 'linear-gradient(to right, #F5A306, #B25D16)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -200,7 +196,7 @@ export default function LobbyPage() {
                 sx={{
                   p: 2,
                   borderRadius: 4,
-                  bgcolor: alpha('#1e293b', 0.6),
+                  bgcolor: alpha('#0B1622', 0.6),
                   border: '1px solid',
                   borderColor: 'divider',
                   display: 'flex',
@@ -232,17 +228,17 @@ export default function LobbyPage() {
                             borderRadius: 3,
                             border: '1px solid',
                             transition: 'all 0.2s',
-                            bgcolor: selected ? alpha('#6366f1', 0.15) : alpha('#0f172a', 0.6),
-                            borderColor: selected ? alpha('#818cf8', 0.6) : 'divider',
-                            color: selected ? 'white' : alpha('#94a3b8', 0.8),
-                            boxShadow: selected ? '0 10px 15px -3px rgba(99, 102, 241, 0.1)' : 'none',
+                            bgcolor: selected ? alpha('#B25D16', 0.15) : alpha('#030A15', 0.6),
+                            borderColor: selected ? alpha('#F5A306', 0.6) : 'divider',
+                            color: selected ? 'white' : alpha('#BEBBAC', 0.8),
+                            boxShadow: selected ? '0 10px 15px -3px rgba(178, 93, 22, 0.12)' : 'none',
                             '&:hover': {
-                              borderColor: selected ? alpha('#818cf8', 0.8) : 'text.disabled',
+                              borderColor: selected ? alpha('#F5A306', 0.8) : 'text.disabled',
                               color: selected ? 'white' : 'text.primary',
                             },
                           }}
                         >
-                          <Box sx={{ color: selected ? '#a5b4fc' : 'text.disabled', display: 'flex' }}>
+                          <Box sx={{ color: selected ? '#F5A306' : 'text.disabled', display: 'flex' }}>
                             <GameIcon game={type} />
                           </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -284,7 +280,7 @@ export default function LobbyPage() {
                     mt: 0.5,
                     py: 1.5,
                     borderRadius: 3,
-                    background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
+                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
                     fontWeight: 700,
                     fontSize: '1.125rem',
                     boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',
@@ -309,7 +305,7 @@ export default function LobbyPage() {
                 sx={{
                   p: 2,
                   borderRadius: 4,
-                  bgcolor: alpha('#1e293b', 0.6),
+                  bgcolor: alpha('#0B1622', 0.6),
                   border: '1px solid',
                   borderColor: 'divider',
                   display: 'flex',
@@ -337,7 +333,7 @@ export default function LobbyPage() {
                     slotProps={{
                       input: {
                         sx: {
-                          bgcolor: '#0f172a',
+                          bgcolor: '#030A15',
                           borderRadius: 3,
                           fontFamily: 'monospace',
                           letterSpacing: '0.2em',
@@ -356,9 +352,9 @@ export default function LobbyPage() {
                       minWidth: 56,
                       borderRadius: 3,
                       bgcolor: 'white',
-                      color: '#4f46e5',
+                      color: '#8F470F',
                       '&:hover': {
-                        bgcolor: alpha('#f8fafc', 0.9),
+                        bgcolor: alpha('#BEBBAC', 0.9),
                       },
                     }}
                   >
@@ -384,8 +380,8 @@ export default function LobbyPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Gamepad2 size={20} style={{ color: '#818cf8' }} />
-                <Typography variant="h6" sx={{ fontWeight: 700, color: alpha('#cbd5e1', 0.9) }}>
+                <Gamepad2 size={20} style={{ color: '#F5A306' }} />
+                <Typography variant="h6" sx={{ fontWeight: 700, color: alpha('#BEBBAC', 0.9) }}>
                   Active Rooms
                 </Typography>
               </Box>
@@ -430,12 +426,12 @@ export default function LobbyPage() {
                       gap: 2,
                       p: 2,
                       borderRadius: 4,
-                      bgcolor: alpha('#1e293b', 0.6),
+                      bgcolor: alpha('#0B1622', 0.6),
                       border: '1px solid',
                       borderColor: 'divider',
                       transition: 'border-color 0.2s',
                       '&:hover': {
-                        borderColor: alpha('#818cf8', 0.5),
+                        borderColor: alpha('#F5A306', 0.5),
                       },
                     }}
                   >
@@ -474,11 +470,11 @@ export default function LobbyPage() {
                           size="small"
                           sx={{
                             height: 24,
-                            bgcolor: alpha('#6366f1', 0.1),
-                            color: '#a5b4fc',
+                            bgcolor: alpha('#B25D16', 0.1),
+                            color: '#F5A306',
                             fontWeight: 600,
                             border: '1px solid',
-                            borderColor: alpha('#818cf8', 0.2),
+                            borderColor: alpha('#F5A306', 0.2),
                             '& .MuiChip-icon': {
                               ml: 0.5,
                               mr: -0.5,
@@ -519,14 +515,14 @@ export default function LobbyPage() {
                       sx={{
                         borderRadius: 2.5,
                         px: 3,
-                        bgcolor: alpha('#6366f1', 0.8),
+                        bgcolor: alpha('#B25D16', 0.8),
                         fontWeight: 600,
                         textTransform: 'none',
                         '&:hover': {
-                          bgcolor: '#6366f1',
+                          bgcolor: '#B25D16',
                         },
                         '&:disabled': {
-                          bgcolor: alpha('#334155', 0.8),
+                          bgcolor: alpha('#2C3A45', 0.8),
                           color: 'text.disabled',
                         },
                       }}
@@ -539,7 +535,6 @@ export default function LobbyPage() {
             )}
           </Box>
         </Box>
-      </Box>
-    </>
+    </Box>
   );
 }

@@ -144,6 +144,12 @@ exports.Prisma.OtpCodeScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.SiteSettingScalarFieldEnum = {
+  key: 'key',
+  value: 'value',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -229,6 +235,7 @@ exports.Prisma.NullsOrder = {
 exports.Prisma.ModelName = {
   User: 'User',
   OtpCode: 'OtpCode',
+  SiteSetting: 'SiteSetting',
   Notification: 'Notification',
   Room: 'Room',
   GameHistory: 'GameHistory',

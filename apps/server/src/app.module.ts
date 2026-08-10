@@ -14,6 +14,7 @@ import { LeaderboardController } from './leaderboard/leaderboard.controller';
 import { TournamentService } from './tournaments/tournament.service';
 import { TournamentsController } from './tournaments/tournament.controller';
 import { AdminModule } from './admin/admin.module';
+import { SiteSettingsModule } from './site-settings/site-settings.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AdminModule } from './admin/admin.module';
     PrismaModule,
     AuthModule,
     AdminModule,
+    SiteSettingsModule,
   ],
   controllers: [
     HistoryController,

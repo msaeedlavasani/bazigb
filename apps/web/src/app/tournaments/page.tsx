@@ -28,7 +28,6 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import Nav from '../components/Nav';
 import { useAuth } from '@/hooks/useAuth';
 import {
   fetchTournaments,
@@ -166,8 +165,7 @@ export default function TournamentsPage() {
   const openCount = tournaments.filter((t) => t.status === 'registration').length;
 
   return (
-    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Nav />
+    <Box sx={{ flex: 1, bgcolor: 'background.default' }}>
       <Container maxWidth="md" sx={{ py: 6 }}>
         {/* Header */}
         <Box
@@ -412,7 +410,7 @@ export default function TournamentsPage() {
                             bgcolor: alpha(theme.palette.text.primary, 0.1),
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 3,
-                              background: 'linear-gradient(to right, #6366f1, #38bdf8)',
+                              background: 'linear-gradient(to right, #F5A306, #B25D16)',
                             },
                           }}
                         />
@@ -454,8 +452,8 @@ export default function TournamentsPage() {
                               sx={{
                                 py: 1.25,
                                 fontWeight: 800,
-                                background: 'linear-gradient(to right, #6366f1, #38bdf8)',
-                                boxShadow: `0 4px 14px 0 ${alpha('#6366f1', 0.4)}`,
+                                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                                boxShadow: `0 4px 14px 0 ${alpha('#B25D16', 0.4)}`,
                               }}
                             >
                               Sign in to join
@@ -469,8 +467,8 @@ export default function TournamentsPage() {
                               sx={{
                                 py: 1.25,
                                 fontWeight: 800,
-                                background: 'linear-gradient(to right, #6366f1, #38bdf8)',
-                                boxShadow: `0 4px 14px 0 ${alpha('#6366f1', 0.4)}`,
+                                background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                                boxShadow: `0 4px 14px 0 ${alpha('#B25D16', 0.4)}`,
                               }}
                             >
                               {joining === t.id ? (

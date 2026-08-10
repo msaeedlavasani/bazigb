@@ -10,9 +10,8 @@ import { Box, Typography } from '@mui/material';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <Box
-      component="main"
       sx={{
-        minHeight: '100vh',
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -33,7 +32,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               fontSize: '2.25rem',
               fontWeight: 800,
               letterSpacing: '-0.025em',
-              background: 'linear-gradient(to right, #818cf8, #38bdf8)',
+              background: 'linear-gradient(to right, #F5A306, #B25D16)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               textDecoration: 'none',

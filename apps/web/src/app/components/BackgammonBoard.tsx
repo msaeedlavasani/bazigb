@@ -360,8 +360,8 @@ export default function BackgammonBoard({
               disabled={disabled}
               sx={{
                 px: 3,
-                bgcolor: '#334155',
-                '&:hover': { bgcolor: '#475569' },
+                bgcolor: '#2C3A45',
+                '&:hover': { bgcolor: '#5B6570' },
                 color: 'white',
                 fontWeight: 'bold',
                 fontSize: '0.75rem',

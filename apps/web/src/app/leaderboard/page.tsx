@@ -20,7 +20,6 @@ import {
   useTheme,
 } from '@mui/material';
 import { Crown, Medal, RefreshCw, Search, Trophy } from 'lucide-react';
-import Nav from '../components/Nav';
 import { fetchLeaderboard, LeaderboardEntry } from '../../lib/leaderboard';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -37,9 +36,9 @@ const RANK_META: Record<
     label: 'Gold',
   },
   2: {
-    ring: '#cbd5e199', // ring-slate-300/60
-    badge: 'linear-gradient(to bottom right, #e2e8f0, #94a3b8)',
-    gradient: 'linear-gradient(to bottom right, #cbd5e1cc, #94a3b8cc)',
+    ring: '#BEBBAC99', // ring-slate-300/60
+    badge: 'linear-gradient(to bottom right, #BEBBAC, #BEBBAC)',
+    gradient: 'linear-gradient(to bottom right, #BEBBACcc, #BEBBACcc)',
     label: 'Silver',
   },
   3: {
@@ -58,12 +57,12 @@ const MEDAL_ICON: Record<number, React.ReactNode> = {
 
 function WinRateBar({ value }: { value: number }) {
   return (
-    <Box sx={{ width: 80, height: 6, borderRadius: 10, bgcolor: 'rgba(51, 65, 85, 0.7)', overflow: 'hidden' }}>
+    <Box sx={{ width: 80, height: 6, borderRadius: 10, bgcolor: 'rgba(44, 58, 69, 0.7)', overflow: 'hidden' }}>
       <Box
         sx={{
           height: '100%',
           borderRadius: 10,
-          background: 'linear-gradient(to right, #818cf8, #38bdf8)',
+          background: 'linear-gradient(to right, #F5A306, #B25D16)',
           width: `${Math.min(100, Math.max(0, value))}%`,
         }}
       />
@@ -86,7 +85,7 @@ function SkeletonRows() {
             borderRadius: 4,
             border: '1px solid',
             borderColor: 'divider',
-            bgcolor: alpha('#1e293b', 0.6),
+            bgcolor: alpha('#0B1622', 0.6),
           }}
         >
           <Skeleton variant="rectangular" width={24} height={20} />
@@ -140,8 +139,7 @@ export default function LeaderboardPage() {
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean) as LeaderboardEntry[];
 
   return (
-    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Nav />
+    <Box sx={{ flex: 1, bgcolor: 'background.default' }}>
       <Container maxWidth="md" sx={{ py: 6 }}>
         {/* Header */}
         <Box
@@ -418,7 +416,7 @@ export default function LeaderboardPage() {
                         height: 40,
                         fontWeight: 800,
                         fontSize: '0.875rem',
-                        background: meta ? meta.gradient : 'linear-gradient(to bottom right, #6366f1, #0ea5e9)',
+                        background: meta ? meta.gradient : 'linear-gradient(to bottom right, #F5A306, #B25D16)',
                       }}
                     >
                       {entry.username.charAt(0).toUpperCase() || '?'}
@@ -471,7 +469,7 @@ export default function LeaderboardPage() {
 
                     {/* Rating */}
                     <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#7dd3fc', lineHeight: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#F5A306', lineHeight: 1 }}>
                         {entry.rating}
                       </Typography>
                       <Typography

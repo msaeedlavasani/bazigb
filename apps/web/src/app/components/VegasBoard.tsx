@@ -107,7 +107,7 @@ function MoneyCard({
             top: -6,
             right: -6,
             borderRadius: '50%',
-            bgcolor: 'rgb(51, 65, 85)', // slate-700
+            bgcolor: 'rgb(44, 58, 69)', // slate-700
             p: 0.5,
             color: 'rgb(148, 163, 184)', // slate-400
             display: 'flex',
@@ -185,7 +185,7 @@ export default function VegasBoard({
         mx: 'auto',
         p: { xs: 1.5, sm: 3 },
         borderRadius: 6,
-        bgcolor: 'rgba(30, 41, 59, 0.5)',
+        bgcolor: 'rgba(11, 22, 34, 0.5)',
         border: '1px solid',
         borderColor: 'divider',
         boxShadow: 24,
@@ -199,9 +199,9 @@ export default function VegasBoard({
             size="small"
             sx={{
               fontWeight: 'bold',
-              bgcolor: 'rgba(99, 102, 241, 0.1)',
-              color: 'indigo.300',
-              borderColor: 'rgba(129, 140, 248, 0.3)',
+              bgcolor: 'rgba(178, 93, 22, 0.12)',
+              color: '#F5A306',
+              borderColor: 'rgba(245, 163, 6, 0.3)',
             }}
             variant="outlined"
           />
@@ -213,7 +213,7 @@ export default function VegasBoard({
               sx={{
                 fontWeight: 'bold',
                 bgcolor: 'rgba(245, 158, 11, 0.1)',
-                color: 'amber.300',
+                color: '#FBBF24',
                 borderColor: 'rgba(251, 191, 36, 0.4)',
               }}
               variant="outlined"
@@ -226,7 +226,7 @@ export default function VegasBoard({
               sx={{
                 fontWeight: 'bold',
                 bgcolor: 'rgba(16, 185, 129, 0.1)',
-                color: 'emerald.300',
+                color: '#34D399',
                 borderColor: 'rgba(52, 211, 153, 0.4)',
               }}
               variant="outlined"
@@ -261,7 +261,7 @@ export default function VegasBoard({
                   </Box>
                 }
                 sx={{
-                  bgcolor: 'rgba(15, 23, 42, 0.7)',
+                  bgcolor: 'rgba(3, 10, 21, 0.7)',
                   borderColor: 'divider',
                   px: 0.5,
                 }}
@@ -296,7 +296,7 @@ export default function VegasBoard({
                 gap: 1.5,
                 p: 2,
                 borderRadius: 4,
-                bgcolor: 'rgba(15, 23, 42, 0.6)',
+                bgcolor: 'rgba(3, 10, 21, 0.6)',
                 border: '1px solid',
                 borderColor: 'divider',
                 boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
@@ -323,8 +323,8 @@ export default function VegasBoard({
                     sx={{
                       p: 0.75,
                       borderRadius: 2,
-                      bgcolor: 'rgba(99, 102, 241, 0.1)',
-                      color: 'indigo.400',
+                      bgcolor: 'rgba(178, 93, 22, 0.12)',
+                      color: '#F5A306',
                       display: 'flex',
                     }}
                   >
@@ -343,7 +343,7 @@ export default function VegasBoard({
                         fontSize: '9px',
                         fontWeight: 900,
                         bgcolor: 'rgba(245, 158, 11, 0.2)',
-                        color: 'amber.300',
+                        color: '#FBBF24',
                         borderColor: 'rgba(251, 191, 36, 0.5)',
                         height: 20,
                       }}
@@ -358,7 +358,7 @@ export default function VegasBoard({
                         fontSize: '9px',
                         fontWeight: 900,
                         bgcolor: 'rgba(244, 63, 94, 0.15)',
-                        color: 'rose.400',
+                        color: '#FB7185',
                         borderColor: 'rgba(251, 113, 133, 0.4)',
                         height: 20,
                       }}
@@ -484,7 +484,7 @@ export default function VegasBoard({
             gap: 2,
             p: { xs: 2, sm: 3 },
             borderRadius: 4,
-            bgcolor: 'rgba(15, 23, 42, 0.5)',
+            bgcolor: 'rgba(3, 10, 21, 0.5)',
             border: '1px solid',
             borderColor: 'divider',
           }}
@@ -514,7 +514,7 @@ export default function VegasBoard({
                     border: '1px solid',
                     px: 2,
                     py: 1.5,
-                    bgcolor: rank === 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(15, 23, 42, 0.6)',
+                    bgcolor: rank === 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(3, 10, 21, 0.6)',
                     borderColor: rank === 0 ? 'rgba(251, 191, 36, 0.4)' : 'divider',
                   }}
                 >
@@ -523,7 +523,7 @@ export default function VegasBoard({
                       width: 20,
                       textAlign: 'center',
                       fontWeight: 900,
-                      color: rank === 0 ? 'amber.300' : 'text.disabled',
+                      color: rank === 0 ? '#FBBF24' : 'text.disabled',
                     }}
                   >
                     {rank + 1}
@@ -553,10 +553,10 @@ export default function VegasBoard({
                 py: 1.5,
                 fontWeight: 900,
                 borderRadius: 3,
-                background: 'linear-gradient(to right, #10b981, #14b8a6)',
+                background: 'linear-gradient(to right, #F5A306, #B25D16)',
                 boxShadow: '0 4px 14px 0 rgba(16, 185, 129, 0.2)',
                 '&:hover': {
-                  background: 'linear-gradient(to right, #059669, #0d9488)',
+                  background: 'linear-gradient(to right, #B25D16, #8F470F)',
                   opacity: 0.9,
                 },
                 textTransform: 'none',
@@ -584,7 +584,7 @@ export default function VegasBoard({
             gap: 2,
             p: { xs: 2, sm: 3 },
             borderRadius: 4,
-            bgcolor: 'rgba(15, 23, 42, 0.5)',
+            bgcolor: 'rgba(3, 10, 21, 0.5)',
             border: '1px solid',
             borderColor: 'divider',
           }}
@@ -645,10 +645,10 @@ export default function VegasBoard({
                         gap: 1,
                         p: 1.5,
                         borderRadius: 3,
-                        bgcolor: 'rgba(30, 41, 59, 0.8)',
+                        bgcolor: 'rgba(11, 22, 34, 0.8)',
                         borderColor: isMyTurn ? `${currentPlayerColor}40` : 'divider',
                         '&:hover': {
-                          bgcolor: 'rgba(51, 65, 85, 0.8)',
+                          bgcolor: 'rgba(44, 58, 69, 0.8)',
                           borderColor: isMyTurn ? currentPlayerColor : 'divider',
                         },
                         '&:disabled': { opacity: 0.5 },
@@ -666,7 +666,7 @@ export default function VegasBoard({
                               width: 32,
                               height: 32,
                               borderRadius: 2,
-                              bgcolor: 'rgb(51, 65, 85)',
+                              bgcolor: 'rgb(44, 58, 69)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -708,7 +708,7 @@ export default function VegasBoard({
                   borderRadius: 4,
                   fontWeight: 900,
                   fontSize: '1.1rem',
-                  background: 'linear-gradient(to bottom right, #6366f1, #0ea5e9)',
+                  background: 'linear-gradient(to bottom right, #F5A306, #B25D16)',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                   '&:hover': {
                     transform: 'scale(1.05)',

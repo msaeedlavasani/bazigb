@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
+  Alert,
   Box,
   Typography,
   Paper,
@@ -23,8 +24,13 @@ import {
 } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
 import { getAdminStats, getAdminUsers, AdminStats, AdminUser } from '@/lib/admin';
-import Nav from '../components/Nav';
-import { Users, PlayCircle, Trophy, ArrowLeft } from 'lucide-react';
+import {
+  fetchSiteSettings,
+  saveFooterSettings,
+  FooterContent,
+  FOOTER_DEFAULTS,
+} from '@/lib/site-settings';
+import { Users, PlayCircle, Trophy, ArrowLeft, Copyright } from 'lucide-react';
 
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -38,6 +44,13 @@ export default function AdminPage() {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const take = 50;
+
+  // Footer editor state
+  const [footer, setFooter] = useState<FooterContent>(FOOTER_DEFAULTS);
+  const [footerLinksJson, setFooterLinksJson] = useState('[]');
+  const [savingFooter, setSavingFooter] = useState(false);
+  const [footerError, setFooterError] = useState<string | null>(null);
+  const [footerSaved, setFooterSaved] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
@@ -53,6 +66,51 @@ export default function AdminPage() {
       return () => clearTimeout(timer);
     }
   }, [user, search, roleFilter, page]);
+
+  // Load current footer content once for the editor.
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') return;
+    let cancelled = false;
+    fetchSiteSettings().then(({ footer }) => {
+      if (cancelled) return;
+      setFooter(footer);
+      setFooterLinksJson(JSON.stringify(footer.links, null, 2));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  async function handleSaveFooter() {
+    setFooterError(null);
+    setFooterSaved(false);
+    let links: { label: string; href: string }[];
+    try {
+      const parsed = JSON.parse(footerLinksJson || '[]') as unknown;
+      if (!Array.isArray(parsed)) throw new Error('JSON باید آرایه باشد');
+      links = parsed
+        .filter((l: unknown) => l && typeof l === 'object')
+        .map((l: Record<string, unknown>) => ({
+          label: String(l.label ?? '').trim(),
+          href: String(l.href ?? '').trim(),
+        }))
+        .filter((l) => l.label && l.href);
+    } catch {
+      setFooterError('فرمت JSON لینکها نامعتبر است');
+      return;
+    }
+    setSavingFooter(true);
+    try {
+      await saveFooterSettings({ ...footer, links });
+      setFooterLinksJson(JSON.stringify(links, null, 2));
+      setFooterSaved(true);
+      setTimeout(() => setFooterSaved(false), 3000);
+    } catch (err: any) {
+      setFooterError(err?.message || 'خطا در ذخیره فوتر');
+    } finally {
+      setSavingFooter(false);
+    }
+  }
 
   async function loadData() {
     setLoading(true);
@@ -78,7 +136,7 @@ export default function AdminPage() {
 
   if (authLoading || (user && user.role !== 'ADMIN' && !authLoading)) {
     return (
-      <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', bgcolor: '#0f172a' }}>
+      <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', bgcolor: '#030A15' }}>
         {authLoading ? <CircularProgress /> : <Typography color="white">دسترسی محدود</Typography>}
       </Box>
     );
@@ -87,25 +145,22 @@ export default function AdminPage() {
   if (!user) return null;
 
   return (
-    <>
-      <Nav />
-      <Box
-        component="main"
-        sx={{
-          display: 'flex',
-          minHeight: '100vh',
-          flexDirection: 'column',
-          alignItems: 'center',
-          p: 3,
-          bgcolor: '#0f172a',
-          color: 'white',
-          direction: 'rtl',
-        }}
-      >
+    <Box
+      sx={{
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: 'center',
+        p: 3,
+        bgcolor: '#030A15',
+        color: 'white',
+        direction: 'rtl',
+      }}
+    >
         <Box sx={{ width: '100%', maxWidth: 'lg', display: 'flex', flexDirection: 'column', gap: 4, py: 4 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: '#818cf8' }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#F5A306' }}>
               پنل مدیریت
             </Typography>
             <Button
@@ -121,9 +176,9 @@ export default function AdminPage() {
           {/* Stats */}
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, sm: 4 }}>
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#1e293b', 0.6), border: '1px solid', borderColor: 'divider' }}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                  <Users color="#818cf8" size={24} />
+                  <Users color="#F5A306" size={24} />
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>کل کاربران</Typography>
                 </Box>
                 <Typography variant="h3" sx={{ fontWeight: 800 }}>{stats?.users.total || 0}</Typography>
@@ -131,7 +186,7 @@ export default function AdminPage() {
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#1e293b', 0.6), border: '1px solid', borderColor: 'divider' }}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <PlayCircle color="#10b981" size={24} />
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>اتاق‌های فعال</Typography>
@@ -141,7 +196,7 @@ export default function AdminPage() {
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
-              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#1e293b', 0.6), border: '1px solid', borderColor: 'divider' }}>
+              <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <Trophy color="#f59e0b" size={24} />
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>بازی‌های انجام شده</Typography>
@@ -152,8 +207,90 @@ export default function AdminPage() {
             </Grid>
           </Grid>
 
+          {/* Footer Content Editor */}
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Copyright color="#F5A306" size={22} />
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>محتوای فوتر</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="زیرنویس (tagline)"
+                variant="outlined"
+                size="small"
+                value={footer.tagline}
+                onChange={(e) => setFooter({ ...footer, tagline: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    bgcolor: '#030A15',
+                    color: 'white',
+                  },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
+                }}
+              />
+              <TextField
+                label="متن کپی‌رایت"
+                variant="outlined"
+                size="small"
+                value={footer.copyright}
+                onChange={(e) => setFooter({ ...footer, copyright: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    bgcolor: '#030A15',
+                    color: 'white',
+                  },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
+                }}
+              />
+              <TextField
+                label="لینک‌ها (JSON)"
+                variant="outlined"
+                size="small"
+                multiline
+                minRows={3}
+                value={footerLinksJson}
+                onChange={(e) => setFooterLinksJson(e.target.value)}
+                helperText='فرمت: [{"label":"درباره ما","href":"/about"}]'
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    bgcolor: '#030A15',
+                    color: 'white',
+                    direction: 'ltr',
+                    fontFamily: 'monospace',
+                  },
+                  '& .MuiInputLabel-root': { color: 'text.secondary' },
+                  '& .MuiFormHelperText-root': { color: 'text.disabled' },
+                }}
+              />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveFooter}
+                  disabled={savingFooter}
+                  startIcon={savingFooter ? <CircularProgress size={16} color="inherit" /> : null}
+                  sx={{ bgcolor: '#B25D16', '&:hover': { bgcolor: '#8F470F' } }}
+                >
+                  ذخیره فوتر
+                </Button>
+                {footerSaved && (
+                  <Typography sx={{ color: '#34d399', fontWeight: 600, fontSize: '0.875rem' }}>
+                    ذخیره شد ✓
+                  </Typography>
+                )}
+              </Box>
+              {footerError && (
+                <Alert severity="error" variant="outlined" sx={{ borderRadius: 2 }}>
+                  {footerError}
+                </Alert>
+              )}
+            </Box>
+          </Paper>
+
           {/* Users Table */}
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#1e293b', 0.6), border: '1px solid', borderColor: 'divider' }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 4, bgcolor: alpha('#0B1622', 0.6), border: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3, alignItems: 'center' }}>
               <TextField
                 placeholder="جستجو (نام کاربری، ایمیل، موبایل)..."
@@ -165,7 +302,7 @@ export default function AdminPage() {
                   flexGrow: 1,
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
-                    bgcolor: '#0f172a',
+                    bgcolor: '#030A15',
                     color: 'white',
                   },
                 }}
@@ -175,7 +312,7 @@ export default function AdminPage() {
                 exclusive
                 onChange={(_, val) => val && setRoleFilter(val)}
                 size="small"
-                sx={{ bgcolor: '#0f172a', borderRadius: 3 }}
+                sx={{ bgcolor: '#030A15', borderRadius: 3 }}
               >
                 <ToggleButton value="ALL" sx={{ color: 'white', px: 2 }}>همه</ToggleButton>
                 <ToggleButton value="USER" sx={{ color: 'white', px: 2 }}>کاربر</ToggleButton>
@@ -220,8 +357,8 @@ export default function AdminPage() {
                             component="span"
                             sx={{
                               px: 1, py: 0.5, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
-                              bgcolor: u.role === 'ADMIN' ? alpha('#f43f5e', 0.1) : alpha('#38bdf8', 0.1),
-                              color: u.role === 'ADMIN' ? '#fb7185' : '#7dd3fc',
+                              bgcolor: u.role === 'ADMIN' ? alpha('#f43f5e', 0.1) : alpha('#B25D16', 0.1),
+                              color: u.role === 'ADMIN' ? '#fb7185' : '#F5A306',
                             }}
                           >
                             {u.role === 'ADMIN' ? 'مدیر' : 'کاربر'}
@@ -263,7 +400,6 @@ export default function AdminPage() {
             </Box>
           </Paper>
         </Box>
-      </Box>
-    </>
+    </Box>
   );
 }

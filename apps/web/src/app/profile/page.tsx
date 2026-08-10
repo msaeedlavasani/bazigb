@@ -115,8 +115,8 @@ const RESULT_BADGE: Record<
 
 // Shared gradient used by the primary CTAs on this page.
 const GRADIENT_BTN = {
-  background: 'linear-gradient(to right, #6366f1, #0ea5e9)',
-  '&:hover': { background: 'linear-gradient(to right, #4f46e5, #0284c7)' },
+  background: 'linear-gradient(to right, #F5A306, #B25D16)',
+  '&:hover': { background: 'linear-gradient(to right, #B25D16, #8F470F)' },
   fontWeight: 700,
   borderRadius: 3,
   textTransform: 'none',
@@ -143,9 +143,9 @@ function StatCard({
         alignItems: 'center',
         gap: 2,
         borderRadius: 4,
-        bgcolor: alpha('#1e293b', 0.6),
+        bgcolor: alpha('#0B1622', 0.6),
         border: '1px solid',
-        borderColor: alpha('#334155', 0.7),
+        borderColor: alpha('#2C3A45', 0.7),
         p: 2.5,
       }}
     >
@@ -194,10 +194,10 @@ function SkeletonRows() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
-        <TableRow key={i} sx={{ borderTop: '1px solid', borderColor: alpha('#334155', 0.8) }}>
+        <TableRow key={i} sx={{ borderTop: '1px solid', borderColor: alpha('#2C3A45', 0.8) }}>
           {Array.from({ length: 4 }).map((__, j) => (
             <TableCell key={j} sx={{ px: 2, py: 2, borderBottom: 'none' }}>
-              <Skeleton variant="text" width="60%" sx={{ maxWidth: 96, bgcolor: alpha('#1e293b', 0.9) }} />
+              <Skeleton variant="text" width="60%" sx={{ maxWidth: 96, bgcolor: alpha('#0B1622', 0.9) }} />
             </TableCell>
           ))}
         </TableRow>
@@ -293,9 +293,8 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <Box
-        component="main"
         sx={{
-          minHeight: '100vh',
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -306,7 +305,7 @@ export default function ProfilePage() {
         }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          <CircularProgress size={48} thickness={4} sx={{ color: '#818cf8' }} />
+          <CircularProgress size={48} thickness={4} sx={{ color: '#F5A306' }} />
           <Typography sx={{ color: 'text.secondary' }}>Loading your profile...</Typography>
         </Box>
       </Box>
@@ -316,9 +315,8 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <Box
-        component="main"
         sx={{
-          minHeight: '100vh',
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -334,9 +332,9 @@ export default function ProfilePage() {
             width: '100%',
             maxWidth: 448,
             borderRadius: 4,
-            bgcolor: alpha('#1e293b', 0.6),
+            bgcolor: alpha('#0B1622', 0.6),
             border: '1px solid',
-            borderColor: '#334155',
+            borderColor: '#2C3A45',
             p: 4,
             textAlign: 'center',
           }}
@@ -363,7 +361,7 @@ export default function ProfilePage() {
   const hasMatches = matches.length > 0;
 
   return (
-    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
+    <Box sx={{ flex: 1, bgcolor: 'background.default', color: 'text.primary' }}>
       <Box sx={{ mx: 'auto', width: '100%', maxWidth: 896, px: { xs: 2, sm: 6 }, py: 10 }}>
         {/* Header */}
         <Box component="header" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
@@ -380,10 +378,10 @@ export default function ProfilePage() {
             onClick={logout}
             startIcon={<LogOut size={16} />}
             sx={{
-              borderColor: '#334155',
+              borderColor: '#2C3A45',
               color: 'text.secondary',
               textTransform: 'none',
-              '&:hover': { bgcolor: alpha('#1e293b', 0.8), color: 'text.primary' },
+              '&:hover': { bgcolor: alpha('#0B1622', 0.8), color: 'text.primary' },
             }}
           >
             Sign out
@@ -396,9 +394,9 @@ export default function ProfilePage() {
           sx={{
             mt: 8,
             borderRadius: 4,
-            bgcolor: alpha('#1e293b', 0.6),
+            bgcolor: alpha('#0B1622', 0.6),
             border: '1px solid',
-            borderColor: alpha('#334155', 0.7),
+            borderColor: alpha('#2C3A45', 0.7),
             p: 6,
           }}
         >
@@ -411,7 +409,7 @@ export default function ProfilePage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 4,
-                background: 'linear-gradient(to bottom right, #6366f1, #0ea5e9)',
+                background: 'linear-gradient(to bottom right, #F5A306, #B25D16)',
                 fontSize: '1.5rem',
                 fontWeight: 800,
                 textTransform: 'uppercase',
@@ -437,7 +435,7 @@ export default function ProfilePage() {
                         color: 'white',
                         '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
                         '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
-                        '&.Mui-focused fieldset': { borderColor: '#6366f1' },
+                        '&.Mui-focused fieldset': { borderColor: '#B25D16' },
                       },
                     }}
                   />
@@ -448,7 +446,7 @@ export default function ProfilePage() {
                       onClick={handleSaveUsername}
                       disabled={isSaving || newUsername === user.username}
                       startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : null}
-                      sx={{ bgcolor: '#6366f1', '&:hover': { bgcolor: '#4f46e5' } }}
+                      sx={{ bgcolor: '#B25D16', '&:hover': { bgcolor: '#8F470F' } }}
                     >
                       Save
                     </Button>
@@ -501,10 +499,10 @@ export default function ProfilePage() {
 
         {/* Stats */}
         <Box sx={{ mt: 8, display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', lg: 'repeat(4, 1fr)' }, gap: 2 }}>
-          <StatCard label="Games Played" value={stats ? stats.gamesPlayed : '—'} icon={<Gamepad2 size={20} />} color="#818cf8" />
+          <StatCard label="Games Played" value={stats ? stats.gamesPlayed : '—'} icon={<Gamepad2 size={20} />} color="#F5A306" />
           <StatCard label="Wins" value={stats ? stats.wins : '—'} icon={<Trophy size={20} />} color="#34d399" />
           <StatCard label="Losses" value={stats ? stats.losses : '—'} icon={<Swords size={20} />} color="#fb7185" />
-          <StatCard label="Win Rate" value={winRate} icon={<TrendingUp size={20} />} color="#38bdf8" />
+          <StatCard label="Win Rate" value={winRate} icon={<TrendingUp size={20} />} color="#B25D16" />
         </Box>
 
         {/* Match history */}
@@ -525,10 +523,10 @@ export default function ProfilePage() {
               startIcon={<RefreshCw size={16} className={loadingHistory ? 'animate-spin' : ''} />}
               sx={{
                 border: '1px solid',
-                borderColor: '#334155',
+                borderColor: '#2C3A45',
                 color: 'text.secondary',
                 textTransform: 'none',
-                '&:hover': { bgcolor: alpha('#1e293b', 0.8), color: 'text.primary' },
+                '&:hover': { bgcolor: alpha('#0B1622', 0.8), color: 'text.primary' },
               }}
             >
               Refresh
@@ -545,7 +543,7 @@ export default function ProfilePage() {
             <TableContainer
               component={Paper}
               elevation={0}
-              sx={{ mt: 2, borderRadius: 4, border: '1px solid', borderColor: alpha('#334155', 0.7), bgcolor: alpha('#0f172a', 0.5), overflowX: 'auto' }}
+              sx={{ mt: 2, borderRadius: 4, border: '1px solid', borderColor: alpha('#2C3A45', 0.7), bgcolor: alpha('#030A15', 0.5), overflowX: 'auto' }}
             >
               <Table>
                 <TableBody>
@@ -557,11 +555,11 @@ export default function ProfilePage() {
             <TableContainer
               component={Paper}
               elevation={0}
-              sx={{ mt: 2, borderRadius: 4, border: '1px solid', borderColor: alpha('#334155', 0.7), bgcolor: alpha('#0f172a', 0.5), overflowX: 'auto' }}
+              sx={{ mt: 2, borderRadius: 4, border: '1px solid', borderColor: alpha('#2C3A45', 0.7), bgcolor: alpha('#030A15', 0.5), overflowX: 'auto' }}
             >
               <Table sx={{ minWidth: 560 }}>
                 <TableHead>
-                  <TableRow sx={{ borderBottom: '1px solid', borderColor: alpha('#334155', 0.7) }}>
+                  <TableRow sx={{ borderBottom: '1px solid', borderColor: alpha('#2C3A45', 0.7) }}>
                     <TableCell sx={{ px: 2, py: 1.5, fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary', borderBottom: 'none' }}>
                       Game Type
                     </TableCell>
@@ -586,8 +584,8 @@ export default function ProfilePage() {
                       <TableRow
                         key={match.id}
                         sx={{
-                          bgcolor: index % 2 === 0 ? alpha('#1e293b', 0.3) : 'transparent',
-                          '&:hover': { bgcolor: alpha('#1e293b', 0.6) },
+                          bgcolor: index % 2 === 0 ? alpha('#0B1622', 0.3) : 'transparent',
+                          '&:hover': { bgcolor: alpha('#0B1622', 0.6) },
                         }}
                       >
                         <TableCell sx={{ px: 2, py: 1.5, fontWeight: 500, color: 'text.primary', borderBottom: 'none' }}>
@@ -644,14 +642,14 @@ export default function ProfilePage() {
                   justifyContent: 'center',
                   borderRadius: 4,
                   border: '1px dashed',
-                  borderColor: '#334155',
-                  bgcolor: alpha('#0f172a', 0.4),
+                  borderColor: '#2C3A45',
+                  bgcolor: alpha('#030A15', 0.4),
                   px: 6,
                   py: 14,
                   textAlign: 'center',
                 }}
               >
-                <Gamepad2 size={40} strokeWidth={1.5} color="#475569" />
+                <Gamepad2 size={40} strokeWidth={1.5} color="#5B6570" />
                 <Typography sx={{ mt: 3, fontWeight: 500 }}>No matches yet</Typography>
                 <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
                   Play a game and your results will show up here.

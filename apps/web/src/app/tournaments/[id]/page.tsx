@@ -27,7 +27,6 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
-import Nav from '../../components/Nav';
 import { useAuth } from '@/hooks/useAuth';
 import {
   BracketMatch,
@@ -397,8 +396,7 @@ export default function TournamentDetailPage({
 
   if (loading) {
     return (
-      <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Nav />
+      <Box sx={{ flex: 1, bgcolor: 'background.default' }}>
         <Box sx={{ display: 'flex', minHeight: '60vh', alignItems: 'center', justifyContent: 'center' }}>
           <CircularProgress size={40} />
         </Box>
@@ -408,15 +406,14 @@ export default function TournamentDetailPage({
 
   if (error && !tournament) {
     return (
-      <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Nav />
+      <Box sx={{ flex: 1, bgcolor: 'background.default' }}>
         <Container maxWidth="md" sx={{ py: 10, textAlign: 'center' }}>
           <Typography color="error" sx={{ mb: 4 }}>{error}</Typography>
           <Button
             component={Link}
             href="/tournaments"
             variant="contained"
-            sx={{ background: 'linear-gradient(to right, #6366f1, #38bdf8)' }}
+            sx={{ background: 'linear-gradient(to right, #F5A306, #B25D16)' }}
           >
             Back to Tournaments
           </Button>
@@ -427,8 +424,7 @@ export default function TournamentDetailPage({
 
   if (!tournament) {
     return (
-      <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-        <Nav />
+      <Box sx={{ flex: 1, bgcolor: 'background.default' }}>
         <Container maxWidth="md" sx={{ py: 10, textAlign: 'center' }}>
           <Swords size={40} style={{ color: theme.palette.text.disabled, margin: '0 auto' }} />
           <Typography variant="h5" sx={{ mt: 2, fontWeight: 800 }}>Tournament not found</Typography>
@@ -439,7 +435,7 @@ export default function TournamentDetailPage({
             component={Link}
             href="/tournaments"
             variant="contained"
-            sx={{ background: 'linear-gradient(to right, #6366f1, #38bdf8)' }}
+            sx={{ background: 'linear-gradient(to right, #F5A306, #B25D16)' }}
           >
             Back to Tournaments
           </Button>
@@ -452,8 +448,7 @@ export default function TournamentDetailPage({
   const hasBracket = tournament.rounds > 0 && tournament.matches.length > 0;
 
   return (
-    <Box component="main" sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Nav />
+    <Box sx={{ flex: 1, bgcolor: 'background.default' }}>
       <Container maxWidth="lg" sx={{ py: 6 }}>
         {/* Back link */}
         <Button
@@ -562,8 +557,8 @@ export default function TournamentDetailPage({
                     py: 1.5,
                     fontWeight: 800,
                     borderRadius: 3,
-                    background: 'linear-gradient(to right, #6366f1, #38bdf8)',
-                    boxShadow: `0 8px 20px ${alpha('#6366f1', 0.4)}`,
+                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                    boxShadow: `0 8px 20px ${alpha('#B25D16', 0.4)}`,
                   }}
                 >
                   Sign in to join
@@ -578,8 +573,8 @@ export default function TournamentDetailPage({
                     py: 1.5,
                     fontWeight: 800,
                     borderRadius: 3,
-                    background: 'linear-gradient(to right, #6366f1, #38bdf8)',
-                    boxShadow: `0 8px 20px ${alpha('#6366f1', 0.4)}`,
+                    background: 'linear-gradient(to right, #F5A306, #B25D16)',
+                    boxShadow: `0 8px 20px ${alpha('#B25D16', 0.4)}`,
                   }}
                 >
                   {joining ? (

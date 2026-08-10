@@ -196,9 +196,9 @@ export default function ChatSidebar({ roomCode, playerIds, myId, names }: ChatSi
           right: 20,
           zIndex: theme.zIndex.drawer + 1,
           boxShadow: `0 8px 24px 0 ${alpha(theme.palette.primary.main, 0.4)}`,
-          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.info.main})`,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
           '&:hover': {
-            background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.info.dark})`,
+            background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
           },
         }}
       >
