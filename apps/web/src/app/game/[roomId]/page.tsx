@@ -531,7 +531,7 @@ export default function GamePage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 1,
+            gap: { xs: 0.5, sm: 1 },
           }}
         >
           <Button
@@ -543,12 +543,16 @@ export default function GamePage() {
               '&:hover': { color: 'text.primary' },
               textTransform: 'none',
               fontWeight: 500,
+              minWidth: { xs: 'auto', sm: 64 },
+              px: { xs: 1, sm: 2 },
+              fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              '& .MuiButton-startIcon': { mr: { xs: 0.5, sm: 1 } },
             }}
           >
             Lobby
           </Button>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1.5 } }}>
             {(turnRemainingSec !== null || turnExpired) && gameState && (
               <Chip
                 icon={<Timer size={14} />}
@@ -570,6 +574,8 @@ export default function GamePage() {
                       ? alpha(theme.palette.warning.main, 0.4)
                       : alpha(theme.palette.success.main, 0.3),
                   fontWeight: 700,
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  px: { xs: 0, sm: 0.5 },
                 }}
               />
             )}
@@ -594,12 +600,12 @@ export default function GamePage() {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1,
+                gap: { xs: 0.5, sm: 1 },
                 borderRadius: 10,
                 bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
-                px: 2,
+                px: { xs: 1, sm: 2 },
                 py: 0.75,
               }}
             >
@@ -621,6 +627,7 @@ export default function GamePage() {
                   fontFamily: 'monospace',
                   fontWeight: 700,
                   letterSpacing: '0.1em',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 }}
               >
                 {roomCode}
@@ -632,6 +639,7 @@ export default function GamePage() {
                   sx={{
                     color: copied ? 'success.main' : 'text.disabled',
                     '&:hover': { color: 'text.primary' },
+                    p: { xs: 0.25, sm: 0.5 },
                   }}
                 >
                   {copied ? <Check size={14} /> : <Copy size={14} />}

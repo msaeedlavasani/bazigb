@@ -234,7 +234,8 @@ export default function LeaderboardPage() {
             aria-label="Top 3"
             sx={{
               display: 'flex',
-              alignItems: 'flex-end',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'stretch', sm: 'flex-end' },
               justifyContent: 'center',
               gap: { xs: 2, sm: 3 },
               mb: 6,
@@ -259,7 +260,8 @@ export default function LeaderboardPage() {
                     borderColor: 'divider',
                     bgcolor: alpha(theme.palette.background.paper, 0.6),
                     boxShadow: isFirst ? `0 10px 25px -5px ${alpha(theme.palette.common.black, 0.3)}` : 'none',
-                    minWidth: { xs: 100, sm: 140 },
+                    minWidth: { xs: '100%', sm: 140 },
+                    order: { xs: entry.rank, sm: 0 },
                   }}
                 >
                   <Box
@@ -277,16 +279,15 @@ export default function LeaderboardPage() {
                   >
                     {MEDAL_ICON[entry.rank]}
                   </Box>
-                  <Box sx={{ textAlign: 'center' }}>
+                  <Box sx={{ textAlign: 'center', width: '100%' }}>
                     <Typography
                       variant="body1"
                       sx={{
                         fontWeight: 800,
                         fontSize: isFirst ? '1.1rem' : '0.9rem',
-                        maxWidth: { xs: 96, sm: 140 },
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        maxWidth: '100%',
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal',
                       }}
                       title={entry.username}
                     >
@@ -432,8 +433,14 @@ export default function LeaderboardPage() {
 
                     {/* Identity + stats */}
                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography noWrap sx={{ fontWeight: 600 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal',
+                          }}
+                        >
                           {entry.username}
                         </Typography>
                         {isMe && (

@@ -192,8 +192,10 @@ export default function ChatSidebar({ roomCode, playerIds, myId, names }: ChatSi
         onClick={() => setOpen((v) => !v)}
         sx={{
           position: 'fixed',
-          bottom: 20,
-          right: 20,
+          bottom: { xs: 16, sm: 20 },
+          right: { xs: 16, sm: 20 },
+          width: { xs: 48, sm: 56 },
+          height: { xs: 48, sm: 56 },
           zIndex: theme.zIndex.drawer + 1,
           boxShadow: `0 8px 24px 0 ${alpha(theme.palette.primary.main, 0.4)}`,
           background: theme.palette.primary.main,
@@ -208,7 +210,7 @@ export default function ChatSidebar({ roomCode, playerIds, myId, names }: ChatSi
           invisible={open || unread === 0}
           sx={{ '& .MuiBadge-badge': { fontWeight: 700 } }}
         >
-          {open ? <X size={24} /> : <MessageSquare size={24} />}
+          {open ? <X size={20} /> : <MessageSquare size={20} />}
         </Badge>
       </Fab>
 
