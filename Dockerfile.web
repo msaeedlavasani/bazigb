@@ -10,13 +10,19 @@ COPY packages/ packages/
 # The lockfile is generated on macOS and only pins the darwin @next/swc binary.
 # npm ci on Linux then has to fetch @next/swc-linux-x64-gnu on the fly (optional
 # dep) — flaky on this VPS, and if it fails `next build` tries to download the
-# binary itself and hangs (BodyTimeoutError). Install the Linux binary
-# explicitly: try npm first, then scripts/fetch-swc.mjs (node fetch + tar with
-# 5 timed retries; the image has no curl/wget).
+# binary itself and hangs (BodyTimeoutError). Install the Linux binary by
+# downloading its tarball directly (scripts/fetch-swc.mjs — node fetch + tar
+# with 5 timed retries; the image has no curl/wget).
+#
+# IMPORTANT: do NOT use `npm install` for the swc binary. On npm 11+ a plain
+# `npm install --no-save` re-resolves the whole dependency tree and PRUNES the
+# nested workspace packages that the lockfile places outside the root (e.g.
+# apps/web/node_modules/@mui/material). `next build` then fails with
+# "unstable_createUseMediaQuery is not a function" (broken @mui/material
+# resolution). The tarball fetch below does not touch the installed tree.
 COPY scripts/ scripts/
 RUN npm ci \
- && (npm install --no-save --package-lock=false --no-audit --no-fund @next/swc-linux-x64-gnu@14.2.33 \
-     || node scripts/fetch-swc.mjs) \
+ && node scripts/fetch-swc.mjs \
  && ls node_modules/@next/swc-linux-x64-gnu/*.node >/dev/null 2>&1 \
  || (echo "ERROR: linux swc binary missing" && exit 1)
 

@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 const url =
-  'https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.33.tgz';
+  'https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-14.2.35.tgz';
 const dest = 'node_modules/@next/swc-linux-x64-gnu';
 
 for (let i = 1; i <= 5; i++) {
