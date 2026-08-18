@@ -199,197 +199,192 @@ export default function LobbyPage() {
           </Box>
 
           {/* Create / Join actions */}
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  borderRadius: '16px',
-                  bgcolor: 'background.paper', // Prussian Blue
-                  border: '1px solid',
-                  borderColor: 'divider', // Dark Coffee
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                }}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: '16px',
+                bgcolor: 'background.paper', // Prussian Blue
+                border: '1px solid',
+                borderColor: 'divider', // Dark Coffee
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              }}
+            >
+              <Typography
+                variant="overline"
+                sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.1em' }}
               >
-                <Typography
-                  variant="overline"
-                  sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.1em' }}
-                >
-                  Select Game
-                </Typography>
-                <Grid container spacing={1.5}>
-                  {GAME_OPTIONS.map((type) => {
-                    const meta = GAME_META[type];
-                    const selected = gameType === type;
-                    return (
-                      <Grid item xs={6} key={type}>
-                        <ButtonBase
-                          onClick={() => setGameType(type)}
-                          sx={{
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 1,
-                            p: 2,
-                            borderRadius: '12px',
-                            border: '2px solid',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            bgcolor: selected ? alpha(theme.palette.primary.main, 0.08) : 'rgba(0,0,0,0.2)',
-                            borderColor: selected ? 'primary.main' : 'transparent',
-                            color: selected ? 'primary.main' : 'text.secondary',
-                            '&:hover': {
-                              bgcolor: selected ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.text.primary, 0.04),
-                              borderColor: selected ? 'primary.main' : alpha(theme.palette.divider, 0.5),
-                              transform: 'translateY(-2px)',
-                            },
-                          }}
-                        >
-                          <Box sx={{ color: 'inherit', display: 'flex', transform: selected ? 'scale(1.1)' : 'none', transition: 'transform 0.2s' }}>
-                            <GameIcon game={type} sx={{ fontSize: '1.75rem' }} />
-                          </Box>
-                          <Box sx={{ textAlign: 'center', minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 800, noWrap: true }}>
-                              {meta.label}
-                            </Typography>
-                            {meta.isNew && (
-                              <Chip 
-                                label="NEW" 
-                                size="small" 
-                                sx={{ 
-                                  height: 16, 
-                                  fontSize: '8px', 
-                                  fontWeight: 900, 
-                                  bgcolor: 'success.main', 
-                                  color: 'white',
-                                  mt: 0.5
-                                }} 
-                              />
-                            )}
-                          </Box>
-                        </ButtonBase>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
+                Select Game
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                {GAME_OPTIONS.map((type) => {
+                  const meta = GAME_META[type];
+                  const selected = gameType === type;
+                  return (
+                    <ButtonBase
+                      key={type}
+                      onClick={() => setGameType(type)}
+                      sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 1,
+                        p: 2,
+                        borderRadius: '12px',
+                        border: '2px solid',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        bgcolor: selected ? alpha(theme.palette.primary.main, 0.08) : 'rgba(0,0,0,0.2)',
+                        borderColor: selected ? 'primary.main' : 'transparent',
+                        color: selected ? 'primary.main' : 'text.secondary',
+                        '&:hover': {
+                          bgcolor: selected ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.text.primary, 0.04),
+                          borderColor: selected ? 'primary.main' : alpha(theme.palette.divider, 0.5),
+                          transform: 'translateY(-2px)',
+                        },
+                      }}
+                    >
+                      <Box sx={{ color: 'inherit', display: 'flex', transform: selected ? 'scale(1.1)' : 'none', transition: 'transform 0.2s' }}>
+                        <GameIcon game={type} sx={{ fontSize: '1.75rem' }} />
+                      </Box>
+                      <Box sx={{ textAlign: 'center', minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 800 }} noWrap>
+                          {meta.label}
+                        </Typography>
+                        {meta.isNew && (
+                          <Chip 
+                            label="NEW" 
+                            size="small" 
+                            sx={{ 
+                              height: 16, 
+                              fontSize: '8px', 
+                              fontWeight: 900, 
+                              bgcolor: 'success.main', 
+                              color: 'white',
+                              mt: 0.5
+                            }} 
+                          />
+                        )}
+                      </Box>
+                    </ButtonBase>
+                  );
+                })}
+              </Box>
 
-                <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-                  <InputLabel id="match-points-label" sx={{ color: 'text.secondary' }}>Match Points</InputLabel>
-                  <Select
-                    labelId="match-points-label"
-                    label="Match Points"
-                    value={maxRounds}
-                    onChange={(e) => setMaxRounds(e.target.value as 1 | 3 | 5)}
-                    sx={{
-                      borderRadius: '10px',
-                      bgcolor: 'rgba(0,0,0,0.2)',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-                    }}
-                  >
-                    {MATCH_POINTS_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value} sx={{ fontWeight: 600 }}>
-                        {opt.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handleCreate}
-                  disabled={creating}
-                  startIcon={creating ? <CircularProgress size={20} color="inherit" /> : <Plus size={20} />}
+              <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                <InputLabel id="match-points-label" sx={{ color: 'text.secondary' }}>Match Points</InputLabel>
+                <Select
+                  labelId="match-points-label"
+                  label="Match Points"
+                  value={maxRounds}
+                  onChange={(e) => setMaxRounds(e.target.value as 1 | 3 | 5)}
                   sx={{
-                    py: 1.5,
-                    borderRadius: '12px',
-                    bgcolor: 'primary.main',
-                    color: 'background.default',
-                    fontWeight: 800,
-                    boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
-                    '&:hover': {
-                      bgcolor: 'primary.light',
-                      transform: 'translateY(-1px)',
-                    },
-                    '&:active': { transform: 'scale(0.98)' },
+                    borderRadius: '10px',
+                    bgcolor: 'rgba(0,0,0,0.2)',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
                   }}
                 >
-                  Create Room
-                </Button>
-              </Paper>
-            </Grid>
+                  {MATCH_POINTS_OPTIONS.map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value} sx={{ fontWeight: 600 }}>
+                      {opt.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-            <Grid item xs={12} sm={6}>
-              <Paper
-                component="form"
-                onSubmit={handleJoinByCode}
-                elevation={0}
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleCreate}
+                disabled={creating}
+                startIcon={creating ? <CircularProgress size={20} color="inherit" /> : <Plus size={20} />}
                 sx={{
-                  p: 2.5,
-                  borderRadius: '16px',
-                  bgcolor: 'background.paper',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  height: '100%',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                  py: 1.5,
+                  borderRadius: '12px',
+                  bgcolor: 'primary.main',
+                  color: 'background.default',
+                  fontWeight: 800,
+                  boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
+                  '&:hover': {
+                    bgcolor: 'primary.light',
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:active': { transform: 'scale(0.98)' },
                 }}
               >
-                <Typography
-                  variant="overline"
-                  sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.1em' }}
-                >
-                  Join by code
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto' }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={codeInput}
-                    placeholder="ABCDE"
-                    onChange={(e) => {
-                      setCodeInput(e.target.value.toUpperCase());
-                      setJoinError(null);
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: 'rgba(0,0,0,0.2)',
-                        borderRadius: '10px',
-                        fontFamily: 'monospace',
-                        fontWeight: 700,
-                        letterSpacing: '0.2em',
-                      }
-                    }}
-                  />
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!codeInput.trim()}
-                    sx={{
-                      minWidth: 56,
+                Create Room
+              </Button>
+            </Paper>
+
+            <Paper
+              component="form"
+              onSubmit={handleJoinByCode}
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: '16px',
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                height: '100%',
+                boxShadow: '0 8px 322px rgba(0,0,0,0.4)',
+              }}
+            >
+              <Typography
+                variant="overline"
+                sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.1em' }}
+              >
+                Join by code
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto' }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={codeInput}
+                  placeholder="ABCDE"
+                  onChange={(e) => {
+                    setCodeInput(e.target.value.toUpperCase());
+                    setJoinError(null);
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(0,0,0,0.2)',
                       borderRadius: '10px',
-                      bgcolor: 'text.primary',
-                      color: 'background.default',
-                      '&:hover': { bgcolor: 'text.secondary' },
-                    }}
-                  >
-                    <ArrowRight size={20} />
-                  </Button>
-                </Box>
-                {joinError && (
-                  <Alert severity="error" variant="filled" sx={{ py: 0, px: 1, borderRadius: '8px', fontSize: '0.75rem' }}>
-                    {joinError}
-                  </Alert>
-                )}
-              </Paper>
-            </Grid>
-          </Grid>
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      letterSpacing: '0.2em',
+                    }
+                  }}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={!codeInput.trim()}
+                  sx={{
+                    minWidth: 56,
+                    borderRadius: '10px',
+                    bgcolor: 'text.primary',
+                    color: 'background.default',
+                    '&:hover': { bgcolor: 'text.secondary' },
+                  }}
+                >
+                  <ArrowRight size={20} />
+                </Button>
+              </Box>
+              {joinError && (
+                <Alert severity="error" variant="filled" sx={{ py: 0, px: 1, borderRadius: '8px', fontSize: '0.75rem' }}>
+                  {joinError}
+                </Alert>
+              )}
+            </Paper>
+          </Box>
 
           {(createError || loadError) && (
             <Alert severity="error" variant="outlined" sx={{ borderRadius: 3, borderColor: alpha('#f43f5e', 0.5) }}>

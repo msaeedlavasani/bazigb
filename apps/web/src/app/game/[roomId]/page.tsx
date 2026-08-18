@@ -33,6 +33,7 @@ import {
   Wifi,
   WifiOff,
   Check,
+  Bot,
 } from 'lucide-react';
 import { socket, connectSocket, rejoinRoom } from '../../../lib/socket';
 import { fetchRoom, GameState, Room } from '../../../lib/rooms';
@@ -132,6 +133,7 @@ export default function GamePage() {
   const ctxPlayers = gameState?.ctx.players ?? [];
   const isPlayer = !!mySocketId && (ctxPlayers.includes(mySocketId) || (room?.players?.includes(mySocketId) ?? false));
   const isMyTurn = isPlayer && !!gameState && gameState.ctx.currentPlayer === mySocketId;
+  const isSpectator = !isPlayer;
 
   // Turn countdown: server announces `turnStarted { player, endsAt }` on every
   // turn change; we tick once per second while a deadline is active.
@@ -914,7 +916,7 @@ export default function GamePage() {
                       Undo
                     </Button>
                   )}
-                  {!winnerId && players.length === 1 && !isSpectator && (
+                  {!winnerId && room && room.players.length === 1 && !isSpectator && (
                     <Button
                       size="small"
                       color="secondary"
