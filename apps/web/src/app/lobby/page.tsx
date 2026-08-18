@@ -275,26 +275,28 @@ export default function LobbyPage() {
                 })}
               </Box>
 
-              <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-                <InputLabel id="match-points-label" sx={{ color: 'text.secondary' }}>Match Points</InputLabel>
-                <Select
-                  labelId="match-points-label"
-                  label="Match Points"
-                  value={maxRounds}
-                  onChange={(e) => setMaxRounds(e.target.value as 1 | 3 | 5)}
-                  sx={{
-                    borderRadius: '10px',
-                    bgcolor: 'rgba(0,0,0,0.2)',
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
-                  }}
-                >
-                  {MATCH_POINTS_OPTIONS.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value} sx={{ fontWeight: 600 }}>
-                      {opt.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              {(gameType === 'backgammon' || gameType === 'tic-tac-toe') && (
+                <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                  <InputLabel id="match-points-label" sx={{ color: 'text.secondary' }}>Match Points</InputLabel>
+                  <Select
+                    labelId="match-points-label"
+                    label="Match Points"
+                    value={maxRounds}
+                    onChange={(e) => setMaxRounds(e.target.value as 1 | 3 | 5)}
+                    sx={{
+                      borderRadius: '10px',
+                      bgcolor: 'rgba(0,0,0,0.2)',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+                    }}
+                  >
+                    {MATCH_POINTS_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value} sx={{ fontWeight: 600 }}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
 
               <Button
                 fullWidth

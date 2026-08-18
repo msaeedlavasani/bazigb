@@ -298,7 +298,15 @@ export default function BackgammonBoard({
   const handlePointClick = (index: number) => {
     if (disabled || !isMyTurn) return;
 
+    const hint = moveHints.find((h) => h.to === index);
+
     if (selectedPoint === index) {
+      setSelectedPoint(null);
+    } else if (hint && hint.sequence) {
+      // Execute the full sequence of moves for this hint (Single, Sum, or Double chain)
+      hint.sequence.forEach((move, i) => {
+        setTimeout(() => handleMove(move.from, move.to), i * 200);
+      });
       setSelectedPoint(null);
     } else if (legalDestinations.includes(index)) {
       handleMove(selectedPoint!, index);
@@ -542,15 +550,15 @@ export default function BackgammonBoard({
               : BAR_BG,
           }}
         >
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center pt-2">
             <AnimatePresence mode="popLayout" initial={false}>
-              {renderTokens(-bar.black, true, 'bar-black', true)}
+              {renderTokens(Math.abs(bar.black), true, 'bar-black', true)}
             </AnimatePresence>
           </div>
-          <div className="h-px w-3/4 bg-white/15" />
-          <div className="flex flex-col items-center">
+          <div className="h-px w-3/4 bg-white/10" />
+          <div className="flex flex-col items-center pb-2">
             <AnimatePresence mode="popLayout" initial={false}>
-              {renderTokens(bar.white, false, 'bar-white', true)}
+              {renderTokens(Math.abs(bar.white), false, 'bar-white', true)}
             </AnimatePresence>
           </div>
         </div>

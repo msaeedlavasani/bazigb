@@ -654,6 +654,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
    *    between rounds (also reflected in the `gameOver` payload).
    *  - `gameState` — the fresh initial state of the next round.
    */
+  /**
+   * Shared game-over path used by every game type.
+   * Rules:
+   * 1. Match Point (multi-round) only for 'backgammon' and 'tic-tac-toe'.
+   * 2. Logic: Reach N points AND Win by 2 (tennis-style).
+   */
   private async handleGameOver(
     roomRecord: RoomWithParsedData,
     game: Game,
@@ -666,12 +672,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const winner = result === 'draw' ? null : result;
     const maxRounds = roomRecord.maxRounds ?? 1;
-    const threshold = Math.ceil(maxRounds / 2);
+    const gameType = roomRecord.gameType;
     const scores = { ...(roomRecord.scores ?? {}) };
 
-    // Tally the finished round into the match scoreboard.
     if (winner) scores[winner] = (scores[winner] ?? 0) + 1;
-    const matchWinner = maxRounds > 1 && winner && scores[winner] >= threshold ? winner : null;
+
+    let matchOver = false;
+    // Multi-round is ONLY for Backgammon and Tic-Tac-Toe
+    if (gameType === 'chess' || gameType === 'vegas' || maxRounds <= 1) {
+      matchOver = true;
+    } else {
+      const playerA = roomRecord.players[0];
+      const playerB = roomRecord.players[1];
+      const sA = scores[playerA] || 0;
+      const sB = scores[playerB] || 0;
+      const leader = Math.max(sA, sB);
+      const diff = Math.abs(sA - sB);
+
+      // Condition: Reach target N AND lead by at least 2
+      if (leader >= maxRounds && diff >= 2) {
+        matchOver = true;
+      }
+    }
 
     const resolvedPlayers = this.resolveUserIds(roomRecord.players);
     const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
@@ -684,8 +706,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         finalState: nextState,
       });
 
-    // Single-game room: legacy behavior — finish and log as before.
-    if (maxRounds <= 1) {
+    if (matchOver) {
       this.server.to(roomCode).emit('gameOver', {
         state: nextState,
         winner: result,
@@ -695,79 +716,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
       await this.roomService.finishRoom(roomCode, winner, nextState);
       await recordRound();
-      this.emitSystemMessage(
-        roomCode,
-        result === 'draw' ? 'The game ended in a draw' : `User ${result} won the game`,
-        result === 'draw' ? undefined : result,
-        'gameOver',
-      );
-      console.log(`Game over in room ${roomCode}. Winner: ${result}`);
-      return;
-    }
+      this.emitSystemMessage(roomCode, result === 'draw' ? 'Draw!' : `Winner: ${result}`, undefined, 'gameOver');
+    } else {
+      // Persist scores and start next round
+      await this.roomService.saveScores(roomCode, scores);
+      const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
+      await this.roomService.startGame(roomCode, initialState);
+      await recordRound();
 
-    // Best-of-N match: persist the scoreboard first so a crash between rounds
-    // cannot lose the finished round.
-    await this.roomService.saveScores(roomCode, scores);
-
-    // The win threshold was reached — the match is over, close the room.
-    if (matchWinner) {
       this.server.to(roomCode).emit('gameOver', {
         state: nextState,
         winner: result,
-        matchOver: true,
+        matchOver: false,
         scores,
         maxRounds,
       });
-      await this.roomService.finishRoom(roomCode, matchWinner, nextState);
-      await recordRound();
-      const winnerScore = scores[matchWinner] ?? 0;
-      const loserScore = Object.values(scores).reduce((sum, n) => sum + n, 0) - winnerScore;
-      this.emitSystemMessage(
-        roomCode,
-        `User ${matchWinner} won the match ${winnerScore} - ${loserScore}`,
-        matchWinner,
-        'gameOver',
-      );
-      console.log(
-        `Match over in room ${roomCode}: ${matchWinner} won ${winnerScore}-${loserScore} (best of ${maxRounds})`,
-      );
-      return;
+      this.server.to(roomCode).emit('matchScore', { scores, maxRounds });
+      this.server.to(roomCode).emit('gameState', initialState);
+      this.scheduleTurnTimer(roomCode, initialState);
     }
-
-    // Round over but the match continues: persist the next round's fresh state
-    // BEFORE announcing the round result, so a move raced in from a client in
-    // the announcement window cannot overwrite the new round's initial state.
-    const roundsPlayed = Object.values(scores).reduce((sum, n) => sum + n, 0);
-    const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
-    // No score reset here — this is a new ROUND of the same match.
-    await this.roomService.startGame(roomCode, initialState);
-
-    this.server.to(roomCode).emit('gameOver', {
-      state: nextState,
-      winner: result,
-      matchOver: false,
-      scores,
-      maxRounds,
-    });
-    await recordRound();
-    this.server.to(roomCode).emit('matchScore', {
-      scores,
-      maxRounds,
-      round: roundsPlayed,
-    });
-    this.server.to(roomCode).emit('gameState', initialState);
-    this.scheduleTurnTimer(roomCode, initialState);
-    this.emitSystemMessage(
-      roomCode,
-      result === 'draw'
-        ? 'The round ended in a draw — next round starting'
-        : `User ${result} won the round — next round starting`,
-      result === 'draw' ? undefined : result,
-      'gameOver',
-    );
-    console.log(
-      `Round ${roundsPlayed} finished in room ${roomCode} (winner: ${result}) — next round started`,
-    );
   }
 
   /**

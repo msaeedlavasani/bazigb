@@ -11,9 +11,9 @@ import {
 } from '../../lib/site-settings';
 
 /**
- * Site footer — rendered once by the AppShell on every page. Content comes
- * from the server (GET /site-settings) so the admin panel can edit it
- * without a redeploy; defaults are shown until the first fetch resolves.
+ * Site footer — Final Elite fix for RTL.
+ * Visual Result (RTL): [BaziGB] (Right) ... [Links] (Center) ... [Enamad] (Left)
+ * DOM Order: Brand, then Links, then Enamad.
  */
 export default function Footer() {
   const [footer, setFooter] = useState<FooterContent>(FOOTER_DEFAULTS);
@@ -21,7 +21,7 @@ export default function Footer() {
   useEffect(() => {
     let cancelled = false;
     fetchSiteSettings().then(({ footer }) => {
-      if (!cancelled) setFooter(footer);
+      if (!cancelled && footer) setFooter(footer);
     });
     return () => {
       cancelled = true;
@@ -34,8 +34,8 @@ export default function Footer() {
       sx={{
         mt: 'auto',
         borderTop: '1px solid',
-        borderColor: alpha('#BEBBAC', 0.12),
-        bgcolor: alpha('#0B1622', 0.6),
+        borderColor: '#392E24',
+        bgcolor: alpha('#061A2D', 0.8),
         py: { xs: 4, sm: 5 },
       }}
     >
@@ -44,88 +44,54 @@ export default function Footer() {
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: { xs: 'flex-start', sm: 'center' },
+            alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 2,
+            gap: 4,
           }}
         >
-          {/* Brand */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Image
-                src="/brand/logo-icon.png"
-                alt="BaziGB Logo"
-                width={34}
-                height={34}
-                style={{ objectFit: 'contain' }}
-              />
+          {/* 1. Brand (Right in RTL) */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-end' }, gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Typography
                 component={Link}
                 href="/"
-                sx={{
-                  fontSize: '1.35rem',
-                  fontWeight: 900,
-                  letterSpacing: '-0.025em',
-                  color: '#F5A306',
-                  textDecoration: 'none',
-                }}
+                sx={{ fontSize: '1.5rem', fontWeight: 900, color: 'primary.main', textDecoration: 'none' }}
               >
                 BaziGB
               </Typography>
+              <Image src="/brand/logo-icon.png" alt="Logo" width={36} height={36} />
             </Box>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {footer.tagline}
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              {footer.tagline || 'همه‌ی بازی‌ها، توی جیبت'}
             </Typography>
           </Box>
 
-          {/* Links & Trust Seals */}
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: 'center',
-              gap: 3,
-            }}
-          >
+          {/* 2. Links (Center) */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 2.5, sm: 4 }, justifyContent: 'center' }}>
+            {(footer.links?.length > 0 ? footer.links : FOOTER_DEFAULTS.links).map((link) => (
+              <Typography
+                key={`${link.label}-${link.href}`}
+                component={Link}
+                href={link.href}
+                variant="body2"
+                sx={{ color: 'text.secondary', textDecoration: 'none', fontWeight: 600, '&:hover': { color: 'primary.main' } }}
+              >
+                {link.label}
+              </Typography>
+            ))}
           </Box>
-        </Box>
 
-        <Divider sx={{ my: 2.5, borderColor: alpha('#BEBBAC', 0.1) }} />
-
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 2,
-          }}
-        >
-          <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.8 }}>
-            {footer.copyright}
-          </Typography>
-
-          {/* Enamad - Elite discrete placement */}
+          {/* 3. Enamad (Left in RTL) */}
           <Box
             sx={{
               bgcolor: 'rgba(255, 255, 255, 0.03)',
-              p: 0.75,
+              p: 1,
               borderRadius: '12px',
               border: '1px solid rgba(255, 255, 255, 0.05)',
               display: 'flex',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': { 
-                bgcolor: 'rgba(255, 255, 255, 0.08)',
-                borderColor: 'rgba(238, 172, 47, 0.3)' // Honey Bronze glow
-              },
-              '& img': { 
-                display: 'block',
-                filter: 'grayscale(0.4) contrast(0.9)', // Mute for dark mode harmony
-                transition: 'filter 0.3s ease',
-              },
-              '&:hover img': {
-                filter: 'grayscale(0) contrast(1)', // Full color on hover
-              }
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)', borderColor: alpha('#EEAC2F', 0.3) },
+              '& img': { display: 'block', filter: 'grayscale(0.4) contrast(0.9)', transition: 'filter 0.3s' },
+              '&:hover img': { filter: 'grayscale(0) contrast(1)' }
             }}
           >
             <a
@@ -137,12 +103,18 @@ export default function Footer() {
                 referrerPolicy="origin"
                 src="https://trustseal.enamad.ir/logo.aspx?id=7267311&Code=gFXuwV2xlgp1rBZVgH6aae2Vp4ynU4S6"
                 alt="eNamad"
-                style={{ height: 40, width: 'auto', cursor: 'pointer' }}
-                // @ts-ignore
-                code="gFXuwV2xlgp1rBZVgH6aae2Vp4ynU4S6"
+                style={{ height: 42, width: 'auto', cursor: 'pointer' }}
               />
             </a>
           </Box>
+        </Box>
+
+        <Divider sx={{ my: 4, borderColor: 'rgba(255, 255, 255, 0.06)' }} />
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.4, fontWeight: 500 }}>
+            {footer.copyright || '© 2026 BaziGB'}
+          </Typography>
         </Box>
       </Container>
     </Box>
