@@ -33,8 +33,24 @@ export interface RoomWithParsedData {
   currentState: GameState | null;
   winnerId: string | null;
   ownerId: string | null;
+  /** Best-of-N match length: 1 = single game, 3 = first to 2, 5 = first to 3. */
+  maxRounds: number;
+  /** Round wins per player id ({ [playerId]: wins }) for multi-round matches. */
+  scores: Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Allowed best-of-N match lengths. 1 keeps the legacy single-game behavior. */
+export const MATCH_ROUND_OPTIONS = [1, 3, 5] as const;
+export type MaxRounds = (typeof MATCH_ROUND_OPTIONS)[number];
+
+/** Coerce any input to a valid maxRounds value (defaults to 1 = single game). */
+export function normalizeMaxRounds(value: unknown): number {
+  const parsed = typeof value === 'string' ? Number(value) : value;
+  return typeof parsed === 'number' && MATCH_ROUND_OPTIONS.includes(parsed as MaxRounds)
+    ? (parsed as MaxRounds)
+    : 1;
 }
 
 /**
@@ -82,15 +98,27 @@ export class RoomService {
 
   /**
    * Create the room if it does not exist yet, otherwise seat `playerId`.
-   * `gameType` is only used when a room is created here (socket-side join
-   * without a preceding HTTP create); existing rooms keep their own type.
-   * Throws when the room is already full.
+   * `gameType` / `maxRounds` are only used when a room is created here
+   * (socket-side join without a preceding HTTP create); existing rooms keep
+   * their own values. Throws when the room is already full.
    */
-  async joinRoom(code: string, playerId: string, gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
-    return this.withRoomLock(code, () => this.joinRoomUnlocked(code, playerId, gameType));
+  async joinRoom(
+    code: string,
+    playerId: string,
+    gameType = 'tic-tac-toe',
+    maxRounds: unknown = 1,
+  ): Promise<RoomWithParsedData> {
+    return this.withRoomLock(code, () =>
+      this.joinRoomUnlocked(code, playerId, gameType, normalizeMaxRounds(maxRounds)),
+    );
   }
 
-  private async joinRoomUnlocked(code: string, playerId: string, gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
+  private async joinRoomUnlocked(
+    code: string,
+    playerId: string,
+    gameType = 'tic-tac-toe',
+    maxRounds = 1,
+  ): Promise<RoomWithParsedData> {
     const existing = await this.prisma.room.findUnique({ where: { code } });
 
     if (!existing) {
@@ -101,6 +129,7 @@ export class RoomService {
           status: 'waiting',
           players: JSON.stringify([playerId]),
           ownerId: playerId,
+          maxRounds,
         },
       });
       return this.toParsed(room);
@@ -125,7 +154,7 @@ export class RoomService {
         ...(existing.ownerId ? {} : { ownerId: playerId }),
         // Reuse a finished room for a rematch.
         ...(existing.status === 'finished'
-          ? { status: 'waiting', winnerId: null, currentState: null }
+          ? { status: 'waiting', winnerId: null, currentState: null, scores: '{}' }
           : {}),
       },
     });
@@ -137,7 +166,8 @@ export class RoomService {
    * Players are not seated here; they join later through the socket.io
    * `joinRoom` event (GameGateway) which seats them by socket id.
    */
-  async createRoom(gameType = 'tic-tac-toe'): Promise<RoomWithParsedData> {
+  async createRoom(gameType = 'tic-tac-toe', maxRounds: unknown = 1): Promise<RoomWithParsedData> {
+    const normalizedRounds = normalizeMaxRounds(maxRounds);
     for (let attempt = 0; attempt < 10; attempt++) {
       const code = this.generateCode();
       try {
@@ -147,6 +177,7 @@ export class RoomService {
             gameType,
             status: 'waiting',
             players: '[]',
+            maxRounds: normalizedRounds,
           },
         });
         return this.toParsed(room);
@@ -206,19 +237,54 @@ export class RoomService {
     return this.toParsed(updated);
   }
 
-  /** Mark a room as playing and store the initial game state. */
-  async startGame(code: string, initialState: GameState): Promise<RoomWithParsedData> {
-    return this.withRoomLock(code, () => this.startGameUnlocked(code, initialState));
+  /**
+   * Mark a room as playing and store the initial game state.
+   *
+   * `opts.resetScores` wipes the match scoreboard — pass true when a brand-new
+   * match begins (first start, Vegas start, rematch). Mid-match rounds reuse
+   * this method WITHOUT reset so the accumulated round wins survive.
+   */
+  async startGame(
+    code: string,
+    initialState: GameState,
+    opts: { resetScores?: boolean } = {},
+  ): Promise<RoomWithParsedData> {
+    return this.withRoomLock(code, () => this.startGameUnlocked(code, initialState, opts));
   }
 
-  private async startGameUnlocked(code: string, initialState: GameState): Promise<RoomWithParsedData> {
+  private async startGameUnlocked(
+    code: string,
+    initialState: GameState,
+    opts: { resetScores?: boolean } = {},
+  ): Promise<RoomWithParsedData> {
     const room = await this.prisma.room.findUnique({ where: { code } });
     if (!room) {
       throw new NotFoundException(`Room "${code}" not found`);
     }
     const updated = await this.prisma.room.update({
       where: { id: room.id },
-      data: { status: 'playing', currentState: JSON.stringify(initialState) },
+      data: {
+        status: 'playing',
+        currentState: JSON.stringify(initialState),
+        ...(opts.resetScores ? { scores: '{}' } : {}),
+      },
+    });
+    return this.toParsed(updated);
+  }
+
+  /** Persist the match scoreboard ({ [playerId]: roundWins }) after a round. */
+  async saveScores(code: string, scores: Record<string, number>): Promise<RoomWithParsedData> {
+    return this.withRoomLock(code, () => this.saveScoresUnlocked(code, scores));
+  }
+
+  private async saveScoresUnlocked(code: string, scores: Record<string, number>): Promise<RoomWithParsedData> {
+    const room = await this.prisma.room.findUnique({ where: { code } });
+    if (!room) {
+      throw new NotFoundException(`Room "${code}" not found`);
+    }
+    const updated = await this.prisma.room.update({
+      where: { id: room.id },
+      data: { scores: JSON.stringify(scores) },
     });
     return this.toParsed(updated);
   }
@@ -295,6 +361,8 @@ export class RoomService {
     currentState: string | null;
     winnerId: string | null;
     ownerId: string | null;
+    maxRounds: number;
+    scores: string;
     createdAt: Date;
     updatedAt: Date;
   }): RoomWithParsedData {
@@ -306,6 +374,15 @@ export class RoomService {
         currentState = null;
       }
     }
+    let scores: Record<string, number> = {};
+    try {
+      const parsed = JSON.parse(room.scores);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        scores = parsed as Record<string, number>;
+      }
+    } catch {
+      scores = {};
+    }
     return {
       id: room.id,
       code: room.code,
@@ -315,6 +392,8 @@ export class RoomService {
       currentState,
       winnerId: room.winnerId,
       ownerId: room.ownerId,
+      maxRounds: room.maxRounds,
+      scores,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
     };

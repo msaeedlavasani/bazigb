@@ -25,28 +25,36 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
         palette: {
           mode: 'dark',
           primary: {
-            main: '#B25D16', // Autumn Ember
-            light: '#F5A306', // Orange
-            dark: '#8F470F',
-            contrastText: '#FFFFFF',
+            main: '#EEAC2F', // Honey Bronze
+            light: '#F5C461',
+            dark: '#C48A25',
+            contrastText: '#030A15',
           },
           secondary: {
-            main: '#114B5E', // Dark Teal
-            light: '#1B6B85',
-            dark: '#0B3A4A',
-            contrastText: '#FFFFFF',
+            main: '#061A2D', // Prussian Blue
+            light: '#0A2D45',
+            dark: '#03101C',
+            contrastText: '#F8FAFC',
           },
           background: {
             default: '#030A15', // Ink Black
-            paper: '#0B1622', // Ink lifted one step
+            paper: '#061A2D', // Prussian Blue (Surface)
           },
           text: {
-            secondary: '#BEBBAC', // Ash Grey
+            primary: '#F8FAFC',
+            secondary: '#94A3B8', // Muted Gray
           },
-          divider: 'rgba(190, 187, 172, 0.14)', // Ash Grey @ 14%
+          divider: '#392E24', // Dark Coffee
         },
         typography: {
-          fontFamily: 'inherit',
+          fontFamily: '"Vazirmatn", "Roboto", "Helvetica", "Arial", sans-serif',
+          h1: { fontWeight: 700 },
+          h2: { fontWeight: 700 },
+          h3: { fontWeight: 700 },
+          h4: { fontWeight: 700 },
+          h5: { fontWeight: 700 },
+          h6: { fontWeight: 700 },
+          button: { fontWeight: 500, letterSpacing: '0.02em' },
         },
         components: {
           MuiButton: {

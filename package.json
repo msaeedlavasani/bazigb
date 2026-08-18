@@ -18,5 +18,8 @@
   "license": "MIT",
   "overrides": {
     "multer": "^2.1.0"
+  },
+  "dependencies": {
+    "@nestjs/platform-express": "^10.4.22"
   }
 }

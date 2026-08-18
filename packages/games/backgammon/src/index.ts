@@ -1,5 +1,7 @@
 import { Game, Move, GameContext } from '@bazigb/engine';
 
+export * from './ai';
+
 export interface BackgammonState {
   points: number[]; // 1-24. Positive for White, Negative for Black
   bar: { white: number; black: number };
@@ -75,7 +77,7 @@ export function getLegalDestinations(
   return Array.from(new Set(destinations));
 }
 
-function canBearOff(state: BackgammonState, isWhite: boolean): boolean {
+export function canBearOff(state: BackgammonState, isWhite: boolean): boolean {
   if (isWhite) {
     if (state.bar.white > 0) return false;
     for (let i = 1; i <= 18; i++) {
@@ -140,8 +142,116 @@ export function getLegalMoves(
   return moves;
 }
 
-const movePiece: Move<BackgammonState> = (G, ctx, { from, to }) => {
-  let { points, bar, off, diceRemaining } = {
+/* ---------------------------------------------------------------------------
+ * Move hints (visual guidance for the board UI)
+ * ------------------------------------------------------------------------- */
+
+/** A destination a checker on a selected point could reach.
+ *  - `single`: one die applied once (bar entry / ordinary move / bear-off)
+ *  - `sum`:    both dice as a single combined move (non-doubles only)
+ *  - `double`: an intermediate step of a doubles roll (2nd/3rd/4th die) */
+export interface BackgammonMoveHint {
+  to: number;
+  kind: 'single' | 'sum' | 'double';
+}
+
+/**
+ * Computes every point reachable from the checker on `from`, including
+ * combined-dice moves (`sum`) and the intermediate steps of doubles rolls.
+ *
+ * Only legal landing squares are returned: no square holding 2+ opponent
+ * checkers, no illegal bear-offs, and when checkers are on the bar every hint
+ * starts from the bar. The result powers the click-to-move hint overlay on the
+ * board (direct targets are exactly what `getLegalDestinations` reports, so
+ * clicking a hint never produces an illegal move).
+ */
+export function getMoveHints(
+  state: BackgammonState,
+  playerId: string,
+  from: number,
+  dice: number[],
+  ctxPlayers: string[]
+): BackgammonMoveHint[] {
+  const isWhite = playerId === ctxPlayers[0];
+  const direction = isWhite ? 1 : -1;
+  const barPos = isWhite ? 0 : 25;
+  const offPos = isWhite ? 25 : 0;
+
+  // While checkers sit on the bar every move must start from the bar.
+  const hasBar = isWhite ? state.bar.white > 0 : state.bar.black > 0;
+  if (hasBar && from !== barPos) return [];
+
+  const hints: BackgammonMoveHint[] = [];
+  const push = (to: number, kind: BackgammonMoveHint['kind']) => {
+    if (!hints.some(h => h.to === to)) hints.push({ to, kind });
+  };
+
+  // Can the checker land on a board point `to` (1-24)?
+  const canLand = (to: number): boolean =>
+    to >= 1 && to <= 24 && (isWhite ? state.points[to] >= -1 : state.points[to] <= 1);
+
+  // Can the checker bear off to `offPos` using exactly `die`? An exact roll
+  // always works; a larger die only works for the furthest checker from home.
+  const canBearOffFrom = (die: number): boolean => {
+    if (!canBearOff(state, isWhite)) return false;
+    const distance = Math.abs(offPos - from);
+    if (distance === die) return true;
+    return distance < die && from === getFurthestPiece(state, isWhite);
+  };
+
+  const destFor = (point: number, die: number): number => point + die * direction;
+  const uniqueDice = Array.from(new Set(dice));
+  const isDoubles = uniqueDice.length === 1 && dice.length >= 2;
+
+  // 1) Single-die destinations (one die at a time).
+  for (const die of uniqueDice) {
+    const to = destFor(from, die);
+    if (canLand(to)) {
+      push(to, 'single');
+    } else if ((isWhite ? to >= offPos : to <= offPos) && canBearOffFrom(die)) {
+      push(offPos, 'single');
+    }
+  }
+
+  // 2) Doubles: intermediate steps after the 2nd/3rd/4th die. Each step must
+  //    be a legal landing square in sequence — a blocked step breaks the chain.
+  if (isDoubles && uniqueDice.length === 1) {
+    const die = uniqueDice[0];
+    let reachable = true;
+    for (let k = 2; k <= Math.min(dice.length, 4) && reachable; k++) {
+      const to = destFor(from, die * k);
+      if (canLand(to)) {
+        push(to, 'double');
+      } else if ((isWhite ? to >= offPos : to <= offPos) && canBearOffFrom(die)) {
+        push(offPos, 'double');
+      } else {
+        reachable = false;
+      }
+    }
+  }
+
+  // 3) Sum of both dice as one combined move (non-doubles only — with doubles
+  //    the intermediate steps above already cover every reachable point).
+  if (!isDoubles && uniqueDice.length === 2 && !hasBar) {
+    const [d1, d2] = uniqueDice;
+    const sumTo = destFor(from, d1 + d2);
+    // A combined move is legal only when at least one die-by-die order is
+    // playable end-to-end (every intermediate square must also be open).
+    const orderLegal = (a: number, b: number): boolean => {
+      const mid = destFor(from, a);
+      if (!canLand(mid)) return false;
+      const end = destFor(mid, b);
+      return canLand(end) || ((isWhite ? end >= offPos : end <= offPos) && canBearOffFrom(b));
+    };
+    if (canLand(sumTo) && (orderLegal(d1, d2) || orderLegal(d2, d1))) {
+      push(sumTo, 'sum');
+    }
+  }
+
+  return hints;
+}
+
+export const movePiece: Move<BackgammonState> = (G, ctx, { from, to }) => {  let { points, bar, off, diceRemaining } = {
     ...G,
     points: [...G.points],
     bar: { ...G.bar },

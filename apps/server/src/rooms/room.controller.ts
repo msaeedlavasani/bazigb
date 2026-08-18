@@ -36,8 +36,8 @@ export class RoomsController {
   }
 
   @Post()
-  createRoom(@Body('gameType') gameType?: string) {
+  createRoom(@Body('gameType') gameType?: string, @Body('maxRounds') maxRounds?: number) {
     const type = typeof gameType === 'string' && gameType.trim() ? gameType.trim() : 'tic-tac-toe';
-    return this.roomService.createRoom(type);
+    return this.roomService.createRoom(type, maxRounds);
   }
 }

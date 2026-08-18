@@ -11,15 +11,21 @@ interface BoardProps {
 }
 
 const CELL_BASE =
-  'flex aspect-square items-center justify-center rounded-2xl text-5xl font-extrabold ' +
-  'transition-all duration-150 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400/60';
+  'flex aspect-square items-center justify-center rounded-2xl text-6xl font-black ' +
+  'transition-all duration-200 focus:outline-none';
 
 const EMPTY_CELL =
-  'bg-white/10 border border-white/10 text-transparent cursor-pointer ' +
-  'hover:bg-white/20 hover:border-indigo-300/30 hover:scale-[1.03] active:scale-95';
+  'bg-[#030A15]/40 border-2 border-[#392E24] text-transparent cursor-pointer ' +
+  'shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] ' +
+  'hover:bg-[#EEAC2F]/5 hover:border-[#EEAC2F]/30 hover:scale-[1.02] active:scale-95';
 
-const X_CELL = 'bg-rose-500/15 border border-rose-400/40 text-rose-400 cursor-default';
-const O_CELL = 'bg-sky-500/15 border border-sky-400/40 text-sky-400 cursor-default';
+const X_CELL = 'bg-[#061A2D] border-2 border-[#EEAC2F]/40 text-[#EEAC2F] cursor-default ' +
+  'shadow-[0_8px_16px_rgba(0,0,0,0.4),_inset_0_2px_4px_rgba(255,255,255,0.1)] ' +
+  'animate-in zoom-in-75 duration-300';
+
+const O_CELL = 'bg-[#061A2D] border-2 border-[#94A3B8]/40 text-[#F8FAFC] cursor-default ' +
+  'shadow-[0_8px_16px_rgba(0,0,0,0.4),_inset_0_2px_4px_rgba(255,255,255,0.1)] ' +
+  'animate-in zoom-in-75 duration-300';
 
 /**
  * 3x3 Tic-Tac-Toe board. Renders the current `cells` and reports

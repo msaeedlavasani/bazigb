@@ -100,8 +100,15 @@ model Room {
   currentState String?  // JSON serialized game state (null until the game starts)
   winnerId     String?  // player user id that won (null for draw / unfinished)
   ownerId      String?  // socket id of the room creator (can issue START)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  // Best-of-N match length: 1 = single game, 3 = first to 2 round wins,
+  // 5 = first to 3 round wins. A round is one full game (a draw awards no
+  // point and just replays as the next round).
+  maxRounds Int      @default(1)
+  // JSON map { [playerId]: roundWins } tracking the current match score for
+  // multi-round rooms ({} for single-game rooms).
+  scores    String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   games GameHistory[]
 

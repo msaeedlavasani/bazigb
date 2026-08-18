@@ -92,9 +92,9 @@ export default function Nav() {
                 fontSize: { xs: '0.9rem', sm: '1.25rem' },
                 fontWeight: 900,
                 letterSpacing: '-0.025em',
-                color: theme.palette.primary.light,
+                color: 'primary.main', // Honey Bronze
                 '&:hover': {
-                  WebkitTextFillColor: theme.palette.common.white,
+                  color: 'primary.light',
                 },
                 transition: 'all 0.2s',
                 display: { xs: 'none', sm: 'block' },
@@ -122,13 +122,16 @@ export default function Nav() {
                     minHeight: { xs: 40, sm: 36 },
                     fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     fontWeight: 500,
-                    color: active ? 'primary.light' : 'text.secondary',
-                    bgcolor: active ? alpha(theme.palette.primary.main, 0.15) : 'transparent',
+                    color: active ? 'primary.main' : 'text.secondary',
+                    bgcolor: active ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                    border: '1px solid',
+                    borderColor: active ? alpha(theme.palette.primary.main, 0.2) : 'transparent',
                     '&:hover': {
                       bgcolor: active
-                        ? alpha(theme.palette.primary.main, 0.2)
+                        ? alpha(theme.palette.primary.main, 0.15)
                         : alpha(theme.palette.text.primary, 0.05),
-                      color: active ? 'primary.light' : 'text.primary',
+                      color: active ? 'primary.main' : 'text.primary',
+                      borderColor: active ? alpha(theme.palette.primary.main, 0.3) : 'transparent',
                     },
                     '& .MuiButton-startIcon': {
                       marginRight: { xs: 0, sm: 1 },
@@ -154,12 +157,12 @@ export default function Nav() {
               aria-label={muted ? 'فعال‌سازی صدا' : 'قطع صدا'}
               startIcon={muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
               sx={{
-                borderColor: muted ? alpha(theme.palette.divider, 0.2) : alpha(theme.palette.primary.main, 0.3),
-                bgcolor: muted ? 'transparent' : alpha(theme.palette.primary.main, 0.08),
-                color: muted ? 'text.disabled' : 'primary.light',
+                borderColor: alpha(theme.palette.divider, 0.2),
+                bgcolor: muted ? 'transparent' : alpha(theme.palette.primary.main, 0.05),
+                color: muted ? 'text.disabled' : 'primary.main',
                 '&:hover': {
-                  borderColor: muted ? alpha(theme.palette.divider, 0.4) : alpha(theme.palette.primary.main, 0.5),
-                  bgcolor: muted ? alpha(theme.palette.text.primary, 0.05) : alpha(theme.palette.primary.main, 0.15),
+                  borderColor: alpha(theme.palette.primary.main, 0.4),
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
                 },
                 px: { xs: 0.75, sm: 1.5 },
                 minWidth: { xs: 40, sm: 'auto' },

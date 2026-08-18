@@ -170,6 +170,8 @@ exports.Prisma.RoomScalarFieldEnum = {
   currentState: 'currentState',
   winnerId: 'winnerId',
   ownerId: 'ownerId',
+  maxRounds: 'maxRounds',
+  scores: 'scores',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

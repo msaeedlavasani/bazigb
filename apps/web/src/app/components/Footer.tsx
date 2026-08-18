@@ -78,37 +78,72 @@ export default function Footer() {
             </Typography>
           </Box>
 
-          {/* Links */}
-          {footer.links.length > 0 && (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1.5, sm: 2.5 } }}>
-              {footer.links.map((link) => (
-                <Typography
-                  key={`${link.label}-${link.href}`}
-                  component={Link}
-                  href={link.href}
-                  variant="body2"
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    minHeight: 40,
-                    px: 0.5,
-                    color: 'text.secondary',
-                    textDecoration: 'none',
-                    '&:hover': { color: 'primary.light' },
-                  }}
-                >
-                  {link.label}
-                </Typography>
-              ))}
-            </Box>
-          )}
+          {/* Links & Trust Seals */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
+              gap: 3,
+            }}
+          >
+          </Box>
         </Box>
 
         <Divider sx={{ my: 2.5, borderColor: alpha('#BEBBAC', 0.1) }} />
 
-        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-          {footer.copyright}
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.8 }}>
+            {footer.copyright}
+          </Typography>
+
+          {/* Enamad - Elite discrete placement */}
+          <Box
+            sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              p: 0.75,
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              display: 'flex',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': { 
+                bgcolor: 'rgba(255, 255, 255, 0.08)',
+                borderColor: 'rgba(238, 172, 47, 0.3)' // Honey Bronze glow
+              },
+              '& img': { 
+                display: 'block',
+                filter: 'grayscale(0.4) contrast(0.9)', // Mute for dark mode harmony
+                transition: 'filter 0.3s ease',
+              },
+              '&:hover img': {
+                filter: 'grayscale(0) contrast(1)', // Full color on hover
+              }
+            }}
+          >
+            <a
+              referrerPolicy="origin"
+              target="_blank"
+              href="https://trustseal.enamad.ir/?id=7267311&Code=gFXuwV2xlgp1rBZVgH6aae2Vp4ynU4S6"
+            >
+              <img
+                referrerPolicy="origin"
+                src="https://trustseal.enamad.ir/logo.aspx?id=7267311&Code=gFXuwV2xlgp1rBZVgH6aae2Vp4ynU4S6"
+                alt="eNamad"
+                style={{ height: 40, width: 'auto', cursor: 'pointer' }}
+                // @ts-ignore
+                code="gFXuwV2xlgp1rBZVgH6aae2Vp4ynU4S6"
+              />
+            </a>
+          </Box>
+        </Box>
       </Container>
     </Box>
   );

@@ -5,6 +5,7 @@ export const joinRoomSchema = z.union([
   z.object({
     roomCode: z.string(),
     gameType: z.string().optional(),
+    maxRounds: z.number().optional(),
     token: z.string().optional(),
     seatKey: z.string().optional(),
   }),

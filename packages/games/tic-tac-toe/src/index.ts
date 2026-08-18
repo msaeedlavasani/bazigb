@@ -1,5 +1,7 @@
 import { Game, Move, GameContext } from '@bazigb/engine';
 
+export * from './ai';
+
 export interface TicTacToeState {
   cells: (string | null)[];
 }

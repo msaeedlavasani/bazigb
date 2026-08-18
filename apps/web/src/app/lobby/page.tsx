@@ -27,6 +27,10 @@ import {
   Grid,
   ButtonBase,
   Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { createRoom, fetchRooms, Room } from '../../lib/rooms';
 
@@ -99,6 +103,13 @@ export default function LobbyPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [gameType, setGameType] = useState<GameType>('tic-tac-toe');
+  const [maxRounds, setMaxRounds] = useState<1 | 3 | 5>(1);
+
+  const MATCH_POINTS_OPTIONS: { value: 1 | 3 | 5; label: string }[] = [
+    { value: 1, label: 'Single game (1 point)' },
+    { value: 3, label: 'Best of 3 — first to 2' },
+    { value: 5, label: 'Best of 5 — first to 3' },
+  ];
 
   const loadRooms = useCallback(async () => {
     try {
@@ -122,7 +133,7 @@ export default function LobbyPage() {
     setCreating(true);
     setCreateError(null);
     try {
-      const room = await createRoom(gameType);
+      const room = await createRoom(gameType, maxRounds);
       router.push(`/game/${room.code}`);
     } catch (e: any) {
       setCreateError(e?.message || 'Could not create a room');
@@ -164,58 +175,58 @@ export default function LobbyPage() {
         flex: 1,
         flexDirection: 'column',
         alignItems: 'center',
-        p: 3,
-        bgcolor: '#030A15',
-        color: 'white',
+        p: { xs: 2, sm: 3 },
+        bgcolor: 'background.default',
+        color: 'text.primary',
       }}
     >
-        <Box sx={{ w: '100%', maxWidth: 'sm', width: '100%', display: 'flex', flexDirection: 'column', gap: 4, py: 4 }}>
+        <Box sx={{ maxWidth: 'sm', width: '100%', display: 'flex', flexDirection: 'column', gap: { xs: 3, sm: 4 }, py: { xs: 2, sm: 4 } }}>
           <Box component="header" sx={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Typography
               variant="h4"
               sx={{
-                fontWeight: 800,
-                letterSpacing: 'tight',
-                background: '#F5A306',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                fontWeight: 900,
+                letterSpacing: '-0.02em',
+                color: 'primary.main', // Honey Bronze
+                textShadow: '0 2px 10px rgba(238, 172, 47, 0.2)',
               }}
             >
               BaziGB Lobby
             </Typography>
-            <Typography sx={{ color: 'text.secondary', fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, opacity: 0.8 }}>
               Create a room or join a friend with a code
             </Typography>
           </Box>
 
           {/* Create / Join actions */}
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Paper
                 elevation={0}
                 sx={{
-                  p: 2,
-                  borderRadius: 4,
-                  bgcolor: alpha('#0B1622', 0.6),
+                  p: 2.5,
+                  borderRadius: '16px',
+                  bgcolor: 'background.paper', // Prussian Blue
                   border: '1px solid',
-                  borderColor: 'divider',
+                  borderColor: 'divider', // Dark Coffee
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 1.5,
+                  gap: 2,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}
               >
                 <Typography
-                  variant="caption"
-                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'text.secondary' }}
+                  variant="overline"
+                  sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.1em' }}
                 >
                   Select Game
                 </Typography>
-                <Grid container spacing={1}>
+                <Grid container spacing={1.5}>
                   {GAME_OPTIONS.map((type) => {
                     const meta = GAME_META[type];
                     const selected = gameType === type;
                     return (
-                      <Grid size={6} key={type}>
+                      <Grid item xs={6} key={type}>
                         <ButtonBase
                           onClick={() => setGameType(type)}
                           sx={{
@@ -223,53 +234,70 @@ export default function LobbyPage() {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            gap: 0.75,
-                            p: 1.5,
-                            borderRadius: 3,
-                            border: '1px solid',
-                            transition: 'all 0.2s',
-                            bgcolor: selected ? alpha('#B25D16', 0.15) : alpha('#030A15', 0.6),
-                            borderColor: selected ? alpha('#F5A306', 0.6) : 'divider',
-                            color: selected ? 'white' : alpha('#BEBBAC', 0.8),
-                            boxShadow: selected ? '0 10px 15px -3px rgba(178, 93, 22, 0.12)' : 'none',
+                            gap: 1,
+                            p: 2,
+                            borderRadius: '12px',
+                            border: '2px solid',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            bgcolor: selected ? alpha(theme.palette.primary.main, 0.08) : 'rgba(0,0,0,0.2)',
+                            borderColor: selected ? 'primary.main' : 'transparent',
+                            color: selected ? 'primary.main' : 'text.secondary',
                             '&:hover': {
-                              borderColor: selected ? alpha('#F5A306', 0.8) : 'text.disabled',
-                              color: selected ? 'white' : 'text.primary',
+                              bgcolor: selected ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.text.primary, 0.04),
+                              borderColor: selected ? 'primary.main' : alpha(theme.palette.divider, 0.5),
+                              transform: 'translateY(-2px)',
                             },
                           }}
                         >
-                          <Box sx={{ color: selected ? '#F5A306' : 'text.disabled', display: 'flex' }}>
-                            <GameIcon game={type} />
+                          <Box sx={{ color: 'inherit', display: 'flex', transform: selected ? 'scale(1.1)' : 'none', transition: 'transform 0.2s' }}>
+                            <GameIcon game={type} sx={{ fontSize: '1.75rem' }} />
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          <Box sx={{ textAlign: 'center', minWidth: 0 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 800, noWrap: true }}>
                               {meta.label}
                             </Typography>
                             {meta.isNew && (
-                              <Box
-                                component="span"
-                                sx={{
-                                  bgcolor: '#10b981',
+                              <Chip 
+                                label="NEW" 
+                                size="small" 
+                                sx={{ 
+                                  height: 16, 
+                                  fontSize: '8px', 
+                                  fontWeight: 900, 
+                                  bgcolor: 'success.main', 
                                   color: 'white',
-                                  fontSize: '8px',
-                                  px: 0.5,
-                                  borderRadius: 0.5,
-                                  textTransform: 'uppercase',
-                                  fontWeight: 900,
-                                }}
-                              >
-                                New
-                              </Box>
+                                  mt: 0.5
+                                }} 
+                              />
                             )}
                           </Box>
-                          <Typography variant="caption" sx={{ fontSize: '10px', fontWeight: 500, opacity: 0.7 }}>
-                            {meta.tagline}
-                          </Typography>
                         </ButtonBase>
                       </Grid>
                     );
                   })}
                 </Grid>
+
+                <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                  <InputLabel id="match-points-label" sx={{ color: 'text.secondary' }}>Match Points</InputLabel>
+                  <Select
+                    labelId="match-points-label"
+                    label="Match Points"
+                    value={maxRounds}
+                    onChange={(e) => setMaxRounds(e.target.value as 1 | 3 | 5)}
+                    sx={{
+                      borderRadius: '10px',
+                      bgcolor: 'rgba(0,0,0,0.2)',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+                    }}
+                  >
+                    {MATCH_POINTS_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value} sx={{ fontWeight: 600 }}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
                 <Button
                   fullWidth
                   variant="contained"
@@ -277,19 +305,17 @@ export default function LobbyPage() {
                   disabled={creating}
                   startIcon={creating ? <CircularProgress size={20} color="inherit" /> : <Plus size={20} />}
                   sx={{
-                    mt: 0.5,
                     py: 1.5,
-                    borderRadius: 3,
-                    background: '#F5A306',
-                    fontWeight: 700,
-                    fontSize: '1.125rem',
-                    boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.2)',
+                    borderRadius: '12px',
+                    bgcolor: 'primary.main',
+                    color: 'background.default',
+                    fontWeight: 800,
+                    boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
                     '&:hover': {
-                      opacity: 0.9,
+                      bgcolor: 'primary.light',
+                      transform: 'translateY(-1px)',
                     },
-                    '&:active': {
-                      transform: 'scale(0.99)',
-                    },
+                    '&:active': { transform: 'scale(0.98)' },
                   }}
                 >
                   Create Room
@@ -297,51 +323,48 @@ export default function LobbyPage() {
               </Paper>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Paper
                 component="form"
                 onSubmit={handleJoinByCode}
                 elevation={0}
                 sx={{
-                  p: 2,
-                  borderRadius: 4,
-                  bgcolor: alpha('#0B1622', 0.6),
+                  p: 2.5,
+                  borderRadius: '16px',
+                  bgcolor: 'background.paper',
                   border: '1px solid',
                   borderColor: 'divider',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 1.5,
+                  gap: 2,
                   height: '100%',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}
               >
                 <Typography
-                  variant="caption"
-                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'text.secondary' }}
+                  variant="overline"
+                  sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.1em' }}
                 >
                   Join by code
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto' }}>
                   <TextField
                     fullWidth
                     size="small"
                     value={codeInput}
-                    placeholder="e.g. ABCDE"
+                    placeholder="ABCDE"
                     onChange={(e) => {
                       setCodeInput(e.target.value.toUpperCase());
                       setJoinError(null);
                     }}
-                    slotProps={{
-                      input: {
-                        sx: {
-                          bgcolor: '#030A15',
-                          borderRadius: 3,
-                          fontFamily: 'monospace',
-                          letterSpacing: '0.2em',
-                          fontWeight: 700,
-                          fontSize: '1.125rem',
-                          textTransform: 'uppercase',
-                        },
-                      },
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(0,0,0,0.2)',
+                        borderRadius: '10px',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        letterSpacing: '0.2em',
+                      }
                     }}
                   />
                   <Button
@@ -350,21 +373,19 @@ export default function LobbyPage() {
                     disabled={!codeInput.trim()}
                     sx={{
                       minWidth: 56,
-                      borderRadius: 3,
-                      bgcolor: 'white',
-                      color: '#8F470F',
-                      '&:hover': {
-                        bgcolor: alpha('#BEBBAC', 0.9),
-                      },
+                      borderRadius: '10px',
+                      bgcolor: 'text.primary',
+                      color: 'background.default',
+                      '&:hover': { bgcolor: 'text.secondary' },
                     }}
                   >
                     <ArrowRight size={20} />
                   </Button>
                 </Box>
                 {joinError && (
-                  <Typography variant="caption" sx={{ color: '#fb7185' }}>
+                  <Alert severity="error" variant="filled" sx={{ py: 0, px: 1, borderRadius: '8px', fontSize: '0.75rem' }}>
                     {joinError}
-                  </Typography>
+                  </Alert>
                 )}
               </Paper>
             </Grid>

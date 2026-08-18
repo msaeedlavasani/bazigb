@@ -5664,8 +5664,18 @@ export namespace Prisma {
 
   export type AggregateRoom = {
     _count: RoomCountAggregateOutputType | null
+    _avg: RoomAvgAggregateOutputType | null
+    _sum: RoomSumAggregateOutputType | null
     _min: RoomMinAggregateOutputType | null
     _max: RoomMaxAggregateOutputType | null
+  }
+
+  export type RoomAvgAggregateOutputType = {
+    maxRounds: number | null
+  }
+
+  export type RoomSumAggregateOutputType = {
+    maxRounds: number | null
   }
 
   export type RoomMinAggregateOutputType = {
@@ -5677,6 +5687,8 @@ export namespace Prisma {
     currentState: string | null
     winnerId: string | null
     ownerId: string | null
+    maxRounds: number | null
+    scores: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5690,6 +5702,8 @@ export namespace Prisma {
     currentState: string | null
     winnerId: string | null
     ownerId: string | null
+    maxRounds: number | null
+    scores: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5703,11 +5717,21 @@ export namespace Prisma {
     currentState: number
     winnerId: number
     ownerId: number
+    maxRounds: number
+    scores: number
     createdAt: number
     updatedAt: number
     _all: number
   }
 
+
+  export type RoomAvgAggregateInputType = {
+    maxRounds?: true
+  }
+
+  export type RoomSumAggregateInputType = {
+    maxRounds?: true
+  }
 
   export type RoomMinAggregateInputType = {
     id?: true
@@ -5718,6 +5742,8 @@ export namespace Prisma {
     currentState?: true
     winnerId?: true
     ownerId?: true
+    maxRounds?: true
+    scores?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5731,6 +5757,8 @@ export namespace Prisma {
     currentState?: true
     winnerId?: true
     ownerId?: true
+    maxRounds?: true
+    scores?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5744,6 +5772,8 @@ export namespace Prisma {
     currentState?: true
     winnerId?: true
     ownerId?: true
+    maxRounds?: true
+    scores?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -5787,6 +5817,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: RoomAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RoomSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: RoomMinAggregateInputType
@@ -5817,6 +5859,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: RoomCountAggregateInputType | true
+    _avg?: RoomAvgAggregateInputType
+    _sum?: RoomSumAggregateInputType
     _min?: RoomMinAggregateInputType
     _max?: RoomMaxAggregateInputType
   }
@@ -5830,9 +5874,13 @@ export namespace Prisma {
     currentState: string | null
     winnerId: string | null
     ownerId: string | null
+    maxRounds: number
+    scores: string
     createdAt: Date
     updatedAt: Date
     _count: RoomCountAggregateOutputType | null
+    _avg: RoomAvgAggregateOutputType | null
+    _sum: RoomSumAggregateOutputType | null
     _min: RoomMinAggregateOutputType | null
     _max: RoomMaxAggregateOutputType | null
   }
@@ -5860,6 +5908,8 @@ export namespace Prisma {
     currentState?: boolean
     winnerId?: boolean
     ownerId?: boolean
+    maxRounds?: boolean
+    scores?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     games?: boolean | Room$gamesArgs<ExtArgs>
@@ -5875,6 +5925,8 @@ export namespace Prisma {
     currentState?: boolean
     winnerId?: boolean
     ownerId?: boolean
+    maxRounds?: boolean
+    scores?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["room"]>
@@ -5888,6 +5940,8 @@ export namespace Prisma {
     currentState?: boolean
     winnerId?: boolean
     ownerId?: boolean
+    maxRounds?: boolean
+    scores?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -5912,6 +5966,8 @@ export namespace Prisma {
       currentState: string | null
       winnerId: string | null
       ownerId: string | null
+      maxRounds: number
+      scores: string
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["room"]>
@@ -6316,6 +6372,8 @@ export namespace Prisma {
     readonly currentState: FieldRef<"Room", 'String'>
     readonly winnerId: FieldRef<"Room", 'String'>
     readonly ownerId: FieldRef<"Room", 'String'>
+    readonly maxRounds: FieldRef<"Room", 'Int'>
+    readonly scores: FieldRef<"Room", 'String'>
     readonly createdAt: FieldRef<"Room", 'DateTime'>
     readonly updatedAt: FieldRef<"Room", 'DateTime'>
   }
@@ -10912,6 +10970,8 @@ export namespace Prisma {
     currentState: 'currentState',
     winnerId: 'winnerId',
     ownerId: 'ownerId',
+    maxRounds: 'maxRounds',
+    scores: 'scores',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -11352,6 +11412,8 @@ export namespace Prisma {
     currentState?: StringNullableFilter<"Room"> | string | null
     winnerId?: StringNullableFilter<"Room"> | string | null
     ownerId?: StringNullableFilter<"Room"> | string | null
+    maxRounds?: IntFilter<"Room"> | number
+    scores?: StringFilter<"Room"> | string
     createdAt?: DateTimeFilter<"Room"> | Date | string
     updatedAt?: DateTimeFilter<"Room"> | Date | string
     games?: GameHistoryListRelationFilter
@@ -11366,6 +11428,8 @@ export namespace Prisma {
     currentState?: SortOrderInput | SortOrder
     winnerId?: SortOrderInput | SortOrder
     ownerId?: SortOrderInput | SortOrder
+    maxRounds?: SortOrder
+    scores?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     games?: GameHistoryOrderByRelationAggregateInput
@@ -11383,6 +11447,8 @@ export namespace Prisma {
     currentState?: StringNullableFilter<"Room"> | string | null
     winnerId?: StringNullableFilter<"Room"> | string | null
     ownerId?: StringNullableFilter<"Room"> | string | null
+    maxRounds?: IntFilter<"Room"> | number
+    scores?: StringFilter<"Room"> | string
     createdAt?: DateTimeFilter<"Room"> | Date | string
     updatedAt?: DateTimeFilter<"Room"> | Date | string
     games?: GameHistoryListRelationFilter
@@ -11397,11 +11463,15 @@ export namespace Prisma {
     currentState?: SortOrderInput | SortOrder
     winnerId?: SortOrderInput | SortOrder
     ownerId?: SortOrderInput | SortOrder
+    maxRounds?: SortOrder
+    scores?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: RoomCountOrderByAggregateInput
+    _avg?: RoomAvgOrderByAggregateInput
     _max?: RoomMaxOrderByAggregateInput
     _min?: RoomMinOrderByAggregateInput
+    _sum?: RoomSumOrderByAggregateInput
   }
 
   export type RoomScalarWhereWithAggregatesInput = {
@@ -11416,6 +11486,8 @@ export namespace Prisma {
     currentState?: StringNullableWithAggregatesFilter<"Room"> | string | null
     winnerId?: StringNullableWithAggregatesFilter<"Room"> | string | null
     ownerId?: StringNullableWithAggregatesFilter<"Room"> | string | null
+    maxRounds?: IntWithAggregatesFilter<"Room"> | number
+    scores?: StringWithAggregatesFilter<"Room"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Room"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Room"> | Date | string
   }
@@ -12039,6 +12111,8 @@ export namespace Prisma {
     currentState?: string | null
     winnerId?: string | null
     ownerId?: string | null
+    maxRounds?: number
+    scores?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     games?: GameHistoryCreateNestedManyWithoutRoomInput
@@ -12053,6 +12127,8 @@ export namespace Prisma {
     currentState?: string | null
     winnerId?: string | null
     ownerId?: string | null
+    maxRounds?: number
+    scores?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     games?: GameHistoryUncheckedCreateNestedManyWithoutRoomInput
@@ -12067,6 +12143,8 @@ export namespace Prisma {
     currentState?: NullableStringFieldUpdateOperationsInput | string | null
     winnerId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerId?: NullableStringFieldUpdateOperationsInput | string | null
+    maxRounds?: IntFieldUpdateOperationsInput | number
+    scores?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     games?: GameHistoryUpdateManyWithoutRoomNestedInput
@@ -12081,6 +12159,8 @@ export namespace Prisma {
     currentState?: NullableStringFieldUpdateOperationsInput | string | null
     winnerId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerId?: NullableStringFieldUpdateOperationsInput | string | null
+    maxRounds?: IntFieldUpdateOperationsInput | number
+    scores?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     games?: GameHistoryUncheckedUpdateManyWithoutRoomNestedInput
@@ -12095,6 +12175,8 @@ export namespace Prisma {
     currentState?: string | null
     winnerId?: string | null
     ownerId?: string | null
+    maxRounds?: number
+    scores?: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12108,6 +12190,8 @@ export namespace Prisma {
     currentState?: NullableStringFieldUpdateOperationsInput | string | null
     winnerId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerId?: NullableStringFieldUpdateOperationsInput | string | null
+    maxRounds?: IntFieldUpdateOperationsInput | number
+    scores?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12121,6 +12205,8 @@ export namespace Prisma {
     currentState?: NullableStringFieldUpdateOperationsInput | string | null
     winnerId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerId?: NullableStringFieldUpdateOperationsInput | string | null
+    maxRounds?: IntFieldUpdateOperationsInput | number
+    scores?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12765,8 +12851,14 @@ export namespace Prisma {
     currentState?: SortOrder
     winnerId?: SortOrder
     ownerId?: SortOrder
+    maxRounds?: SortOrder
+    scores?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type RoomAvgOrderByAggregateInput = {
+    maxRounds?: SortOrder
   }
 
   export type RoomMaxOrderByAggregateInput = {
@@ -12778,6 +12870,8 @@ export namespace Prisma {
     currentState?: SortOrder
     winnerId?: SortOrder
     ownerId?: SortOrder
+    maxRounds?: SortOrder
+    scores?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -12791,8 +12885,14 @@ export namespace Prisma {
     currentState?: SortOrder
     winnerId?: SortOrder
     ownerId?: SortOrder
+    maxRounds?: SortOrder
+    scores?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type RoomSumOrderByAggregateInput = {
+    maxRounds?: SortOrder
   }
 
   export type UserNullableRelationFilter = {
@@ -14434,6 +14534,8 @@ export namespace Prisma {
     currentState?: string | null
     winnerId?: string | null
     ownerId?: string | null
+    maxRounds?: number
+    scores?: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -14447,6 +14549,8 @@ export namespace Prisma {
     currentState?: string | null
     winnerId?: string | null
     ownerId?: string | null
+    maxRounds?: number
+    scores?: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -14527,6 +14631,8 @@ export namespace Prisma {
     currentState?: NullableStringFieldUpdateOperationsInput | string | null
     winnerId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerId?: NullableStringFieldUpdateOperationsInput | string | null
+    maxRounds?: IntFieldUpdateOperationsInput | number
+    scores?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -14540,6 +14646,8 @@ export namespace Prisma {
     currentState?: NullableStringFieldUpdateOperationsInput | string | null
     winnerId?: NullableStringFieldUpdateOperationsInput | string | null
     ownerId?: NullableStringFieldUpdateOperationsInput | string | null
+    maxRounds?: IntFieldUpdateOperationsInput | number
+    scores?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -27,6 +27,7 @@ import {
   RotateCcw,
   Share2,
   Timer,
+  Trophy,
   Undo2,
   Users,
   Wifi,
@@ -119,6 +120,13 @@ export default function GamePage() {
   const [turnExpired, setTurnExpired] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
+  // Multi-round (best-of-N) match state. `scores` maps player id -> round wins;
+  // `matchOver` gates the final winner banner (false while rounds remain).
+  const [matchScores, setMatchScores] = useState<Record<string, number>>({});
+  const [matchMaxRounds, setMatchMaxRounds] = useState(1);
+  const [matchOver, setMatchOver] = useState(false);
+  const [roundNotice, setRoundNotice] = useState<string | null>(null);
+
   // Shared computed variables (declared early so callbacks can use them)
   const mySocketId = socket.id ?? null;
   const ctxPlayers = gameState?.ctx.players ?? [];
@@ -159,6 +167,11 @@ export default function GamePage() {
         .then((r) => {
           if (cancelled) return;
           setRoom(r);
+          setMatchScores(r.scores ?? {});
+          setMatchMaxRounds(r.maxRounds ?? 1);
+          // A finished room means the match itself is over (winner banner);
+          // a playing room is mid-round or mid-match.
+          setMatchOver(r.status === 'finished');
           if (r.currentState) {
             setGameState(r.currentState);
             setWinner(r.winnerId ?? null);
@@ -236,11 +249,52 @@ export default function GamePage() {
       setError(null);
       handleStateChange(state);
     };
-    const onGameOver = ({ state, winner: w }: { state: GameState; winner: string }) => {
+    const onGameOver = ({
+      state,
+      winner: w,
+      scores,
+      maxRounds,
+      matchOver: over,
+    }: {
+      state: GameState;
+      winner: string;
+      scores?: Record<string, number>;
+      maxRounds?: number;
+      matchOver?: boolean;
+    }) => {
       if (cancelled) return;
       setGameState(state);
       setWinner(w);
       handleStateChange(state);
+      // `matchOver: false` means a round ended but the best-of-N match
+      // continues — the server starts the next round right away. Any other
+      // value (incl. legacy servers without match fields) = match finished.
+      const roundEnded = over === false;
+      setMatchOver(over !== false);
+      if (scores) setMatchScores(scores);
+      if (typeof maxRounds === 'number') setMatchMaxRounds(maxRounds);
+
+      if (roundEnded) {
+        const label =
+          w === 'draw'
+            ? 'Draw'
+            : w === socket.id
+              ? 'You won the round!'
+              : 'Opponent won the round';
+        setRoundNotice(`${label} — next round starting`);
+        window.setTimeout(() => {
+          if (!cancelled) setRoundNotice(null);
+        }, 6000);
+      } else {
+        setRoundNotice(null);
+      }
+    };
+
+    // Live scoreboard update between rounds of a best-of-N match.
+    const onMatchScore = (data: { scores?: Record<string, number>; maxRounds?: number }) => {
+      if (cancelled) return;
+      if (data.scores) setMatchScores(data.scores);
+      if (typeof data.maxRounds === 'number') setMatchMaxRounds(data.maxRounds);
     };
     const onError = (err: any) => {
       if (cancelled) return;
@@ -306,6 +360,7 @@ export default function GamePage() {
 
     socket.on('gameState', onGameState);
     socket.on('gameOver', onGameOver);
+    socket.on('matchScore', onMatchScore);
     socket.on('error', onError);
     socket.on('connect', onConnect);
     socket.on('connect_error', onConnectError);
@@ -323,6 +378,7 @@ export default function GamePage() {
       if (retryTimer) clearTimeout(retryTimer);
       socket.off('gameState', onGameState);
       socket.off('gameOver', onGameOver);
+      socket.off('matchScore', onMatchScore);
       socket.off('error', onError);
       socket.off('connect', onConnect);
       socket.off('connect_error', onConnectError);
@@ -485,6 +541,13 @@ export default function GamePage() {
     const idx = ctxPlayers.indexOf(winnerId);
     return idx >= 0 ? `Winner: Player ${idx + 1}` : 'Winner: Player';
   }, [winnerId, isPlayer, mySocketId, ctxPlayers]);
+
+  // Best-of-N match scoreboard, resolved in seat order (player 0 vs player 1)
+  // so "Matches: 2 - 1" always reads from the seated players' perspective.
+  const [player0Id, player1Id] = ctxPlayers;
+  const scoreA = player0Id ? (matchScores[player0Id] ?? 0) : 0;
+  const scoreB = player1Id ? (matchScores[player1Id] ?? 0) : 0;
+  const isMultiRoundMatch = matchMaxRounds > 1;
 
   const connChip =
     connStatus === 'connected'
@@ -851,6 +914,27 @@ export default function GamePage() {
                       Undo
                     </Button>
                   )}
+                  {!winnerId && players.length === 1 && !isSpectator && (
+                    <Button
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                      onClick={() => socket.emit('add_ai_player', { room: roomCode })}
+                      startIcon={<Bot size={14} />}
+                      sx={{
+                        ml: 1,
+                        py: 0.25,
+                        px: 1.5,
+                        borderRadius: 10,
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        borderColor: alpha(theme.palette.secondary.main, 0.4),
+                      }}
+                    >
+                      Play with AI
+                    </Button>
+                  )}
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'secondary.light' }}>
@@ -878,6 +962,37 @@ export default function GamePage() {
               )}
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {isMultiRoundMatch && (
+                  <Chip
+                    icon={<Trophy size={14} />}
+                    label={`Matches ${scoreA} - ${scoreB}`}
+                    size="small"
+                    title={`Best of ${matchMaxRounds} — first to ${Math.ceil(matchMaxRounds / 2)}`}
+                    sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      bgcolor: alpha(theme.palette.warning.main, 0.12),
+                      color: '#fbbf24',
+                      border: '1px solid',
+                      borderColor: alpha(theme.palette.warning.main, 0.3),
+                      '& .MuiChip-icon': { color: 'inherit' },
+                    }}
+                  />
+                )}
+                {roundNotice && !matchOver && (
+                  <Chip
+                    label={roundNotice}
+                    size="small"
+                    sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      bgcolor: alpha(theme.palette.success.main, 0.15),
+                      color: 'success.light',
+                      border: '1px solid',
+                      borderColor: alpha(theme.palette.success.main, 0.3),
+                    }}
+                  />
+                )}
                 <Chip
                   label={isChess ? '♞ Chess' : isBackgammon ? '🎲 Backgammon' : isVegas ? '💵 Vegas' : 'Tic-Tac-Toe'}
                   size="small"
@@ -1072,7 +1187,7 @@ export default function GamePage() {
               </Box>
             )}
 
-            {winnerLabel && (
+            {winnerLabel && matchOver && (
               <Paper
                 elevation={8}
                 sx={{

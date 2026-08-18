@@ -38,6 +38,10 @@ export interface Room {
   winnerId: string | null;
   /** Socket id of the room creator (can issue the START command in Vegas). */
   ownerId: string | null;
+  /** Best-of-N match length: 1 = single game, 3 = first to 2, 5 = first to 3. */
+  maxRounds: number;
+  /** Round wins per player id ({ [playerId]: wins }) for multi-round matches. */
+  scores: Record<string, number>;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,7 +56,11 @@ export function fetchRoom(code: string): Promise<Room> {
   return api.get<Room>(`/rooms/${encodeURIComponent(code)}`);
 }
 
-/** Ask the server to persist a new empty room; returns the room with its code. */
-export function createRoom(gameType = 'tic-tac-toe'): Promise<Room> {
-  return api.post<Room>('/rooms', { gameType });
+/**
+ * Ask the server to persist a new empty room; returns the room with its code.
+ * `maxRounds` is the best-of-N match length: 1 = single game (default),
+ * 3 = first to 2 round wins, 5 = first to 3 round wins.
+ */
+export function createRoom(gameType = 'tic-tac-toe', maxRounds = 1): Promise<Room> {
+  return api.post<Room>('/rooms', { gameType, maxRounds });
 }

@@ -159,20 +159,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
-        this.clearTurnTimers(roomCode);
-        this.undoStacks.delete(roomCode);
-        this.server.to(roomCode).emit('gameOver', { state: nextState, winner: result });
-        const winner = result === 'draw' ? null : result;
-        await this.roomService.finishRoom(roomCode, winner, nextState);
-        const resolvedPlayers = this.resolveUserIds(room.players);
-        const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
-        await this.historyService.recordGameResult({
-          roomCode,
-          gameName: game.name,
-          winnerId: resolvedWinner,
-          players: resolvedPlayers,
-          finalState: nextState,
-        });
+        await this.handleGameOver(room, game, nextState, result);
       } else {
         await this.roomService.saveState(roomCode, nextState);
         this.server.to(roomCode).emit('gameState', nextState);
@@ -324,6 +311,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const roomCode = typeof data === 'string' ? data : data.roomCode;
     const gameType = typeof data === 'string' ? undefined : data.gameType;
+    const maxRounds = typeof data === 'string' ? undefined : data.maxRounds;
     const seatKey = typeof data === 'string' ? undefined : data.seatKey;
     const token = typeof data === 'string' ? undefined : data.token;
     if (!roomCode) return;
@@ -339,14 +327,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // 1) Create the room when it does not exist (first joiner is seated).
       if (!room) {
-        room = await this.roomService.joinRoom(roomCode, client.id, gameType);
+        room = await this.roomService.joinRoom(roomCode, client.id, gameType, maxRounds);
         this.issueSeatKey(client, roomCode);
       } else if (room.players.includes(client.id)) {
         // 2) Already seated — re-join is a no-op.
       } else if (room.status === 'waiting' && room.players.length < getMaxPlayers(room.gameType)) {
         // 3) Free seat in a waiting room -> seat the client as a player.
         try {
-          room = await this.roomService.joinRoom(roomCode, client.id, gameType);
+          room = await this.roomService.joinRoom(roomCode, client.id, gameType, maxRounds);
           this.issueSeatKey(client, roomCode);
         } catch {
           // Lost the race for the last seat -> fall through as a spectator.
@@ -386,7 +374,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           // The stale id was already removed from room.players on disconnect —
           // re-seat the fresh socket so the room sees 2 players again.
           if (room && !room.players.includes(client.id)) {
-            room = await this.roomService.joinRoom(roomCode, client.id, gameType);
+            room = await this.roomService.joinRoom(roomCode, client.id, gameType, maxRounds);
           }
           this.server.to(roomCode).emit('gameState', nextState);
           console.log(
@@ -444,8 +432,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (shouldStart) {
         const game = resolveGame(room.gameType);
         const initialState = BaziGBEngine.createInitialState(game, room.players);
-        await this.roomService.startGame(roomCode, initialState);
+        // A fresh match starts 0-0 regardless of any previous match's scores.
+        await this.roomService.startGame(roomCode, initialState, { resetScores: true });
         this.undoStacks.delete(roomCode);
+        this.server.to(roomCode).emit('matchScore', {
+          scores: {},
+          maxRounds: room.maxRounds ?? 1,
+          round: 0,
+        });
         this.server.to(roomCode).emit('gameState', initialState);
         this.scheduleTurnTimer(roomCode, initialState);
         this.emitSystemMessage(roomCode, 'The game has started', undefined, 'gameStart');
@@ -584,8 +578,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const game = resolveGame(roomRecord.gameType);
     const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
-    await this.roomService.startGame(roomCode, initialState);
+    // A fresh match starts 0-0 regardless of any previous match's scores.
+    await this.roomService.startGame(roomCode, initialState, { resetScores: true });
     this.undoStacks.delete(roomCode);
+    this.server.to(roomCode).emit('matchScore', {
+      scores: {},
+      maxRounds: roomRecord.maxRounds ?? 1,
+      round: 0,
+    });
     this.server.to(roomCode).emit('gameState', initialState);
     this.scheduleTurnTimer(roomCode, initialState);
     this.emitSystemMessage(
@@ -619,12 +619,155 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const game = resolveGame(roomRecord.gameType);
     const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
-    await this.roomService.startGame(roomCode, initialState);
+    // A rematch is a brand-new match: the scoreboard starts 0-0 again.
+    await this.roomService.startGame(roomCode, initialState, { resetScores: true });
     this.undoStacks.delete(roomCode);
+    this.server.to(roomCode).emit('matchScore', {
+      scores: {},
+      maxRounds: roomRecord.maxRounds ?? 1,
+      round: 0,
+    });
     this.server.to(roomCode).emit('gameState', initialState);
     this.scheduleTurnTimer(roomCode, initialState);
     this.emitSystemMessage(roomCode, 'A new game has started', undefined, 'gameStart');
     console.log(`Rematch started in room ${roomCode} by ${client.id}`);
+  }
+
+  /**
+   * Shared game-over path used by every game type (makeMove / gameAction /
+   * turn-timeout auto end-turn).
+   *
+   * Single-game rooms (maxRounds = 1, the default) finish exactly like before:
+   * the room is closed and the result is recorded in history.
+   *
+   * Best-of-N rooms (maxRounds = 3 | 5) tally the finished round into the
+   * match scoreboard (`scores` keyed by player id; a draw awards no point).
+   * When a player reaches the win threshold (ceil(maxRounds / 2)) the match is
+   * finished and the room is closed. Otherwise the next round starts
+   * immediately with a fresh initial state and the same players — the room
+   * stays in `playing` and its accumulated scores survive.
+   *
+   * Emitted events:
+   *  - `gameOver`  { state, winner, matchOver, scores, maxRounds } — round (or
+   *    match) result. `matchOver: true` means the room is finished.
+   *  - `matchScore` { scores, maxRounds, round } — live scoreboard update
+   *    between rounds (also reflected in the `gameOver` payload).
+   *  - `gameState` — the fresh initial state of the next round.
+   */
+  private async handleGameOver(
+    roomRecord: RoomWithParsedData,
+    game: Game,
+    nextState: GameState,
+    result: string,
+  ) {
+    const roomCode = roomRecord.code;
+    this.clearTurnTimers(roomCode);
+    this.undoStacks.delete(roomCode);
+
+    const winner = result === 'draw' ? null : result;
+    const maxRounds = roomRecord.maxRounds ?? 1;
+    const threshold = Math.ceil(maxRounds / 2);
+    const scores = { ...(roomRecord.scores ?? {}) };
+
+    // Tally the finished round into the match scoreboard.
+    if (winner) scores[winner] = (scores[winner] ?? 0) + 1;
+    const matchWinner = maxRounds > 1 && winner && scores[winner] >= threshold ? winner : null;
+
+    const resolvedPlayers = this.resolveUserIds(roomRecord.players);
+    const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
+    const recordRound = () =>
+      this.historyService.recordGameResult({
+        roomCode,
+        gameName: game.name,
+        winnerId: resolvedWinner,
+        players: resolvedPlayers,
+        finalState: nextState,
+      });
+
+    // Single-game room: legacy behavior — finish and log as before.
+    if (maxRounds <= 1) {
+      this.server.to(roomCode).emit('gameOver', {
+        state: nextState,
+        winner: result,
+        matchOver: true,
+        scores,
+        maxRounds,
+      });
+      await this.roomService.finishRoom(roomCode, winner, nextState);
+      await recordRound();
+      this.emitSystemMessage(
+        roomCode,
+        result === 'draw' ? 'The game ended in a draw' : `User ${result} won the game`,
+        result === 'draw' ? undefined : result,
+        'gameOver',
+      );
+      console.log(`Game over in room ${roomCode}. Winner: ${result}`);
+      return;
+    }
+
+    // Best-of-N match: persist the scoreboard first so a crash between rounds
+    // cannot lose the finished round.
+    await this.roomService.saveScores(roomCode, scores);
+
+    // The win threshold was reached — the match is over, close the room.
+    if (matchWinner) {
+      this.server.to(roomCode).emit('gameOver', {
+        state: nextState,
+        winner: result,
+        matchOver: true,
+        scores,
+        maxRounds,
+      });
+      await this.roomService.finishRoom(roomCode, matchWinner, nextState);
+      await recordRound();
+      const winnerScore = scores[matchWinner] ?? 0;
+      const loserScore = Object.values(scores).reduce((sum, n) => sum + n, 0) - winnerScore;
+      this.emitSystemMessage(
+        roomCode,
+        `User ${matchWinner} won the match ${winnerScore} - ${loserScore}`,
+        matchWinner,
+        'gameOver',
+      );
+      console.log(
+        `Match over in room ${roomCode}: ${matchWinner} won ${winnerScore}-${loserScore} (best of ${maxRounds})`,
+      );
+      return;
+    }
+
+    // Round over but the match continues: persist the next round's fresh state
+    // BEFORE announcing the round result, so a move raced in from a client in
+    // the announcement window cannot overwrite the new round's initial state.
+    const roundsPlayed = Object.values(scores).reduce((sum, n) => sum + n, 0);
+    const initialState = BaziGBEngine.createInitialState(game, roomRecord.players);
+    // No score reset here — this is a new ROUND of the same match.
+    await this.roomService.startGame(roomCode, initialState);
+
+    this.server.to(roomCode).emit('gameOver', {
+      state: nextState,
+      winner: result,
+      matchOver: false,
+      scores,
+      maxRounds,
+    });
+    await recordRound();
+    this.server.to(roomCode).emit('matchScore', {
+      scores,
+      maxRounds,
+      round: roundsPlayed,
+    });
+    this.server.to(roomCode).emit('gameState', initialState);
+    this.scheduleTurnTimer(roomCode, initialState);
+    this.emitSystemMessage(
+      roomCode,
+      result === 'draw'
+        ? 'The round ended in a draw — next round starting'
+        : `User ${result} won the round — next round starting`,
+      result === 'draw' ? undefined : result,
+      'gameOver',
+    );
+    console.log(
+      `Round ${roundsPlayed} finished in room ${roomCode} (winner: ${result}) — next round started`,
+    );
   }
 
   /**
@@ -805,31 +948,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check for a winner or a draw.
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
-        this.clearTurnTimers(room);
-        this.undoStacks.delete(room);
-        console.log(`Game over in room ${room}. Winner: ${result}`);
-        this.server.to(room).emit('gameOver', { state: nextState, winner: result });
-
-        const winner = result === 'draw' ? null : result;
-        await this.roomService.finishRoom(room, winner, nextState);
-        const resolvedPlayers = this.resolveUserIds(roomRecord.players);
-        const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
-        await this.historyService.recordGameResult({
-          roomCode: room,
-          gameName: game.name,
-          winnerId: resolvedWinner,
-          players: resolvedPlayers,
-          finalState: nextState,
-        });
-        this.emitSystemMessage(
-          room,
-          result === 'draw'
-            ? 'The game ended in a draw'
-            : `User ${result} won the game`,
-          result === 'draw' ? undefined : result,
-          'gameOver',
-        );
-        console.log(`Game result logged in history for room ${room}`);
+        await this.handleGameOver(roomRecord, game, nextState, result);
       } else {
         await this.roomService.saveState(room, nextState);
         this.server.to(room).emit('gameState', nextState);
@@ -882,26 +1001,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const result = game.endIf?.(nextState.G, nextState.ctx);
       if (result) {
-        this.clearTurnTimers(room);
-        this.undoStacks.delete(room);
-        this.server.to(room).emit('gameOver', { state: nextState, winner: result });
-        const winner = result === 'draw' ? null : result;
-        await this.roomService.finishRoom(room, winner, nextState);
-        const resolvedPlayers = this.resolveUserIds(roomRecord.players);
-        const resolvedWinner = winner ? this.socketUsers.get(winner) ?? winner : null;
-        await this.historyService.recordGameResult({
-          roomCode: room,
-          gameName: game.name,
-          winnerId: resolvedWinner,
-          players: resolvedPlayers,
-          finalState: nextState,
-        });
-        this.emitSystemMessage(
-          room,
-          result === 'draw' ? 'The game ended in a draw' : `User ${result} won the game`,
-          result === 'draw' ? undefined : result,
-          'gameOver',
-        );
+        await this.handleGameOver(roomRecord, game, nextState, result);
       } else {
         // The undo stack is intentionally NOT cleared on turn rotation: undo
         // only pops the TOP snapshot and only when it belongs to the requester
