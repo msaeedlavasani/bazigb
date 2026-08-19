@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Prevent horizontal overflow on narrow screens (mobile zoom-out showed a
+   white gap on the right when the fixed nav content exceeded the viewport).
+   `clip` does NOT create a scroll container, so the sticky header keeps
+   working — unlike `hidden`. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}

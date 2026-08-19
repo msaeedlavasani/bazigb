@@ -1,0 +1,25 @@
+{
+  "name": "bazigb",
+  "version": "1.0.0",
+  "description": "BaziGB Online Board Game Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/games/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:server": "npm run dev --workspace=apps/server",
+    "build": "npm run build --workspace=@bazigb/engine && npm run build --workspace=@bazigb/game-tic-tac-toe && npm run build --workspace=@bazigb/game-chess && npm run build --workspace=@bazigb/game-backgammon && npm run build --workspace=@bazigb/game-vegas && npm run build --workspace=@bazigb/server && npm run build --workspace=@bazigb/web"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "overrides": {
+    "multer": "^2.1.0"
+  },
+  "dependencies": {
+    "@nestjs/platform-express": "^10.4.22"
+  }
+}

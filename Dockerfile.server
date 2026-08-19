@@ -1,0 +1,61 @@
+# BaziGB Server — production image
+# NestJS + Prisma (PostgreSQL) inside the npm-workspaces monorepo.
+
+# ---------- Stage 1: install dependencies ----------
+FROM node:20-slim AS deps
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.json ./
+COPY apps/ apps/
+COPY packages/ packages/
+# npm ci installs ALL workspaces (engine, games, server, web deps are linked)
+RUN npm ci
+
+# ---------- Stage 2: build ----------
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/tsconfig.json ./tsconfig.json
+COPY --from=deps /app/apps ./apps
+COPY --from=deps /app/packages ./packages
+
+# Build workspace packages in dependency order
+RUN npm run build --workspace=@bazigb/engine \
+ && npm run build --workspace=@bazigb/game-tic-tac-toe \
+ && npm run build --workspace=@bazigb/game-chess \
+ && npm run build --workspace=@bazigb/game-backgammon \
+ && npm run build --workspace=@bazigb/game-vegas
+
+# Generate the Prisma client (custom output dir: apps/server/src/generated/prisma)
+RUN npx prisma generate --schema apps/server/prisma/schema.prisma
+
+# Build the NestJS server
+RUN npm run build --workspace=@bazigb/server \
+ # Prisma generated client lives in src/generated (pre-generated JS); tsc
+ # does not copy it — carry it into dist so the compiled app can require it.
+ && cp -r apps/server/src/generated apps/server/dist/generated
+
+# ---------- Stage 3: runtime ----------
+FROM node:20-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# OpenSSL is required by the Prisma query engine on node:slim images
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# Node deps (includes devDependencies so `prisma migrate deploy` works at startup)
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/apps ./apps
+
+# Run as a non-root user (node exists in node:20-slim) — least privilege.
+RUN chown -R node:node /app
+USER node
+ENV HOME=/tmp
+
+EXPOSE 3001
+
+# Apply pending Prisma migrations, then boot the API + Socket.IO gateway.
+CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/main.js"]

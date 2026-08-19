@@ -1,0 +1,78 @@
+# BaziGB Web — production image
+# Next.js standalone output inside the npm-workspaces monorepo.
+
+# ---------- Stage 1: install dependencies ----------
+FROM node:20-slim AS deps
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.json ./
+COPY apps/ apps/
+COPY packages/ packages/
+# The lockfile is generated on macOS and only pins the darwin @next/swc binary.
+# npm ci on Linux then has to fetch @next/swc-linux-x64-gnu on the fly (optional
+# dep) — flaky on this VPS, and if it fails `next build` tries to download the
+# binary itself and hangs (BodyTimeoutError). Install the Linux binary by
+# downloading its tarball directly (scripts/fetch-swc.mjs — node fetch + tar
+# with 5 timed retries; the image has no curl/wget). The swc version in the
+# script must match `next`'s optionalDependencies (14.2.33), NOT the `next`
+# version (14.2.35) — the platform swc packages stop at 14.2.33.
+#
+# IMPORTANT: do NOT use `npm install` for the swc binary. On npm 11+ a plain
+# `npm install --no-save` re-resolves the whole dependency tree and PRUNES the
+# nested workspace packages that the lockfile places outside the root (e.g.
+# apps/web/node_modules/@mui/material). `next build` then fails with
+# "unstable_createUseMediaQuery is not a function" (broken @mui/material
+# resolution). The tarball fetch below does not touch the installed tree.
+COPY scripts/ scripts/
+RUN npm ci \
+ && node scripts/fetch-swc.mjs \
+ && ls node_modules/@next/swc-linux-x64-gnu/*.node >/dev/null 2>&1 \
+ || (echo "ERROR: linux swc binary missing" && exit 1)
+
+# ---------- Stage 2: build ----------
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/tsconfig.json ./tsconfig.json
+COPY --from=deps /app/apps ./apps
+COPY --from=deps /app/packages ./packages
+
+# Build engine + the game packages the web app imports at runtime
+RUN npm run build --workspace=@bazigb/engine \
+ && npm run build --workspace=@bazigb/game-tic-tac-toe \
+ && npm run build --workspace=@bazigb/game-chess \
+ && npm run build --workspace=@bazigb/game-backgammon \
+ && npm run build --workspace=@bazigb/game-vegas
+
+# NEXT_PUBLIC_* are inlined at build time — pass them as build args
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SOCKET_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
+
+# The committed lockfile only pins the macOS @next/swc binary; `next build`
+# would otherwise try to fetch the Linux one from the npm registry during the
+# build (slow/unreliable on the VPS -> BodyTimeoutError). The Linux binary is
+# already installed by `npm ci` — skip Next's lockfile-patch fetch entirely.
+ENV NEXT_IGNORE_INCORRECT_LOCKFILE=1
+
+RUN npm run build --workspace=@bazigb/web
+
+# ---------- Stage 3: runtime ----------
+FROM node:20-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Next standalone output (traced node_modules + server.js)
+COPY --from=builder /app/apps/web/.next/standalone ./
+# Static assets and public files
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
+
+# Run as a non-root user (node exists in node:20-slim) — least privilege.
+RUN chown -R node:node /app
+USER node
+ENV HOME=/tmp
+
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

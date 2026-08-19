@@ -1,0 +1,200 @@
+// BaziGB Prisma Schema
+//
+// Production uses PostgreSQL. Local development can use the same Postgres
+// instance via the docker-compose stack, or any local Postgres.
+//   DATABASE_URL="postgresql://bazigb:password@localhost:5432/bazigb?schema=public"
+//
+// NOTE: Prisma does not support switching the provider at runtime. If you
+// need SQLite for a scratch environment, switch `provider` below to "sqlite"
+// and set DATABASE_URL="file:./dev.db" — but do not commit that change.
+
+generator client {
+  provider = "prisma-client-js"
+  // Custom output (monorepo-safe): avoids the hoisted node_modules/.prisma
+  // location and keeps generated types inside the workspace.
+  // Path is relative to this file (prisma/).
+  output = "../src/generated/prisma"
+  // Ensure the production query engine (Debian bookworm / OpenSSL 3) is always
+  // downloaded by `prisma generate` — even when generating on macOS.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique // null for phone-only (OTP) accounts
+  password  String?  // null for phone-only (OTP) accounts
+  username  String   @unique
+  phone     String?  @unique // Iranian mobile (09xxxxxxxxx) — OTP login/signup identifier
+  role      String   @default("USER")
+  wins      Int      @default(0)
+  losses    Int      @default(0)
+  rating    Int      @default(1200) // ELO rating, seeded at 1200
+  deactivated Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  gameHistoryWins GameHistory[]    @relation("GameWinner")
+  tournamentsWon  Tournament[]     @relation("TournamentWinner")
+  tournamentSlots TournamentPlayer[]
+  matchAsPlayerA  TournamentMatch[] @relation("MatchPlayerA")
+  matchAsPlayerB  TournamentMatch[] @relation("MatchPlayerB")
+  matchWins       TournamentMatch[] @relation("MatchWinner")
+
+  notifications Notification[]
+
+  @@map("users")
+}
+
+// One-time SMS verification codes (OTP login / signup via sms.ir).
+// The code itself is stored hashed; `attempts` caps brute force and the
+// record expires shortly after `expiresAt`. A new request replaces the
+// previous code for the same phone.
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@map("otp_codes")
+}
+
+// Editable site-wide settings (footer content, etc.) — managed from the
+// admin panel via PATCH /admin/site-settings, read publicly via
+// GET /site-settings. Key/value store; `value` is a JSON string.
+model SiteSetting {
+  key       String   @id
+  value     String   @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   @default("system")
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+model Room {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  status       String   @default("waiting") // waiting | playing | finished
+  gameType     String
+  players      String   @default("[]") // JSON array of seated player user ids
+  currentState String?  // JSON serialized game state (null until the game starts)
+  winnerId     String?  // player user id that won (null for draw / unfinished)
+  ownerId      String?  // socket id of the room creator (can issue START)
+  // Best-of-N match length: 1 = single game, 3 = first to 2 round wins,
+  // 5 = first to 3 round wins. A round is one full game (a draw awards no
+  // point and just replays as the next round).
+  maxRounds Int      @default(1)
+  // JSON map { [playerId]: roundWins } tracking the current match score for
+  // multi-round rooms ({} for single-game rooms).
+  scores    String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  games GameHistory[]
+
+  @@map("rooms")
+}
+
+model GameHistory {
+  id        String   @id @default(cuid())
+  winnerId  String?
+  roomId    String
+  gameName  String   @default("tic-tac-toe")
+  players   String   @default("[]") // JSON array of participating user ids
+  data      String   @default("{}") // JSON string with game-specific result data (final state)
+  createdAt DateTime @default(now())
+
+  winner User? @relation("GameWinner", fields: [winnerId], references: [id])
+  room   Room  @relation(fields: [roomId], references: [id])
+
+  @@index([roomId])
+  @@index([winnerId])
+  @@map("game_histories")
+}
+
+// ---------------------------------------------------------------------------
+// Tournaments: single-elimination knockout brackets.
+//
+// lifecycle: registration -> seeded -> in_progress -> completed
+// - `bracket` stores the serialized bracket tree (rounds + match ids).
+// - Round 1 is the first round; `bracketIndex` is the 0-based position of a
+//   match inside its round. A match's winner advances to `nextMatchId`.
+// ---------------------------------------------------------------------------
+
+model Tournament {
+  id         String   @id @default(cuid())
+  name       String
+  gameType   String   @default("tic-tac-toe")
+  status     String   @default("registration") // registration | seeded | in_progress | completed
+  maxPlayers Int      @default(16)
+  bracket    String?  // JSON serialized bracket tree (rounds -> match ids)
+  winnerId   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  winner  User?               @relation("TournamentWinner", fields: [winnerId], references: [id])
+  players TournamentPlayer[]
+  matches TournamentMatch[]
+
+  @@index([status])
+  @@map("tournaments")
+}
+
+model TournamentPlayer {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  seed         Int      @default(0) // 1-based seeding order (assigned when the bracket is seeded)
+  joinedAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
+  @@map("tournament_players")
+}
+
+model TournamentMatch {
+  id           String    @id @default(cuid())
+  tournamentId String
+  round        Int       @default(1) // 1 = first round
+  bracketIndex Int       @default(0) // 0-based position inside the round
+  playerAId    String?
+  playerBId    String?
+  winnerId     String?
+  nextMatchId  String? // match the winner advances to (null for the final)
+  status       String    @default("pending") // pending | in_progress | completed
+  playedAt     DateTime?
+
+  tournament Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerA    User?               @relation("MatchPlayerA", fields: [playerAId], references: [id])
+  playerB    User?               @relation("MatchPlayerB", fields: [playerBId], references: [id])
+  winner     User?               @relation("MatchWinner", fields: [winnerId], references: [id])
+  nextMatch  TournamentMatch?    @relation("NextMatch", fields: [nextMatchId], references: [id])
+  previousMatches TournamentMatch[] @relation("NextMatch")
+
+  @@unique([tournamentId, round, bracketIndex])
+  @@index([tournamentId, status])
+  @@map("tournament_matches")
+}

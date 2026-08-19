@@ -1,0 +1,11 @@
+{
+  "name": "@bazigb/game-vegas",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@bazigb/engine": "*"
+  }
+}

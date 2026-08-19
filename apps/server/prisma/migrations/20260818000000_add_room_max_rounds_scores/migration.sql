@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "rooms" ADD COLUMN "maxRounds" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN "scores" TEXT NOT NULL DEFAULT '{}';

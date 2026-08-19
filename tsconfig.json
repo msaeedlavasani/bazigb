@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",
+    "lib": ["ESNext", "DOM"],
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@bazigb/engine": [
+        "packages/engine/src"
+      ],
+      "@bazigb/game-*": [
+        "packages/games/*/src"
+      ]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}
